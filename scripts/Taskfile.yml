@@ -1,0 +1,311 @@
+version: '3'
+
+tasks:
+  docker_network:
+    desc: "Create docker network for project."
+    aliases:
+      - network
+    cmd: sudo docker network create khod_felts_network
+
+  prod:
+    desc: "Run application and it's dependencies for production."
+    cmds:
+      - task: generate_open_api_docs
+      - task: create_grafana_folder
+      - task: prepare_prometheus
+      - task: create_logs_folder
+      - task: prepare_env_file_prod
+      - task: docker_build_prod
+      - task: docker_run_prod
+      - task: migrate
+
+  local:
+    desc: "Run application dependencies for local launch."
+    cmds:
+      - task: generate_open_api_docs
+      - task: create_grafana_folder
+      - task: prepare_prometheus
+      - task: create_logs_folder
+      - task: prepare_env_file_local
+      - task: docker_build_local
+      - task: docker_run_local
+      - task: migrate
+
+  create_grafana_folder:
+    desc: "Create Grafana folder for docker volume purposes."
+    internal: true
+    dir: ../
+    cmds:
+      - mkdir -p grafana
+      - sudo chmod -R 777 grafana
+
+  prepare_prometheus:
+    desc: "Prepares Prometheus config."
+    internal: true
+    dir: ../
+    cmds:
+      - export $(cat .env | xargs) && envsubst < prometheus.template.yml > prometheus.yml
+
+  create_postgres_folders:
+    desc: "Create postgres folders for other tasks purposes."
+    internal: true
+    dir: ../
+    cmds:
+      - mkdir -p postgres_data
+      - mkdir -p postgres_backups
+
+  create_logs_folder:
+    desc: "Create logs folder for docker volume purposes."
+    internal: true
+    dir: ../
+    cmds:
+      - mkdir -p logs
+
+  prepare_env_file_prod:
+    desc: "Prepare .env file for production."
+    internal: true
+    dir: ../
+    cmds:
+      - cp .env.prod .env
+      - cp .env build/package/prod/.env
+
+  prepare_env_file_local:
+    desc: "Prepare .env file for local launch."
+    internal: true
+    dir: ../
+    cmds:
+      - cp .env.local .env
+      - cp .env build/package/local/.env
+
+  docker_build_prod:
+    desc: "Build docker container for production."
+    aliases:
+      - build_prod
+    cmd: sudo docker-compose -f ../build/package/prod/docker-compose.yml build
+
+  docker_run_prod:
+    desc: "Launch docker container for production."
+    aliases:
+      - run_prod
+    cmd: sudo docker-compose -f ../build/package/prod/docker-compose.yml up -d
+
+  docker_build_local:
+    desc: "Build docker container for local launch."
+    aliases:
+      - build_local
+    cmd: sudo docker-compose -f ../build/package/local/docker-compose.yml build
+
+  docker_run_local:
+    desc: "Launch docker container for local launch."
+    aliases:
+      - run_local
+    cmd: sudo docker-compose -f ../build/package/local/docker-compose.yml up -d
+
+  docker_stop:
+    desc: "Stop all docker containers."
+    aliases:
+      - stop
+    cmd: sudo docker stop $(sudo docker ps -a -q)
+
+  docker_clean:
+    desc: "Clean docker containers, images and volumes."
+    cmd: sudo docker system prune -a --volumes
+
+  clean_up:
+    desc: "Clean up all folders, docker volumes, images and containers."
+    dir: ../
+    aliases:
+      - clean
+    cmds:
+      #      - sudo rm -rf grafana/
+      - sudo rm -rf prometheus.yml
+      #      - sudo rm -rf logs/
+      - sudo rm -rf coverage/
+      - sudo rm -rf build/package/prod/.env
+      - sudo rm -rf build/package/local/.env
+      #      - sudo rm -rf postgres_data/
+      #      - sudo rm -rf postgres_backups/
+      - task: docker_clean
+
+  tests:
+    desc: "Run tests and save coverage to coverage folder."
+    aliases:
+      - test
+    dir: ../
+    cmds:
+      - task: create_postgres_folders
+      - sudo chmod -R 777 postgres_data
+      - sudo chmod -R 777 postgres_backups
+      - mkdir -p ./coverage
+      - |
+        printf "integration={{.integration}}\n\n"  # View flag value
+        if [ "{{.integration}}" == "true" ]; then
+          go test -v -shuffle=on -coverprofile ./coverage/coverage.out -coverpkg=$(go list ./... | grep -v -F -f .coverignore | paste -sd, -) ./... -tags=integration
+        else
+          go test -v -shuffle=on -coverprofile ./coverage/coverage.out -coverpkg=$(go list ./... | grep -v -F -f .coverignore | paste -sd, -) ./...
+        fi
+      - go tool cover -html ./coverage/coverage.out -o ./coverage/coverage.html
+    vars:
+      integration:
+        sh: echo "${integration:-false}"  # false by default
+
+  benchmarks:
+    desc: "Run benchmarks."
+    aliases:
+      - bench
+    dir: ../
+    cmd: go test -v ./... -bench=. -run=xxx -benchmem >> bench.txt
+
+  linters:
+    desc: "Run linters."
+    aliases:
+      - lint
+    dir: ../
+    cmds:
+      - task: create_postgres_folders
+      - sudo chmod -R 777 postgres_data
+      - sudo chmod -R 777 postgres_backups
+      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+      - export PATH=$PATH:$(go env GOPATH)/bin
+      - golangci-lint run -v --fix
+
+  makemigrations:
+    desc: "Create migration file with provided name."
+    requires: # Make sure these variables are set before running
+      vars: [ NAME ]
+    vars:
+      DIR: ./migrations
+    dir: ../
+    cmds:
+      - go install github.com/pressly/goose/v3/cmd/goose@latest
+      - goose -dir {{.DIR}} create {{.NAME}} sql
+
+  migrate:
+    desc: "Apply all available migrations."
+    aliases:
+      - create_database
+    dotenv:
+      - .env
+    vars:
+      DIR: ./migrations
+      DRIVER: $POSTGRES_DRIVER
+      DATABASE_URL: "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$DB_OUTER_HOST:$DB_OUTER_PORT/$POSTGRES_DB"
+    dir: ../
+    cmds:
+      - go install github.com/pressly/goose/v3/cmd/goose@latest
+      - goose -dir {{.DIR}} {{.DRIVER}} {{.DATABASE_URL}} up
+
+  migrate_to:
+    desc: "Migrate up to a specific version."
+    requires:
+      vars: [ VERSION ]
+    dotenv:
+      - .env
+    vars:
+      DIR: ./migrations
+      DRIVER: $POSTGRES_DRIVER
+      DATABASE_URL: "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$DB_OUTER_HOST:$DB_OUTER_PORT/$POSTGRES_DB"
+    dir: ../
+    cmds:
+      - go install github.com/pressly/goose/v3/cmd/goose@latest
+      - goose -dir {{.DIR}} {{.DRIVER}} {{.DATABASE_URL}} up-to {{.VERSION}}
+
+  downgrade_to:
+    desc: "Rollback migrations to a specific version."
+    requires:
+      vars: [ VERSION ]
+    dotenv:
+      - .env
+    vars:
+      DIR: ./migrations
+      DRIVER: $POSTGRES_DRIVER
+      DATABASE_URL: "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$DB_OUTER_HOST:$DB_OUTER_PORT/$POSTGRES_DB"
+    dir: ../
+    cmds:
+      - go install github.com/pressly/goose/v3/cmd/goose@latest
+      - goose -dir {{.DIR}} {{.DRIVER}} {{.DATABASE_URL}} down-to {{.VERSION}}
+
+  downgrade_to_base:
+    desc: "Rollback all migrations (careful!)."
+    aliases:
+      - drop_tables
+    dotenv:
+      - .env
+    vars:
+      DIR: ./migrations
+      DRIVER: $POSTGRES_DRIVER
+      DATABASE_URL: "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$DB_OUTER_HOST:$DB_OUTER_PORT/$POSTGRES_DB"
+    dir: ../
+    cmds:
+      - go install github.com/pressly/goose/v3/cmd/goose@latest
+      - goose -dir {{.DIR}} {{.DRIVER}} {{.DATABASE_URL}} down-to 0
+
+  migrations_status:
+    desc: "Print status of all migrations."
+    aliases:
+      - status
+    dotenv:
+      - .env
+    vars:
+      DIR: ./migrations
+      DRIVER: $POSTGRES_DRIVER
+      DATABASE_URL: "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$DB_OUTER_HOST:$DB_OUTER_PORT/$POSTGRES_DB"
+    dir: ../
+    cmds:
+      - go install github.com/pressly/goose/v3/cmd/goose@latest
+      - goose -dir {{.DIR}} {{.DRIVER}} {{.DATABASE_URL}} status
+
+  upload_docker_image:
+    desc: "Uploads docker image to dockerhub."
+    aliases:
+      - upload
+    dir: ../
+    cmds:
+      - task: prepare_env_file_prod
+      - task: docker_build_prod
+      - sudo docker tag plants_care_bot d3m0s/plants_care_bot
+      - sudo docker push d3m0s/plants_care_bot
+
+  connect_to_database_container:
+    desc: "Connects to database container."
+    aliases:
+      - connect_to_database
+    dir: ../
+    cmds:
+      - sudo docker exec -it database sh
+
+  create_database_backup:
+    desc: "Creates database backup."
+    aliases:
+      - backup
+    dir: ../
+    cmds:
+      - sudo docker exec database /scripts/backup.sh
+
+  restore_database_from_backup:
+    desc: "Restores database from backup."
+    aliases:
+      - restore
+    dir: ../
+    cmds:
+      - |
+        if [ -z "{{.BACKUP_FILENAME}}" ]; then
+          echo "Восстановление из последней резервной копии..."
+          sudo docker exec database /scripts/restore.sh
+        else
+          echo "Восстановление из резервной копии: {{.BACKUP_FILENAME}}"
+          sudo docker exec database /scripts/restore.sh {{.BACKUP_FILENAME}}
+        fi
+
+  stop_redis:
+    desc: "Stops Redis server locally."
+    dir: ../
+    cmds:
+      - sudo systemctl stop redis-server
+
+  generate_open_api_docs:
+    aliases:
+      - docs
+    desc: "Generates Swagger docs for viewing in web by service."
+    dir: ../
+    cmd: swagger generate spec --scan-models -o ./swagger.yaml
