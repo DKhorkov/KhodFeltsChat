@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/libs/security"
+	"github.com/DKhorkov/libs/tracing"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"time"
 
 	"github.com/DKhorkov/libs/db/postgresql"
@@ -121,6 +124,154 @@ func New() Config {
 				SecretKey: loadenv.GetEnv("JWT_SECRET", "defaultSecret"),
 			},
 		},
+		Tracing: TracingConfig{
+			Server: tracing.Config{
+				ServiceName:    loadenv.GetEnv("TRACING_SERVICE_NAME", "kfc"),
+				ServiceVersion: loadenv.GetEnv("VERSION", "latest"),
+				JaegerURL: fmt.Sprintf(
+					"http://%s:%d/api/traces",
+					loadenv.GetEnv("TRACING_JAEGER_HOST", "0.0.0.0"),
+					loadenv.GetEnvAsInt("TRACING_API_TRACES_PORT", 14268),
+				),
+			},
+			Spans: SpansConfig{
+				Root: tracing.SpanConfig{
+					Opts: []trace.SpanStartOption{
+						trace.WithAttributes(
+							attribute.String("Environment", loadenv.GetEnv("ENVIRONMENT", "local")),
+						),
+					},
+					Events: tracing.SpanEventsConfig{
+						Start: tracing.SpanEventConfig{
+							Name: "Calling handler",
+							Opts: []trace.EventOption{
+								trace.WithAttributes(
+									attribute.String(
+										"Environment",
+										loadenv.GetEnv("ENVIRONMENT", "local"),
+									),
+								),
+							},
+						},
+						End: tracing.SpanEventConfig{
+							Name: "Received response from handler",
+							Opts: []trace.EventOption{
+								trace.WithAttributes(
+									attribute.String(
+										"Environment",
+										loadenv.GetEnv("ENVIRONMENT", "local"),
+									),
+								),
+							},
+						},
+					},
+				},
+				Repositories: SpanRepositories{
+					Auth: tracing.SpanConfig{
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Auth Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Auth Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+					Users: tracing.SpanConfig{
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Users Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Users Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+					Emails: tracing.SpanConfig{
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Emails Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Emails Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -172,6 +323,22 @@ type DocsConfig struct {
 	Filepath string
 }
 
+type SpanRepositories struct {
+	Auth   tracing.SpanConfig
+	Users  tracing.SpanConfig
+	Emails tracing.SpanConfig
+}
+
+type SpansConfig struct {
+	Root         tracing.SpanConfig
+	Repositories SpanRepositories
+}
+
+type TracingConfig struct {
+	Server tracing.Config
+	Spans  SpansConfig
+}
+
 type Config struct {
 	HTTP        HTTPConfig
 	Security    security.Config
@@ -184,4 +351,5 @@ type Config struct {
 	Validation  ValidationConfig
 	CORS        CORSConfig
 	Docs        DocsConfig
+	Tracing     TracingConfig
 }

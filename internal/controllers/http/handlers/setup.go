@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	middlewares "github.com/DKhorkov/libs/middlewares/http"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -11,8 +12,7 @@ import (
 )
 
 const (
-	docsURL    = "/docs"
-	metricsURL = "/metrics"
+	docsURL = "/docs"
 )
 
 func SetupHandlers(
@@ -25,7 +25,7 @@ func SetupHandlers(
 	rootMux.MethodNotAllowedHandler = http.HandlerFunc(NotAllowedHandler)
 
 	getMux := rootMux.Methods(http.MethodGet).Subrouter()
-	getMux.Handle(metricsURL, promhttp.Handler())
+	getMux.Handle(middlewares.MetricsURLPath, promhttp.Handler())
 	//getMux.Handle("/entries", handlers.ListHandler(useCases))
 	//getMux.Handle(fmt.Sprintf("/entries/{%s}", handlers.SearchKey), handlers.SearchHandler(useCases))
 

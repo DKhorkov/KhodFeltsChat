@@ -9,6 +9,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/logging"
 	middlewares "github.com/DKhorkov/libs/middlewares/http"
+	"github.com/DKhorkov/libs/tracing"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"net/http"
@@ -28,8 +29,11 @@ func New(
 	usersUseCases interfaces.UsersUseCases,
 	authUseCases interfaces.AuthUseCases,
 	logger logging.Logger,
+	traceProvider tracing.Provider,
+	spanConfig tracing.SpanConfig,
 ) (*Controller, error) {
 	rootMux := mux.NewRouter()
+	rootMux.Use(middlewares.TracingMiddleware(traceProvider, spanConfig))
 	rootMux.Use(middlewares.MetricsMiddleware)
 
 	handlers.SetupHandlers(
