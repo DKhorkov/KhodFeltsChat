@@ -1,0 +1,132 @@
+package services
+
+import (
+	"context"
+	"database/sql"
+	"github.com/DKhorkov/khodfeltschat/internal/domains"
+	customerrors "github.com/DKhorkov/khodfeltschat/internal/errors"
+	"github.com/DKhorkov/khodfeltschat/internal/interfaces"
+)
+
+type UsersService struct {
+	uow                    interfaces.UnitOfWork
+	newUsersRepositoryFunc func() interfaces.UsersRepository
+}
+
+func NewUsersService(
+	uow interfaces.UnitOfWork,
+	newUsersRepositoryFunc func() interfaces.UsersRepository,
+) *UsersService {
+	return &UsersService{
+		uow:                    uow,
+		newUsersRepositoryFunc: newUsersRepositoryFunc,
+	}
+}
+
+func (s *UsersService) GetUsers(
+	ctx context.Context,
+	filters *domains.UsersFilters,
+	pagination *domains.Pagination,
+) (users []domains.User, err error) {
+	err = s.uow.Do(
+		ctx,
+		func(ctx context.Context, tx *sql.Tx) error {
+			usersRepository := s.newUsersRepositoryFunc()
+			if users, err = usersRepository.GetUsers(ctx, filters, pagination); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+func (s *UsersService) GetUserByID(ctx context.Context, id uint64) (user *domains.User, err error) {
+	err = s.uow.Do(
+		ctx,
+		func(ctx context.Context, tx *sql.Tx) error {
+			usersRepository := s.newUsersRepositoryFunc()
+			if user, err = usersRepository.GetUserByID(ctx, id); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	)
+
+	if err != nil {
+		return nil, &customerrors.UserNotFoundError{BaseErr: err}
+	}
+
+	return user, nil
+}
+
+func (s *UsersService) GetUserByEmail(ctx context.Context, email string) (user *domains.User, err error) {
+	err = s.uow.Do(
+		ctx,
+		func(ctx context.Context, tx *sql.Tx) error {
+			usersRepository := s.newUsersRepositoryFunc()
+			if user, err = usersRepository.GetUserByEmail(ctx, email); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	)
+
+	if err != nil {
+		return nil, &customerrors.UserNotFoundError{BaseErr: err}
+	}
+
+	return user, nil
+}
+
+func (s *UsersService) GetUserByUsername(ctx context.Context, username string) (user *domains.User, err error) {
+	err = s.uow.Do(
+		ctx,
+		func(ctx context.Context, tx *sql.Tx) error {
+			usersRepository := s.newUsersRepositoryFunc()
+			if user, err = usersRepository.GetUserByUsername(ctx, username); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	)
+
+	if err != nil {
+		return nil, &customerrors.UserNotFoundError{BaseErr: err}
+	}
+
+	return user, nil
+}
+
+func (s *UsersService) UpdateUser(ctx context.Context, userData domains.UpdateUserDTO) (user *domains.User, err error) {
+	err = s.uow.Do(
+		ctx,
+		func(ctx context.Context, tx *sql.Tx) error {
+			usersRepository := s.newUsersRepositoryFunc()
+			if err = usersRepository.UpdateUser(ctx, userData); err != nil {
+				return err
+			}
+
+			if user, err = usersRepository.GetUserByID(ctx, userData.ID); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}

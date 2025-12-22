@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/DKhorkov/libs/db"
+	"github.com/DKhorkov/libs/db/postgresql"
 	sq "github.com/Masterminds/squirrel"
 
-	"KhodFeltsChat/internal/domains"
+	"github.com/DKhorkov/khodfeltschat/internal/domains"
 )
 
 const (
@@ -118,7 +118,7 @@ func (repo *AuthRepository) GetRefreshTokenByUserID(
 
 	refreshToken := &domains.RefreshToken{}
 
-	columns := db.GetEntityColumns(refreshToken)
+	columns := postgresql.GetEntityColumns(refreshToken)
 	if err = repo.tx.QueryRowContext(ctx, stmt, params...).Scan(columns...); err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (repo *AuthRepository) ExpireRefreshToken(ctx context.Context, refreshToken
 	return err
 }
 
-func (repo *AuthRepository) VerifyUserEmail(ctx context.Context, userID uint64) error {
+func (repo *AuthRepository) VerifyEmail(ctx context.Context, userID uint64) error {
 	stmt, params, err := sq.
 		Update(usersTableName).
 		Where(sq.Eq{idColumnName: userID}).
