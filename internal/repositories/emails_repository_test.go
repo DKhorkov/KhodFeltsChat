@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/DKhorkov/khodfeltschat/internal/config"
+	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/stretchr/testify/require"
 )
 

@@ -5,9 +5,9 @@ import (
 
 	"gopkg.in/gomail.v2"
 
-	"github.com/DKhorkov/khodfeltschat/internal/config"
-	"github.com/DKhorkov/khodfeltschat/internal/domains"
-	"github.com/DKhorkov/khodfeltschat/internal/interfaces"
+	"github.com/DKhorkov/kfc/internal/config"
+	"github.com/DKhorkov/kfc/internal/domains"
+	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
 type EmailsRepository struct {

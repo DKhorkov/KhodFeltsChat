@@ -2,6 +2,6 @@ global:
   scrape_interval: ${PROMETHEUS_SCRAPE_INTERVAL}  # Как часто собирать метрики
 
 scrape_configs:
-  - job_name: 'khod_felts_chat'  # Метрики Go-приложения
+  - job_name: 'kfc'  # Метрики Go-приложения
     static_configs:
       - targets: ['${APP_HOST_FOR_PROMETHEUS}:${PORT}']  # Используем имя сервиса из docker-compose

@@ -3,19 +3,19 @@ package services
 import (
 	"context"
 	"database/sql"
-	"github.com/DKhorkov/khodfeltschat/internal/domains"
-	customerrors "github.com/DKhorkov/khodfeltschat/internal/errors"
-	"github.com/DKhorkov/khodfeltschat/internal/interfaces"
+	"github.com/DKhorkov/kfc/internal/domains"
+	customerrors "github.com/DKhorkov/kfc/internal/errors"
+	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
 type UsersService struct {
 	uow                    interfaces.UnitOfWork
-	newUsersRepositoryFunc func() interfaces.UsersRepository
+	newUsersRepositoryFunc func(tx *sql.Tx) interfaces.UsersRepository
 }
 
 func NewUsersService(
 	uow interfaces.UnitOfWork,
-	newUsersRepositoryFunc func() interfaces.UsersRepository,
+	newUsersRepositoryFunc func(tx *sql.Tx) interfaces.UsersRepository,
 ) *UsersService {
 	return &UsersService{
 		uow:                    uow,
@@ -31,7 +31,7 @@ func (s *UsersService) GetUsers(
 	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
-			usersRepository := s.newUsersRepositoryFunc()
+			usersRepository := s.newUsersRepositoryFunc(tx)
 			if users, err = usersRepository.GetUsers(ctx, filters, pagination); err != nil {
 				return err
 			}
@@ -51,7 +51,7 @@ func (s *UsersService) GetUserByID(ctx context.Context, id uint64) (user *domain
 	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
-			usersRepository := s.newUsersRepositoryFunc()
+			usersRepository := s.newUsersRepositoryFunc(tx)
 			if user, err = usersRepository.GetUserByID(ctx, id); err != nil {
 				return err
 			}
@@ -71,7 +71,7 @@ func (s *UsersService) GetUserByEmail(ctx context.Context, email string) (user *
 	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
-			usersRepository := s.newUsersRepositoryFunc()
+			usersRepository := s.newUsersRepositoryFunc(tx)
 			if user, err = usersRepository.GetUserByEmail(ctx, email); err != nil {
 				return err
 			}
@@ -91,7 +91,7 @@ func (s *UsersService) GetUserByUsername(ctx context.Context, username string) (
 	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
-			usersRepository := s.newUsersRepositoryFunc()
+			usersRepository := s.newUsersRepositoryFunc(tx)
 			if user, err = usersRepository.GetUserByUsername(ctx, username); err != nil {
 				return err
 			}
@@ -111,7 +111,7 @@ func (s *UsersService) UpdateUser(ctx context.Context, userData domains.UpdateUs
 	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
-			usersRepository := s.newUsersRepositoryFunc()
+			usersRepository := s.newUsersRepositoryFunc(tx)
 			if err = usersRepository.UpdateUser(ctx, userData); err != nil {
 				return err
 			}

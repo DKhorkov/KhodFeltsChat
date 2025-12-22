@@ -1,0 +1,125 @@
+services:
+  kfc:
+    container_name: kfc
+    image: kfc
+    build:
+      context: ../../..
+      dockerfile: ./build/package/Dockerfile
+    ports:
+      - "${HTTP_OUTER_PORT}:${HTTP_INNER_PORT}"
+    depends_on:
+      - postgres
+      - cache
+      - jaeger
+    volumes:
+      - ../../../logs/:/app/logs/
+    networks:
+      - kfc_network
+
+  postgres:
+    container_name: postgres
+    hostname: postgres
+    image: postgres:17
+    env_file:
+      - ../../../.env
+    volumes:
+      - ../../../postgres_data:/var/lib/postgresql/data
+      - ../../../postgres_backups:/backups
+      - ../../../scripts/postgres:/scripts
+    ports:
+      - "${DB_OUTER_PORT}:${DB_INNER_PORT}"
+    networks:
+      - kfc_network
+    restart: unless-stopped
+
+  backup_cron:
+    image: ubuntu:24.04
+    container_name: backup_cron
+    depends_on:
+      - postgres
+    volumes:
+      - ../../../postgres_backups:/backups
+      - ../../../scripts/postgres:/scripts
+      - ../backup_cron_entrypoint.sh:/entrypoint.sh # ← монтируем скрипт
+    env_file:
+      - ../../../.env
+    entrypoint: /bin/bash /entrypoint.sh
+    restart: unless-stopped
+    networks:
+      - kfc_network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    env_file:
+      - ../../../.env
+    ports:
+      - "${TRACING_OUTER_API_TRACES_PORT}:${TRACING_INNER_API_TRACES_PORT}"
+      - "${TRACING_OUTER_WEB_PORT}:${TRACING_INNER_WEB_PORT}"
+    networks:
+      - kfc_network
+    restart: unless-stopped
+
+  # Prometheus для сбора метрик
+  prometheus:
+    image: prom/prometheus
+    env_file:
+      - ../../../.env
+    ports:
+      - "${PROMETHEUS_OUTER_PORT}:${PROMETHEUS_INNER_PORT}"
+    volumes:
+      - ../../../prometheus.yml:/etc/prometheus/prometheus.yml  # Конфиг Prometheus
+    networks:
+      - kfc_network
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Автоматическое определение IP хоста
+
+  # Grafana для визуализации
+  grafana:
+    image: grafana/grafana
+    env_file:
+      - ../../../.env
+    ports:
+      - "${GRAFANA_OUTER_PORT}:${GRAFANA_INNER_PORT}"
+    volumes:
+      - ../../../grafana:/var/lib/grafana  # Сохраняет данные Grafana
+    networks:
+      - kfc_network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  cache:
+    container_name: cache
+    hostname: cache
+    image: redis:latest
+    env_file:
+      - ../../../.env
+    ports:
+      - "${CACHE_OUTER_PORT}:${CACHE_INNER_PORT}"
+    volumes:
+      - ../../../redis_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    command: redis-server --requirepass ${CACHE_PASSWORD}
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "$CACHE_PASSWORD", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    networks:
+      - kfc_network
+
+networks:
+  kfc_network:
+    name: kfc_network
+    external: true

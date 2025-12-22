@@ -5,16 +5,16 @@ tasks:
     desc: "Create docker network for project."
     aliases:
       - network
-    cmd: sudo docker network create khod_felts_network
+    cmd: sudo docker network create kfc_network
 
   prod:
     desc: "Run application and it's dependencies for production."
     cmds:
+      - task: prepare_env_file_prod
       - task: generate_open_api_docs
       - task: create_grafana_folder
       - task: prepare_prometheus
       - task: create_logs_folder
-      - task: prepare_env_file_prod
       - task: docker_build_prod
       - task: docker_run_prod
       - task: migrate
@@ -22,11 +22,11 @@ tasks:
   local:
     desc: "Run application dependencies for local launch."
     cmds:
+      - task: prepare_env_file_local
       - task: generate_open_api_docs
       - task: create_grafana_folder
       - task: prepare_prometheus
       - task: create_logs_folder
-      - task: prepare_env_file_local
       - task: docker_build_local
       - task: docker_run_local
       - task: migrate
@@ -307,5 +307,12 @@ tasks:
     aliases:
       - docs
     desc: "Generates Swagger docs for viewing in web by service."
+    dotenv:
+      - .env
+    vars:
+      DOCS_DIR: $DOCS_DIR
+      DOCS_OUTPUT_FILEPATH: "$DOCS_DIR/$DOCS_FILEPATH"
     dir: ../
-    cmd: swagger generate spec --scan-models -o ./swagger.yaml
+    cmds:
+      - mkdir -p {{.DOCS_DIR}}
+      - swagger generate spec --scan-models -o {{.DOCS_OUTPUT_FILEPATH}}

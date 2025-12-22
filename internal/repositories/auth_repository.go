@@ -8,7 +8,7 @@ import (
 	"github.com/DKhorkov/libs/db/postgresql"
 	sq "github.com/Masterminds/squirrel"
 
-	"github.com/DKhorkov/khodfeltschat/internal/domains"
+	"github.com/DKhorkov/kfc/internal/domains"
 )
 
 const (

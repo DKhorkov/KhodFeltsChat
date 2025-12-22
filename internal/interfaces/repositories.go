@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/DKhorkov/khodfeltschat/internal/domains"
+	"github.com/DKhorkov/kfc/internal/domains"
 )
 
 //go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/emails_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,UsersRepository

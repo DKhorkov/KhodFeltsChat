@@ -25,7 +25,7 @@ go.work.sum
 # env file
 .env
 .env.local
-.env.example
+.env.prod
 
 # Local files^
 *.log
@@ -33,7 +33,6 @@ logs/
 grafana/
 *.db
 bench.txt
-swagger.yaml
 prometheus.yml
 
 # Environments

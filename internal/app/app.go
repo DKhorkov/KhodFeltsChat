@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/DKhorkov/khodfeltschat/internal/interfaces"
+	"github.com/DKhorkov/kfc/internal/interfaces"
 	"os"
 	"os/signal"
 	"syscall"

@@ -3,7 +3,7 @@ package interfaces
 import (
 	"context"
 
-	"github.com/DKhorkov/khodfeltschat/internal/domains"
+	"github.com/DKhorkov/kfc/internal/domains"
 )
 
 //go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/users_usecases.go -package=mockusecases -exclude_interfaces=AuthUseCases

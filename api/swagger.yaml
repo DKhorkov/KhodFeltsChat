@@ -1,0 +1,14 @@
+paths:
+    /:
+        post:
+            description: Works with all HTTP methods
+            operationId: OK
+            responses:
+                "200":
+                    $ref: '#/responses/OK'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: Default Handler for everything that is not a match.
+            tags:
+                - DefaultHandler
+swagger: "2.0"

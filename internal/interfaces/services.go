@@ -2,7 +2,7 @@ package interfaces
 
 import (
 	"context"
-	"github.com/DKhorkov/khodfeltschat/internal/domains"
+	"github.com/DKhorkov/kfc/internal/domains"
 	"time"
 )
 

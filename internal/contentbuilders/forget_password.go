@@ -6,7 +6,7 @@ import (
 
 	"github.com/DKhorkov/libs/security"
 
-	"github.com/DKhorkov/khodfeltschat/internal/domains"
+	"github.com/DKhorkov/kfc/internal/domains"
 )
 
 type ForgetPasswordContentBuilder struct {

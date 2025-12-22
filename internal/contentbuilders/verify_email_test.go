@@ -1,7 +1,7 @@
 package contentbuilders
 
 import (
-	"github.com/DKhorkov/khodfeltschat/internal/domains"
+	"github.com/DKhorkov/kfc/internal/domains"
 	"testing"
 
 	"github.com/stretchr/testify/require"

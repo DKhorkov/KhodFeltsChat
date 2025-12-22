@@ -2,7 +2,7 @@ package contentbuilders
 
 import (
 	"fmt"
-	"github.com/DKhorkov/khodfeltschat/internal/domains"
+	"github.com/DKhorkov/kfc/internal/domains"
 	"strconv"
 
 	"github.com/DKhorkov/libs/security"

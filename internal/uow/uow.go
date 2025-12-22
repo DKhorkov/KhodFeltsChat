@@ -13,6 +13,13 @@ type UnitOfWork struct {
 	opts []pg.TransactionOption
 }
 
+func New(pg pg.Connector, opts ...pg.TransactionOption) *UnitOfWork {
+	return &UnitOfWork{
+		pg:   pg,
+		opts: opts,
+	}
+}
+
 func (uow *UnitOfWork) Do(
 	ctx context.Context,
 	f func(ctx context.Context, tx *sql.Tx) error,

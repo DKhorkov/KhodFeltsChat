@@ -2,10 +2,10 @@ package usecases
 
 import (
 	"context"
-	"github.com/DKhorkov/khodfeltschat/internal/config"
-	"github.com/DKhorkov/khodfeltschat/internal/domains"
-	customerrors "github.com/DKhorkov/khodfeltschat/internal/errors"
-	"github.com/DKhorkov/khodfeltschat/internal/interfaces"
+	"github.com/DKhorkov/kfc/internal/config"
+	"github.com/DKhorkov/kfc/internal/domains"
+	customerrors "github.com/DKhorkov/kfc/internal/errors"
+	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/security"
 	"github.com/DKhorkov/libs/validation"
 	"github.com/golang-jwt/jwt/v5"

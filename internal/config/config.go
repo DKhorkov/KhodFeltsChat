@@ -2,7 +2,8 @@ package config
 
 import (
 	"fmt"
-	"github.com/DKhorkov/khodfeltschat/internal/common"
+	"github.com/DKhorkov/kfc/internal/common"
+	"github.com/DKhorkov/libs/security"
 	"time"
 
 	"github.com/DKhorkov/libs/db/postgresql"
@@ -18,13 +19,13 @@ func New() Config {
 			Host: loadenv.GetEnv("HOST", "0.0.0.0"),
 			Port: loadenv.GetEnvAsInt("PORT", 8080),
 			ReadTimeout: time.Second * time.Duration(
-				loadenv.GetEnvAsInt("HTTP_READ_TIMEOUT", 3),
+				loadenv.GetEnvAsInt("HTTP_READ_TIMEOUT", 1),
 			),
-			ReadHeaderTimeout: time.Second * time.Duration(
-				loadenv.GetEnvAsInt("HTTP_READ_HEADER_TIMEOUT", 1),
+			IdleTimeout: time.Second * time.Duration(
+				loadenv.GetEnvAsInt("HTTP_IDLE_TIMEOUT", 10),
 			),
-			TimeoutHandlerTimeout: time.Second * time.Duration(
-				loadenv.GetEnvAsInt("HTTP_TIMEOUT_HANDLER_TIMEOUT", 2),
+			WriteTimeout: time.Second * time.Duration(
+				loadenv.GetEnvAsInt("HTTP_WRITE_TIMEOUT", 1),
 			),
 		},
 		Database: postgresql.Config{
@@ -96,15 +97,39 @@ func New() Config {
 				";",
 			),
 		},
+		CORS: CORSConfig{
+			AllowedOrigins:   loadenv.GetEnvAsSlice("CORS_ALLOWED_ORIGINS", []string{"*"}, ", "),
+			AllowedMethods:   loadenv.GetEnvAsSlice("CORS_ALLOWED_METHODS", []string{"*"}, ", "),
+			AllowedHeaders:   loadenv.GetEnvAsSlice("CORS_ALLOWED_HEADERS", []string{"*"}, ", "),
+			AllowCredentials: loadenv.GetEnvAsBool("CORS_ALLOW_CREDENTIALS", true),
+			MaxAge:           loadenv.GetEnvAsInt("CORS_MAX_AGE", 600),
+		},
+		Docs: DocsConfig{
+			Dir:      loadenv.GetEnv("DOCS_DIR", "./"),
+			Filepath: loadenv.GetEnv("DOCS_FILEPATH", "swagger.yaml"),
+		},
+		Security: security.Config{
+			HashCost: loadenv.GetEnvAsInt("HASH_COST", 8), // Auth speed sensitive if large
+			JWT: security.JWTConfig{
+				RefreshTokenTTL: time.Hour * time.Duration(
+					loadenv.GetEnvAsInt("REFRESH_TOKEN_JWT_TTL", 168),
+				),
+				AccessTokenTTL: time.Minute * time.Duration(
+					loadenv.GetEnvAsInt("ACCESS_TOKEN_JWT_TTL", 15),
+				),
+				Algorithm: loadenv.GetEnv("JWT_ALGORITHM", "HS256"),
+				SecretKey: loadenv.GetEnv("JWT_SECRET", "defaultSecret"),
+			},
+		},
 	}
 }
 
 type HTTPConfig struct {
-	Host                  string
-	Port                  int
-	ReadHeaderTimeout     time.Duration
-	ReadTimeout           time.Duration
-	TimeoutHandlerTimeout time.Duration
+	Host         string
+	Port         int
+	IdleTimeout  time.Duration
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
 }
 
 type EmailConfig struct {
@@ -134,8 +159,22 @@ type CacheConfig struct {
 	Password string
 }
 
+type CORSConfig struct {
+	AllowedOrigins   []string
+	AllowedMethods   []string
+	AllowedHeaders   []string
+	MaxAge           int
+	AllowCredentials bool
+}
+
+type DocsConfig struct {
+	Dir      string
+	Filepath string
+}
+
 type Config struct {
 	HTTP        HTTPConfig
+	Security    security.Config
 	Database    postgresql.Config
 	Logging     logging.Config
 	Environment string
@@ -143,4 +182,6 @@ type Config struct {
 	Email       EmailConfig
 	Cache       CacheConfig
 	Validation  ValidationConfig
+	CORS        CORSConfig
+	Docs        DocsConfig
 }

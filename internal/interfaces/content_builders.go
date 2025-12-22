@@ -1,7 +1,7 @@
 package interfaces
 
 import (
-	"github.com/DKhorkov/khodfeltschat/internal/domains"
+	"github.com/DKhorkov/kfc/internal/domains"
 )
 
 type ContentBuilders struct {

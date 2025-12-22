@@ -2,10 +2,9 @@ package usecases
 
 import (
 	"context"
-	"github.com/DKhorkov/khodfeltschat/internal/config"
-	"github.com/DKhorkov/khodfeltschat/internal/domains"
-	"github.com/DKhorkov/khodfeltschat/internal/interfaces"
-	"github.com/DKhorkov/libs/cache"
+	"github.com/DKhorkov/kfc/internal/config"
+	"github.com/DKhorkov/kfc/internal/domains"
+	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/security"
 	"github.com/DKhorkov/libs/validation"
 )
@@ -14,13 +13,11 @@ func NewUsersUseCases(
 	usersService interfaces.UsersService,
 	securityConfig security.Config,
 	validationConfig config.ValidationConfig,
-	cacheProvider cache.Provider,
 ) *UsersUseCases {
 	return &UsersUseCases{
 		usersService:     usersService,
 		securityConfig:   securityConfig,
 		validationConfig: validationConfig,
-		cacheProvider:    cacheProvider,
 	}
 }
 
@@ -28,7 +25,6 @@ type UsersUseCases struct {
 	usersService     interfaces.UsersService
 	securityConfig   security.Config
 	validationConfig config.ValidationConfig
-	cacheProvider    cache.Provider
 }
 
 func (u *UsersUseCases) GetUsers(
