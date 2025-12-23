@@ -26,7 +26,7 @@ func GetUserByIDHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 
 		user, err := u.GetUserByID(r.Context(), userID)
 		switch {
-		case errors.As(err, &customerrors.UserNotFoundError{}):
+		case errors.Is(err, customerrors.ErrUserNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 
 			return

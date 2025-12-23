@@ -8,7 +8,6 @@ import (
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/cookies"
-	"github.com/DKhorkov/libs/validation"
 	"io"
 	"net/http"
 )
@@ -36,19 +35,19 @@ func LoginHandler(u interfaces.AuthUseCases, cookiesConfig config.CookiesConfig)
 
 		tokens, err := u.LoginUser(r.Context(), dto)
 		switch {
-		case errors.As(err, &customerrors.UserNotFoundError{}):
+		case errors.Is(err, customerrors.ErrUserNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 
 			return
-		case errors.As(err, &customerrors.EmailIsNotConfirmedError{}):
+		case errors.Is(err, customerrors.ErrEmailNotConfirmed):
 			http.Error(w, err.Error(), http.StatusForbidden)
 
 			return
-		case errors.As(err, &customerrors.WrongPasswordError{}):
+		case errors.Is(err, customerrors.ErrWrongPassword):
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 
 			return
-		case errors.As(err, &validation.Error{}):
+		case errors.Is(err, customerrors.ErrValidationFailed):
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return

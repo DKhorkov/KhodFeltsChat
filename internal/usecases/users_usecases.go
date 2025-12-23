@@ -2,8 +2,10 @@ package usecases
 
 import (
 	"context"
+	"fmt"
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
+	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/security"
 	"github.com/DKhorkov/libs/validation"
@@ -47,7 +49,7 @@ func (u *UsersUseCases) UpdateUser(
 		*userData.Username,
 		u.validationConfig.UsernameRegExps,
 	) {
-		return nil, &validation.Error{Message: "invalid username"}
+		return nil, fmt.Errorf("%w: invalid username", customerrors.ErrValidationFailed)
 	}
 
 	accessTokenPayload, err := security.ParseJWT(
@@ -55,12 +57,12 @@ func (u *UsersUseCases) UpdateUser(
 		u.securityConfig.JWT.SecretKey,
 	)
 	if err != nil {
-		return nil, &security.InvalidJWTError{}
+		return nil, customerrors.ErrInvalidJWT
 	}
 
 	floatUserID, ok := accessTokenPayload.(float64)
 	if !ok {
-		return nil, &security.InvalidJWTError{}
+		return nil, customerrors.ErrInvalidJWT
 	}
 
 	userID := uint64(floatUserID)
@@ -82,12 +84,12 @@ func (u *UsersUseCases) UpdateUser(
 func (u *UsersUseCases) GetMe(ctx context.Context, accessToken string) (*domains.User, error) {
 	accessTokenPayload, err := security.ParseJWT(accessToken, u.securityConfig.JWT.SecretKey)
 	if err != nil {
-		return nil, &security.InvalidJWTError{}
+		return nil, customerrors.ErrInvalidJWT
 	}
 
 	floatUserID, ok := accessTokenPayload.(float64)
 	if !ok {
-		return nil, &security.InvalidJWTError{}
+		return nil, customerrors.ErrInvalidJWT
 	}
 
 	userID := uint64(floatUserID)

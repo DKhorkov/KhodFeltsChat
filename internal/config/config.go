@@ -24,13 +24,13 @@ func New() Config {
 			Host: loadenv.GetEnv("HOST", "0.0.0.0"),
 			Port: loadenv.GetEnvAsInt("PORT", 8080),
 			ReadTimeout: time.Second * time.Duration(
-				loadenv.GetEnvAsInt("HTTP_READ_TIMEOUT", 1),
+				loadenv.GetEnvAsInt("HTTP_READ_TIMEOUT", 3),
 			),
 			IdleTimeout: time.Second * time.Duration(
 				loadenv.GetEnvAsInt("HTTP_IDLE_TIMEOUT", 10),
 			),
 			WriteTimeout: time.Second * time.Duration(
-				loadenv.GetEnvAsInt("HTTP_WRITE_TIMEOUT", 1),
+				loadenv.GetEnvAsInt("HTTP_WRITE_TIMEOUT", 2),
 			),
 		},
 		Database: postgresql.Config{
@@ -65,11 +65,11 @@ func New() Config {
 			},
 			VerifyEmailURL: loadenv.GetEnv(
 				"VERIFY_EMAIL_URL",
-				"http://localhost:3000/verify-email",
+				"http://localhost:443/verify-email",
 			),
 			ForgetPasswordURL: loadenv.GetEnv(
 				"FORGET_PASSWORD_URL",
-				"http://localhost:3000/forget-password",
+				"http://localhost:443/forget-password",
 			),
 		},
 		Cache: CacheConfig{

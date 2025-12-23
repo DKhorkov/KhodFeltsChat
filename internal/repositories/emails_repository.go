@@ -17,9 +17,11 @@ type EmailsRepository struct {
 
 func NewEmailsRepository(
 	smtpConfig config.SMTPConfig,
+	contentBuilders interfaces.ContentBuilders,
 ) *EmailsRepository {
 	return &EmailsRepository{
-		smtpConfig: smtpConfig,
+		smtpConfig:      smtpConfig,
+		contentBuilders: contentBuilders,
 	}
 }
 

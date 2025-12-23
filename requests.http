@@ -33,4 +33,4 @@ Content-Type: application/json
 
 GET http://localhost:8080/users/me
 Content-Type: application/json
-Cookie: accessToken=eysdfsdfJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjY1MjQzOTEsInZhbHVlIjoxfQ.Shjrq2bKgNO39dZ0-ar_84WkTDfOx8kp_psFbbBSDHE
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjY1MjYyODAsInZhbHVlIjoxfQ.NHYO8VPzsFqrZfqSPyvOkLqstcQsP3HVysEkxyaTOTk

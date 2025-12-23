@@ -74,11 +74,11 @@ func (u *AuthUseCases) LoginUser(
 	}
 
 	if !user.EmailConfirmed {
-		return nil, &customerrors.EmailIsNotConfirmedError{}
+		return nil, customerrors.ErrEmailNotConfirmed
 	}
 
 	if !security.ValidateHash(userData.Password, user.Password) {
-		return nil, &customerrors.WrongPasswordError{}
+		return nil, customerrors.ErrWrongPassword
 	}
 
 	if dbRefreshToken, err := u.authService.GetRefreshTokenByUserID(ctx, user.ID); err == nil {
@@ -134,7 +134,7 @@ func (u *AuthUseCases) RefreshTokens(
 	// Decoding refresh token to get original JWT and compare its value with value in Database:
 	oldRefreshTokenBytes, err := security.RawDecode(refreshToken)
 	if err != nil {
-		return nil, &security.InvalidJWTError{}
+		return nil, customerrors.ErrInvalidJWT
 	}
 
 	// Retrieving refresh token payload to get access token from refresh token:
@@ -145,12 +145,12 @@ func (u *AuthUseCases) RefreshTokens(
 		u.securityConfig.JWT.SecretKey,
 	)
 	if err != nil {
-		return nil, &security.InvalidJWTError{}
+		return nil, customerrors.ErrInvalidJWT
 	}
 
 	oldAccessToken, ok := refreshTokenPayload.(string)
 	if !ok {
-		return nil, &security.InvalidJWTError{}
+		return nil, customerrors.ErrInvalidJWT
 	}
 
 	// Retrieving access token payload to get user ID:
@@ -160,30 +160,30 @@ func (u *AuthUseCases) RefreshTokens(
 		jwt.WithoutClaimsValidation(), // not validating claims due to expiration of JWT TTL
 	)
 	if err != nil {
-		return nil, &security.InvalidJWTError{}
+		return nil, customerrors.ErrInvalidJWT
 	}
 
 	// Selecting refresh token model from Database, if refresh token has not expired yet:
 	floatUserID, ok := accessTokenPayload.(float64)
 	if !ok {
-		return nil, &security.InvalidJWTError{}
+		return nil, customerrors.ErrInvalidJWT
 	}
 
 	userID := uint64(floatUserID)
 
 	dbRefreshToken, err := u.authService.GetRefreshTokenByUserID(ctx, userID)
 	if err != nil {
-		return nil, &security.InvalidJWTError{}
+		return nil, customerrors.ErrInvalidJWT
 	}
 
 	// Checking if access token belongs to refresh token:
 	if oldRefreshToken != dbRefreshToken.Value {
-		return nil, &customerrors.AccessTokenDoesNotBelongToRefreshTokenError{}
+		return nil, customerrors.ErrAccessTokenDoesNotBelongToRefreshToken
 	}
 
 	// Expiring old refresh token in Database to have only one valid refresh token instance:
 	if err = u.authService.ExpireRefreshToken(ctx, dbRefreshToken.Value); err != nil {
-		return nil, &security.InvalidJWTError{}
+		return nil, customerrors.ErrInvalidJWT
 	}
 
 	// Create tokens:
@@ -229,12 +229,12 @@ func (u *AuthUseCases) RefreshTokens(
 func (u *AuthUseCases) LogoutUser(ctx context.Context, accessToken string) error {
 	accessTokenPayload, err := security.ParseJWT(accessToken, u.securityConfig.JWT.SecretKey)
 	if err != nil {
-		return &security.InvalidJWTError{}
+		return customerrors.ErrInvalidJWT
 	}
 
 	floatUserID, ok := accessTokenPayload.(float64)
 	if !ok {
-		return &security.InvalidJWTError{}
+		return customerrors.ErrInvalidJWT
 	}
 
 	userID := uint64(floatUserID)
@@ -264,7 +264,7 @@ func (u *AuthUseCases) VerifyUserEmail(ctx context.Context, verifyEmailToken str
 	}
 
 	if user.EmailConfirmed {
-		return &customerrors.EmailAlreadyConfirmedError{}
+		return customerrors.ErrEmailAlreadyConfirmed
 	}
 
 	return u.authService.VerifyEmail(ctx, user.ID)
@@ -318,12 +318,12 @@ func (u *AuthUseCases) ChangePassword(
 
 	accessTokenPayload, err := security.ParseJWT(accessToken, u.securityConfig.JWT.SecretKey)
 	if err != nil {
-		return &security.InvalidJWTError{}
+		return customerrors.ErrInvalidJWT
 	}
 
 	floatUserID, ok := accessTokenPayload.(float64)
 	if !ok {
-		return &security.InvalidJWTError{}
+		return customerrors.ErrInvalidJWT
 	}
 
 	userID := uint64(floatUserID)
@@ -334,7 +334,7 @@ func (u *AuthUseCases) ChangePassword(
 	}
 
 	if !security.ValidateHash(oldPassword, user.Password) {
-		return &customerrors.WrongPasswordError{}
+		return customerrors.ErrWrongPassword
 	}
 
 	hashedPassword, err := security.Hash(newPassword, u.securityConfig.HashCost)

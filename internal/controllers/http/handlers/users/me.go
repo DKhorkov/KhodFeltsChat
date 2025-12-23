@@ -6,7 +6,6 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
-	"github.com/DKhorkov/libs/security"
 	"net/http"
 )
 
@@ -21,11 +20,11 @@ func GetMeHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 
 		user, err := u.GetMe(r.Context(), accessTokenCookie.Value)
 		switch {
-		case errors.Is(err, &security.InvalidJWTError{}):
+		case errors.Is(err, customerrors.ErrInvalidJWT):
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 
 			return
-		case errors.As(err, &customerrors.UserNotFoundError{}):
+		case errors.Is(err, customerrors.ErrUserNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 
 			return

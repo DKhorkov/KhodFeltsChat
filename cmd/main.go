@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"github.com/DKhorkov/kfc/internal/app"
 	"github.com/DKhorkov/kfc/internal/config"
+	"github.com/DKhorkov/kfc/internal/contentbuilders"
 	controllers "github.com/DKhorkov/kfc/internal/controllers/http"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/kfc/internal/repositories"
@@ -51,6 +52,15 @@ func main() {
 		}
 	}()
 
+	contentBuilders := interfaces.ContentBuilders{
+		VerifyEmail: contentbuilders.NewVerifyEmailContentBuilder(
+			cfg.Email.VerifyEmailURL,
+		),
+		ForgetPassword: contentbuilders.NewForgetPasswordContentBuilder(
+			cfg.Email.ForgetPasswordURL,
+		),
+	}
+
 	unitOfWork := uow.New(pg)
 
 	usersService := services.NewUsersService(
@@ -69,7 +79,7 @@ func main() {
 			return repositories.NewUsersRepository(tx)
 		},
 		func() interfaces.EmailsRepository {
-			return repositories.NewEmailsRepository(cfg.Email.SMTP)
+			return repositories.NewEmailsRepository(cfg.Email.SMTP, contentBuilders)
 		},
 	)
 

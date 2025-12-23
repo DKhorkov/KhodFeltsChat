@@ -6,7 +6,6 @@ import (
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
-	"github.com/DKhorkov/libs/validation"
 	"io"
 	"net/http"
 )
@@ -29,11 +28,11 @@ func RegisterHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 
 		user, err := u.RegisterUser(r.Context(), dto)
 		switch {
-		case errors.As(err, &customerrors.UserAlreadyExistsError{}):
+		case errors.Is(err, customerrors.ErrUserAlreadyExists):
 			http.Error(w, err.Error(), http.StatusConflict)
 
 			return
-		case errors.As(err, &validation.Error{}):
+		case errors.Is(err, customerrors.ErrValidationFailed):
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return

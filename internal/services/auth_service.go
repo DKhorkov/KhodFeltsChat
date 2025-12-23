@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -36,11 +37,11 @@ func (s *AuthService) RegisterUser(ctx context.Context, userData domains.Registe
 		func(ctx context.Context, tx *sql.Tx) error {
 			usersRepository := s.newUsersRepositoryFunc(tx)
 			if user, _ = usersRepository.GetUserByEmail(ctx, userData.Email); user != nil {
-				return customerrors.UserAlreadyExistsError{}
+				return fmt.Errorf("%w: user with provided email already exists", customerrors.ErrUserAlreadyExists)
 			}
 
 			if user, _ = usersRepository.GetUserByUsername(ctx, userData.Email); user != nil {
-				return customerrors.UserAlreadyExistsError{Message: "user with provided username already exists"}
+				return fmt.Errorf("%w: user with provided username already exists", customerrors.ErrUserAlreadyExists)
 			}
 
 			authRepository := s.newAuthRepositoryFunc(tx)
@@ -50,6 +51,11 @@ func (s *AuthService) RegisterUser(ctx context.Context, userData domains.Registe
 
 			user, err = usersRepository.GetUserByEmail(ctx, userData.Email)
 			if err != nil {
+				return err
+			}
+
+			emailsRepository := s.newEmailsRepositoryFunc()
+			if err = emailsRepository.SendVerifyEmailMessage(ctx, *user); err != nil {
 				return err
 			}
 

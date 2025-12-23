@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"context"
+	"github.com/DKhorkov/kfc/internal/contentbuilders"
+	"github.com/DKhorkov/kfc/internal/interfaces"
 	"testing"
 
 	"github.com/DKhorkov/kfc/internal/config"
@@ -31,8 +33,18 @@ func TestEmailsRepository_Send(t *testing.T) {
 		},
 	}
 
+	contentBuilders := interfaces.ContentBuilders{
+		VerifyEmail: contentbuilders.NewVerifyEmailContentBuilder(
+			"test",
+		),
+		ForgetPassword: contentbuilders.NewForgetPasswordContentBuilder(
+			"test",
+		),
+	}
+
 	repo := NewEmailsRepository(
 		smtpConfig,
+		contentBuilders,
 	)
 
 	for _, tc := range testCases {

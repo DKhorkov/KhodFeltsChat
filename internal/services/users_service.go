@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -61,7 +62,7 @@ func (s *UsersService) GetUserByID(ctx context.Context, id uint64) (user *domain
 	)
 
 	if err != nil {
-		return nil, &customerrors.UserNotFoundError{BaseErr: err}
+		return nil, fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
 	}
 
 	return user, nil
@@ -81,7 +82,7 @@ func (s *UsersService) GetUserByEmail(ctx context.Context, email string) (user *
 	)
 
 	if err != nil {
-		return nil, &customerrors.UserNotFoundError{BaseErr: err}
+		return nil, fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
 	}
 
 	return user, nil
@@ -101,7 +102,7 @@ func (s *UsersService) GetUserByUsername(ctx context.Context, username string) (
 	)
 
 	if err != nil {
-		return nil, &customerrors.UserNotFoundError{BaseErr: err}
+		return nil, fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
 	}
 
 	return user, nil
