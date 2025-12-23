@@ -35,6 +35,10 @@ func (u *UsersUseCases) GetUsers(
 	return u.usersService.GetUsers(ctx, filters, pagination)
 }
 
+func (u *UsersUseCases) GetUserByID(ctx context.Context, id uint64) (*domains.User, error) {
+	return u.usersService.GetUserByID(ctx, id)
+}
+
 func (u *UsersUseCases) UpdateUser(
 	ctx context.Context,
 	userData domains.RawUpdateUserDTO,

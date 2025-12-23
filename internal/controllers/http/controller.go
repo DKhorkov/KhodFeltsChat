@@ -26,6 +26,7 @@ func New(
 	httpConfig config.HTTPConfig,
 	corsConfig config.CORSConfig,
 	docsConfig config.DocsConfig,
+	cookiesConfig config.CookiesConfig,
 	usersUseCases interfaces.UsersUseCases,
 	authUseCases interfaces.AuthUseCases,
 	logger logging.Logger,
@@ -39,6 +40,7 @@ func New(
 	handlers.SetupHandlers(
 		rootMux,
 		docsConfig,
+		cookiesConfig,
 		usersUseCases,
 		authUseCases,
 	)

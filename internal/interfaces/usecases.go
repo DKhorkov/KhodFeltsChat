@@ -9,6 +9,7 @@ import (
 //go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/users_usecases.go -package=mockusecases -exclude_interfaces=AuthUseCases
 type UsersUseCases interface {
 	GetUsers(ctx context.Context, filters *domains.UsersFilters, pagination *domains.Pagination) ([]domains.User, error)
+	GetUserByID(ctx context.Context, id uint64) (*domains.User, error)
 	GetMe(ctx context.Context, accessToken string) (*domains.User, error)
 	UpdateUser(ctx context.Context, userData domains.RawUpdateUserDTO) (*domains.User, error)
 }

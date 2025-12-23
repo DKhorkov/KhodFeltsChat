@@ -3,10 +3,12 @@ package config
 import (
 	"fmt"
 	"github.com/DKhorkov/kfc/internal/common"
+	"github.com/DKhorkov/libs/cookies"
 	"github.com/DKhorkov/libs/security"
 	"github.com/DKhorkov/libs/tracing"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"net/http"
 	"time"
 
 	"github.com/DKhorkov/libs/db/postgresql"
@@ -122,6 +124,34 @@ func New() Config {
 				),
 				Algorithm: loadenv.GetEnv("JWT_ALGORITHM", "HS256"),
 				SecretKey: loadenv.GetEnv("JWT_SECRET", "defaultSecret"),
+			},
+		},
+		Cookies: CookiesConfig{
+			AccessToken: cookies.Config{
+				Path:   loadenv.GetEnv("COOKIES_ACCESS_TOKEN_PATH", "/"),
+				Domain: loadenv.GetEnv("COOKIES_ACCESS_TOKEN_DOMAIN", ""),
+				MaxAge: loadenv.GetEnvAsInt("COOKIES_ACCESS_TOKEN_MAX_AGE", 0),
+				Expires: time.Minute * time.Duration(
+					loadenv.GetEnvAsInt("COOKIES_ACCESS_TOKEN_EXPIRES", 15),
+				),
+				Secure:   loadenv.GetEnvAsBool("COOKIES_ACCESS_TOKEN_SECURE", false),
+				HTTPOnly: loadenv.GetEnvAsBool("COOKIES_ACCESS_TOKEN_HTTP_ONLY", false),
+				SameSite: http.SameSite(
+					loadenv.GetEnvAsInt("COOKIES_ACCESS_TOKEN_SAME_SITE", 1),
+				),
+			},
+			RefreshToken: cookies.Config{
+				Path:   loadenv.GetEnv("COOKIES_REFRESH_TOKEN_PATH", "/"),
+				Domain: loadenv.GetEnv("COOKIES_REFRESH_TOKEN_DOMAIN", ""),
+				MaxAge: loadenv.GetEnvAsInt("COOKIES_REFRESH_TOKEN_MAX_AGE", 0),
+				Expires: time.Hour * time.Duration(
+					loadenv.GetEnvAsInt("COOKIES_REFRESH_TOKEN_EXPIRES", 24*7),
+				),
+				Secure:   loadenv.GetEnvAsBool("COOKIES_REFRESH_TOKEN_SECURE", false),
+				HTTPOnly: loadenv.GetEnvAsBool("COOKIES_REFRESH_TOKEN_HTTP_ONLY", false),
+				SameSite: http.SameSite(
+					loadenv.GetEnvAsInt("COOKIES_REFRESH_TOKEN_SAME_SITE", 1),
+				),
 			},
 		},
 		Tracing: TracingConfig{
@@ -339,6 +369,11 @@ type TracingConfig struct {
 	Spans  SpansConfig
 }
 
+type CookiesConfig struct {
+	AccessToken  cookies.Config
+	RefreshToken cookies.Config
+}
+
 type Config struct {
 	HTTP        HTTPConfig
 	Security    security.Config
@@ -351,5 +386,6 @@ type Config struct {
 	Validation  ValidationConfig
 	CORS        CORSConfig
 	Docs        DocsConfig
+	Cookies     CookiesConfig
 	Tracing     TracingConfig
 }

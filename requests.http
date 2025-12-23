@@ -1,0 +1,36 @@
+###
+
+POST http://localhost:8080/auth/register
+Content-Type: application/json
+
+{
+  "email": "alexqwerty35@yandex.ru",
+  "username": "testDemos",
+  "password": "SomeTestP@ssword228"
+}
+
+###
+
+GET http://localhost:8080/users?username=test&limit=1&offset=0
+Content-Type: application/json
+
+###
+
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "email": "alexqwerty35@yandex.ru",
+  "password": "SomeTestP@ssword228"
+}
+
+###
+
+GET http://localhost:8080/users/1
+Content-Type: application/json
+
+###
+
+GET http://localhost:8080/users/me
+Content-Type: application/json
+Cookie: accessToken=eysdfsdfJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjY1MjQzOTEsInZhbHVlIjoxfQ.Shjrq2bKgNO39dZ0-ar_84WkTDfOx8kp_psFbbBSDHE

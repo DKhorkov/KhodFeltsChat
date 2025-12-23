@@ -80,6 +80,7 @@ func main() {
 		cfg.HTTP,
 		cfg.CORS,
 		cfg.Docs,
+		cfg.Cookies,
 		usersUseCases,
 		authUseCases,
 		logger,

@@ -63,6 +63,10 @@ func (u *AuthUseCases) LoginUser(
 	ctx context.Context,
 	userData domains.LoginDTO,
 ) (*domains.TokensDTO, error) {
+	if !validation.ValidateValueByRule(userData.Email, u.validationConfig.EmailRegExp) {
+		return nil, &validation.Error{Message: "invalid email address"}
+	}
+
 	// Check if user with provided email exists and password is valid:
 	user, err := u.usersService.GetUserByEmail(ctx, userData.Email)
 	if err != nil {
