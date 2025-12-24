@@ -4,15 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/DKhorkov/kfc/internal/config"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers"
-	"github.com/DKhorkov/kfc/internal/interfaces"
+	"net/http"
+
 	"github.com/DKhorkov/libs/logging"
-	middlewares "github.com/DKhorkov/libs/middlewares/http"
 	"github.com/DKhorkov/libs/tracing"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
-	"net/http"
+
+	middlewares "github.com/DKhorkov/libs/middlewares/http"
+
+	"github.com/DKhorkov/kfc/internal/config"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers"
+	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
 type Controller struct {
@@ -76,10 +79,11 @@ func (c *Controller) Run() {
 	addr := fmt.Sprintf("%s:%d", c.host, c.port)
 	logging.LogInfo(
 		c.logger,
-		fmt.Sprintf("Ready to serve at %s", addr),
+		"Ready to serve at "+addr,
 	)
 
-	if err := c.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+	err := c.server.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
 		logging.LogError(c.logger, "HTTP server error", err)
 	}
 

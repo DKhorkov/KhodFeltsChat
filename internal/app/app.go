@@ -1,10 +1,11 @@
 package app
 
 import (
-	"github.com/DKhorkov/kfc/internal/interfaces"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
 func New(controller interfaces.Controller) *App {

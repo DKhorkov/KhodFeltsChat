@@ -1,6 +1,6 @@
 ###
 
-POST http://localhost:8080/auth/register
+POST http://localhost:8080/users
 Content-Type: application/json
 
 {
@@ -16,7 +16,7 @@ Content-Type: application/json
 
 ###
 
-POST http://localhost:8080/auth/login
+POST http://localhost:8080/sessions
 Content-Type: application/json
 
 {
@@ -26,11 +26,76 @@ Content-Type: application/json
 
 ###
 
-GET http://localhost:8080/users/1
+GET http://localhost:8080/users/7
 Content-Type: application/json
 
 ###
 
 GET http://localhost:8080/users/me
 Content-Type: application/json
-Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjY1MjYyODAsInZhbHVlIjoxfQ.NHYO8VPzsFqrZfqSPyvOkLqstcQsP3HVysEkxyaTOTk
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjY1OTIxNTQsInZhbHVlIjo3fQ.UaUcGZEPChfOvP-we5vrRI_kbNJSP2ZQnI_254pH6DY
+
+###
+
+DELETE http://localhost:8080/sessions
+Content-Type: application/json
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjY1OTIxNTQsInZhbHVlIjo3fQ.UaUcGZEPChfOvP-we5vrRI_kbNJSP2ZQnI_254pH6DY
+
+###
+
+PUT http://localhost:8080/sessions
+Content-Type: application/json
+Cookie: refreshToken=ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmxlSEFpT2pFM05qY3hPVFE0TnpNc0luWmhiSFZsSWpvaVpYbEthR0pIWTJsUGFVcEpWWHBKTVU1cFNYTkpibEkxWTBOSk5rbHJjRmhXUTBvNUxtVjVTbXhsU0VGcFQycEZNMDVxV1RGUFZFRTFUbnBOYzBsdVdtaGlTRlpzU1dwdk0yWlJMa2MwYTBweU16VnRVRGhtZG5nNE5IVmhkamQyTVZScFVrMVhNbmhyVlVOQloyWlRNbXRCTUVWVlVFa2lmUS5icGRwSXNVa2NveDZIVFJDclNjdHhmZ2swR0ZNZkcxMHJZSEhKbUJlNWpj
+
+###
+
+PUT http://localhost:8080/users/me
+Content-Type: application/json
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjY1OTA1MzAsInZhbHVlIjo3fQ.Gi5ptdxTiAySIpiDEqrpXDtvz9wLofdmdZvrhwJVqxg
+
+{
+  "username": "testDemos22823sfsfsf"
+}
+
+###
+
+POST http://localhost:8080/users/email/verify
+Content-Type: application/json
+
+{
+  "email": "alexqwerty35@yandex.ru"
+}
+
+###
+
+POST http://localhost:8080/users/email/verify/Nw
+Content-Type: application/json
+
+###
+
+POST http://localhost:8080/users/password/change
+Content-Type: application/json
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjY1OTA1MzAsInZhbHVlIjo3fQ.Gi5ptdxTiAySIpiDEqrpXDtvz9wLofdmdZvrhwJVqxg
+
+{
+  "oldPassword": "SomeTestP@ssword228",
+  "newPassword": "SomeTestP@ssword228Changed"
+}
+
+###
+
+POST http://localhost:8080/users/password/forget
+Content-Type: application/json
+
+{
+  "email": "alexqwerty35@yandex.ru"
+}
+
+###
+
+POST http://localhost:8080/users/password/forget/Nw
+Content-Type: application/json
+
+{
+  "newPassword": "SomeTestP@ssword228"
+}

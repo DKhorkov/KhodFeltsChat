@@ -2,11 +2,14 @@ package users
 
 import (
 	"encoding/json"
-	"github.com/DKhorkov/kfc/internal/domains"
-	"github.com/DKhorkov/kfc/internal/interfaces"
-	"github.com/DKhorkov/libs/pointers"
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	"net/http"
 	"strconv"
+
+	"github.com/DKhorkov/libs/pointers"
+
+	"github.com/DKhorkov/kfc/internal/domains"
+	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
 const (
@@ -45,7 +48,7 @@ func GetUsersHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 			return
 		}
 
-		if err = json.NewEncoder(w).Encode(users); err != nil {
+		if err = json.NewEncoder(w).Encode(mappers.MapUsers(users)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return

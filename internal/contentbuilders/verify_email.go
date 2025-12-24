@@ -2,10 +2,11 @@ package contentbuilders
 
 import (
 	"fmt"
-	"github.com/DKhorkov/kfc/internal/domains"
 	"strconv"
 
 	"github.com/DKhorkov/libs/security"
+
+	"github.com/DKhorkov/kfc/internal/domains"
 )
 
 type VerifyEmailContentBuilder struct {

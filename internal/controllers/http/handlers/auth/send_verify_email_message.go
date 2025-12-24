@@ -3,15 +3,15 @@ package auth
 import (
 	"encoding/json"
 	"errors"
+	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"io"
 	"net/http"
 
-	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
-func RegisterHandler(u interfaces.AuthUseCases) http.HandlerFunc {
+func SendVerifyEmailMessageHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -20,31 +20,24 @@ func RegisterHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		var dto domains.RegisterDTO
+		var dto schemas.SendVerifyEmailDTO
 		if err = json.Unmarshal(data, &dto); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
 
-		user, err := u.RegisterUser(r.Context(), dto)
-
+		err = u.SendVerifyEmailMessage(r.Context(), dto.Email)
 		switch {
-		case errors.Is(err, customerrors.ErrUserAlreadyExists):
+		case errors.Is(err, customerrors.ErrUserNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
+
+			return
+		case errors.Is(err, customerrors.ErrEmailAlreadyConfirmed):
 			http.Error(w, err.Error(), http.StatusConflict)
 
 			return
-		case errors.Is(err, customerrors.ErrValidationFailed):
-			http.Error(w, err.Error(), http.StatusBadRequest)
-
-			return
 		case err != nil:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-
-			return
-		}
-
-		if err = json.NewEncoder(w).Encode(user); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return

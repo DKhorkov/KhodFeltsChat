@@ -20,7 +20,7 @@ type AuthUseCases interface {
 	LoginUser(ctx context.Context, userData domains.LoginDTO) (*domains.TokensDTO, error)
 	LogoutUser(ctx context.Context, accessToken string) error
 	RefreshTokens(ctx context.Context, refreshToken string) (*domains.TokensDTO, error)
-	VerifyUserEmail(ctx context.Context, verifyEmailToken string) error
+	VerifyEmail(ctx context.Context, verifyEmailToken string) error
 	ForgetPassword(ctx context.Context, forgetPasswordToken, newPassword string) error
 	SendForgetPasswordMessage(ctx context.Context, email string) error
 	ChangePassword(ctx context.Context, accessToken, oldPassword, newPassword string) error

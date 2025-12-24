@@ -2,14 +2,17 @@ package usecases
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+
+	"github.com/DKhorkov/libs/security"
+	"github.com/DKhorkov/libs/validation"
+	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
-	"github.com/DKhorkov/libs/security"
-	"github.com/DKhorkov/libs/validation"
-	"github.com/golang-jwt/jwt/v5"
-	"strconv"
 )
 
 func NewAuthUseCases(
@@ -38,15 +41,15 @@ func (u *AuthUseCases) RegisterUser(
 	userData domains.RegisterDTO,
 ) (*domains.User, error) {
 	if !validation.ValidateValueByRule(userData.Email, u.validationConfig.EmailRegExp) {
-		return nil, &validation.Error{Message: "invalid email address"}
+		return nil, fmt.Errorf("%w: invalid email address", customerrors.ErrValidationFailed)
 	}
 
 	if !validation.ValidateValueByRules(userData.Password, u.validationConfig.PasswordRegExps) {
-		return nil, &validation.Error{Message: "invalid password"}
+		return nil, fmt.Errorf("%w: invalid password", customerrors.ErrValidationFailed)
 	}
 
 	if !validation.ValidateValueByRules(userData.Username, u.validationConfig.UsernameRegExps) {
-		return nil, &validation.Error{Message: "invalid username"}
+		return nil, fmt.Errorf("%w: invalid username", customerrors.ErrValidationFailed)
 	}
 
 	hashedPassword, err := security.Hash(userData.Password, u.securityConfig.HashCost)
@@ -64,7 +67,7 @@ func (u *AuthUseCases) LoginUser(
 	userData domains.LoginDTO,
 ) (*domains.TokensDTO, error) {
 	if !validation.ValidateValueByRule(userData.Email, u.validationConfig.EmailRegExp) {
-		return nil, &validation.Error{Message: "invalid email address"}
+		return nil, fmt.Errorf("%w: invalid email address", customerrors.ErrValidationFailed)
 	}
 
 	// Check if user with provided email exists and password is valid:
@@ -82,7 +85,8 @@ func (u *AuthUseCases) LoginUser(
 	}
 
 	if dbRefreshToken, err := u.authService.GetRefreshTokenByUserID(ctx, user.ID); err == nil {
-		if err = u.authService.ExpireRefreshToken(ctx, dbRefreshToken.Value); err != nil {
+		err = u.authService.ExpireRefreshToken(ctx, dbRefreshToken.Value)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -247,10 +251,10 @@ func (u *AuthUseCases) LogoutUser(ctx context.Context, accessToken string) error
 	return u.authService.ExpireRefreshToken(ctx, refreshToken.Value)
 }
 
-func (u *AuthUseCases) VerifyUserEmail(ctx context.Context, verifyEmailToken string) error {
+func (u *AuthUseCases) VerifyEmail(ctx context.Context, verifyEmailToken string) error {
 	strUserID, err := security.RawDecode(verifyEmailToken)
 	if err != nil {
-		return err
+		return customerrors.ErrInvalidJWT
 	}
 
 	intUserID, err := strconv.Atoi(string(strUserID))
@@ -272,12 +276,12 @@ func (u *AuthUseCases) VerifyUserEmail(ctx context.Context, verifyEmailToken str
 
 func (u *AuthUseCases) ForgetPassword(ctx context.Context, forgetPasswordToken, newPassword string) error {
 	if !validation.ValidateValueByRules(newPassword, u.validationConfig.PasswordRegExps) {
-		return &validation.Error{Message: "invalid password"}
+		return fmt.Errorf("%w: invalid password", customerrors.ErrValidationFailed)
 	}
 
 	strUserID, err := security.RawDecode(forgetPasswordToken)
 	if err != nil {
-		return err
+		return customerrors.ErrInvalidJWT
 	}
 
 	intUserID, err := strconv.Atoi(string(strUserID))
@@ -291,7 +295,7 @@ func (u *AuthUseCases) ForgetPassword(ctx context.Context, forgetPasswordToken, 
 	}
 
 	if security.ValidateHash(newPassword, user.Password) {
-		return &validation.Error{Message: "new password can not be equal to old password"}
+		return fmt.Errorf("%w: new password can not be equal to old password", customerrors.ErrValidationFailed)
 	}
 
 	hashedPassword, err := security.Hash(newPassword, u.securityConfig.HashCost)
@@ -309,11 +313,11 @@ func (u *AuthUseCases) ChangePassword(
 	newPassword string,
 ) error {
 	if oldPassword == newPassword {
-		return &validation.Error{Message: "new password can not be equal to old password"}
+		return fmt.Errorf("%w: new password can not be equal to old password", customerrors.ErrValidationFailed)
 	}
 
 	if !validation.ValidateValueByRules(newPassword, u.validationConfig.PasswordRegExps) {
-		return &validation.Error{Message: "invalid password"}
+		return fmt.Errorf("%w: invalid password", customerrors.ErrValidationFailed)
 	}
 
 	accessTokenPayload, err := security.ParseJWT(accessToken, u.securityConfig.JWT.SecretKey)
@@ -346,9 +350,27 @@ func (u *AuthUseCases) ChangePassword(
 }
 
 func (u *AuthUseCases) SendVerifyEmailMessage(ctx context.Context, email string) error {
+	user, err := u.usersService.GetUserByEmail(ctx, email)
+	if err != nil {
+		return err
+	}
+
+	if user.EmailConfirmed {
+		return customerrors.ErrEmailAlreadyConfirmed
+	}
+
 	return u.authService.SendVerifyEmailMessage(ctx, email)
 }
 
 func (u *AuthUseCases) SendForgetPasswordMessage(ctx context.Context, email string) error {
+	user, err := u.usersService.GetUserByEmail(ctx, email)
+	if err != nil {
+		return err
+	}
+
+	if !user.EmailConfirmed {
+		return customerrors.ErrEmailNotConfirmed
+	}
+
 	return u.authService.SendForgetPasswordMessage(ctx, email)
 }

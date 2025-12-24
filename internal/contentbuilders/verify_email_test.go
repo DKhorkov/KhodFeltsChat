@@ -1,10 +1,11 @@
 package contentbuilders
 
 import (
-	"github.com/DKhorkov/kfc/internal/domains"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/DKhorkov/kfc/internal/domains"
 )
 
 func TestVerifyEmailContentBuilder_Subject(t *testing.T) {

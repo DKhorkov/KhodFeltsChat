@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"database/sql"
+
+	"github.com/DKhorkov/libs/db/postgresql"
+	"github.com/DKhorkov/libs/loadenv"
+	"github.com/DKhorkov/libs/logging"
+	"github.com/DKhorkov/libs/tracing"
+
 	"github.com/DKhorkov/kfc/internal/app"
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/contentbuilders"
@@ -12,10 +18,6 @@ import (
 	"github.com/DKhorkov/kfc/internal/services"
 	"github.com/DKhorkov/kfc/internal/uow"
 	"github.com/DKhorkov/kfc/internal/usecases"
-	"github.com/DKhorkov/libs/db/postgresql"
-	"github.com/DKhorkov/libs/loadenv"
-	"github.com/DKhorkov/libs/logging"
-	"github.com/DKhorkov/libs/tracing"
 )
 
 func main() {
@@ -47,7 +49,8 @@ func main() {
 	}
 
 	defer func() {
-		if err = traceProvider.Shutdown(context.Background()); err != nil {
+		err = traceProvider.Shutdown(context.Background())
+		if err != nil {
 			logging.LogError(logger, "Error shutting down tracer", err)
 		}
 	}()
@@ -97,7 +100,6 @@ func main() {
 		traceProvider,
 		cfg.Tracing.Spans.Root,
 	)
-
 	if err != nil {
 		panic(err)
 	}

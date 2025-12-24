@@ -31,6 +31,7 @@ func (uow *UnitOfWork) Do(
 
 	doneChan := make(chan struct{})
 	errChan := make(chan error)
+
 	go func() {
 		defer close(doneChan)
 		defer close(errChan)
@@ -47,14 +48,16 @@ func (uow *UnitOfWork) Do(
 	case <-doneChan:
 		return tx.Commit()
 	case <-ctx.Done():
-		if closeErr := tx.Rollback(); closeErr != nil {
-			return fmt.Errorf("%w: %v", err, closeErr)
+		closeErr := tx.Rollback()
+		if closeErr != nil {
+			return fmt.Errorf("%w: %w", err, closeErr)
 		}
 
 		return ctx.Err()
 	case err = <-errChan:
-		if closeErr := tx.Rollback(); closeErr != nil {
-			return fmt.Errorf("%w: %v", err, closeErr)
+		closeErr := tx.Rollback()
+		if closeErr != nil {
+			return fmt.Errorf("%w: %w", err, closeErr)
 		}
 
 		return err

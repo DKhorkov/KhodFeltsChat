@@ -2,12 +2,13 @@ package repositories
 
 import (
 	"context"
-	"github.com/DKhorkov/kfc/internal/contentbuilders"
-	"github.com/DKhorkov/kfc/internal/interfaces"
 	"testing"
 
-	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/stretchr/testify/require"
+
+	"github.com/DKhorkov/kfc/internal/config"
+	"github.com/DKhorkov/kfc/internal/contentbuilders"
+	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
 func TestEmailsRepository_Send(t *testing.T) {

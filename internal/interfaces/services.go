@@ -2,8 +2,9 @@ package interfaces
 
 import (
 	"context"
-	"github.com/DKhorkov/kfc/internal/domains"
 	"time"
+
+	"github.com/DKhorkov/kfc/internal/domains"
 )
 
 //go:generate mockgen -source=services.go -destination=../../mocks/services/users_service.go -package=mockservices -exclude_interfaces=AuthService

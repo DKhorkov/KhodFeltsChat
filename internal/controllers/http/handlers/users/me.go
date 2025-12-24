@@ -3,10 +3,12 @@ package users
 import (
 	"encoding/json"
 	"errors"
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
+	"net/http"
+
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
-	"net/http"
 )
 
 func GetMeHandler(u interfaces.UsersUseCases) http.HandlerFunc {
@@ -19,6 +21,7 @@ func GetMeHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 		}
 
 		user, err := u.GetMe(r.Context(), accessTokenCookie.Value)
+
 		switch {
 		case errors.Is(err, customerrors.ErrInvalidJWT):
 			http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -34,7 +37,7 @@ func GetMeHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 			return
 		}
 
-		if err = json.NewEncoder(w).Encode(user); err != nil {
+		if err = json.NewEncoder(w).Encode(mappers.MapUser(*user)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return

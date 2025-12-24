@@ -2,18 +2,19 @@ package config
 
 import (
 	"fmt"
-	"github.com/DKhorkov/kfc/internal/common"
+	"net/http"
+	"time"
+
 	"github.com/DKhorkov/libs/cookies"
+	"github.com/DKhorkov/libs/db/postgresql"
+	"github.com/DKhorkov/libs/loadenv"
+	"github.com/DKhorkov/libs/logging"
 	"github.com/DKhorkov/libs/security"
 	"github.com/DKhorkov/libs/tracing"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"net/http"
-	"time"
 
-	"github.com/DKhorkov/libs/db/postgresql"
-	"github.com/DKhorkov/libs/loadenv"
-	"github.com/DKhorkov/libs/logging"
+	"github.com/DKhorkov/kfc/internal/common"
 )
 
 func New() Config {
@@ -96,8 +97,8 @@ func New() Config {
 			UsernameRegExps: loadenv.GetEnvAsSlice(
 				"USERNAME_REGEXPS",
 				[]string{
-					`^.{5,70}$`,   // длина 5-70 символов
-					`^[A-Za-z]+$`, // только латинница
+					`^.{5,70}$`,      // длина 5-70 символов
+					`^[A-Za-z0-9]+$`, // только латинница и цифры
 				},
 				";",
 			),

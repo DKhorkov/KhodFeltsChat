@@ -3,13 +3,15 @@ package auth
 import (
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
+
+	"github.com/DKhorkov/libs/cookies"
+
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
-	"github.com/DKhorkov/libs/cookies"
-	"io"
-	"net/http"
 )
 
 const (
@@ -34,6 +36,7 @@ func LoginHandler(u interfaces.AuthUseCases, cookiesConfig config.CookiesConfig)
 		}
 
 		tokens, err := u.LoginUser(r.Context(), dto)
+
 		switch {
 		case errors.Is(err, customerrors.ErrUserNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)

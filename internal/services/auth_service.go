@@ -3,11 +3,13 @@ package services
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"time"
+
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
-	"time"
 )
 
 type AuthService struct {
@@ -55,14 +57,15 @@ func (s *AuthService) RegisterUser(ctx context.Context, userData domains.Registe
 			}
 
 			emailsRepository := s.newEmailsRepositoryFunc()
-			if err = emailsRepository.SendVerifyEmailMessage(ctx, *user); err != nil {
+
+			err = emailsRepository.SendVerifyEmailMessage(ctx, *user)
+			if err != nil {
 				return err
 			}
 
 			return nil
 		},
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -80,13 +83,13 @@ func (s *AuthService) CreateRefreshToken(
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
 			authRepository := s.newAuthRepositoryFunc(tx)
+
 			_, err = authRepository.CreateRefreshToken(
 				ctx,
 				userID,
 				value,
 				ttl,
 			)
-
 			if err != nil {
 				return err
 			}
@@ -98,7 +101,6 @@ func (s *AuthService) CreateRefreshToken(
 			return nil
 		},
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +123,6 @@ func (s *AuthService) GetRefreshTokenByUserID(
 			return nil
 		},
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -134,6 +135,7 @@ func (s *AuthService) ExpireRefreshToken(ctx context.Context, refreshToken strin
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
 			authRepository := s.newAuthRepositoryFunc(tx)
+
 			return authRepository.ExpireRefreshToken(ctx, refreshToken)
 		},
 	)
@@ -144,6 +146,7 @@ func (s *AuthService) VerifyEmail(ctx context.Context, userID uint64) error {
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
 			authRepository := s.newAuthRepositoryFunc(tx)
+
 			return authRepository.VerifyEmail(ctx, userID)
 		},
 	)
@@ -163,7 +166,10 @@ func (s *AuthService) ForgetPassword(
 			}
 
 			refreshToken, err := authRepository.GetRefreshTokenByUserID(ctx, userID)
-			if err != nil {
+			switch {
+			case errors.Is(err, sql.ErrNoRows): // Если токена нет - то ничего удалять не нужно, фактической ошибки нет:
+				return nil
+			case err != nil:
 				return err
 			}
 
@@ -181,6 +187,7 @@ func (s *AuthService) ChangePassword(
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
 			authRepository := s.newAuthRepositoryFunc(tx)
+
 			return authRepository.ChangePassword(ctx, userID, newPassword)
 		},
 	)
@@ -191,13 +198,12 @@ func (s *AuthService) SendForgetPasswordMessage(ctx context.Context, email strin
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
 			usersRepository := s.newUsersRepositoryFunc(tx)
-			emailsRepository := s.newEmailsRepositoryFunc()
-
 			user, err := usersRepository.GetUserByEmail(ctx, email)
 			if err != nil {
-				return err
+				return fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
 			}
 
+			emailsRepository := s.newEmailsRepositoryFunc()
 			return emailsRepository.SendForgetPasswordMessage(ctx, *user)
 		},
 	)
@@ -208,13 +214,12 @@ func (s *AuthService) SendVerifyEmailMessage(ctx context.Context, email string) 
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
 			usersRepository := s.newUsersRepositoryFunc(tx)
-			emailsRepository := s.newEmailsRepositoryFunc()
-
 			user, err := usersRepository.GetUserByEmail(ctx, email)
 			if err != nil {
-				return err
+				return fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
 			}
 
+			emailsRepository := s.newEmailsRepositoryFunc()
 			return emailsRepository.SendVerifyEmailMessage(ctx, *user)
 		},
 	)

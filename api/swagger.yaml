@@ -2,8 +2,8 @@ basePath: /
 consumes:
     - application/json
 info:
-    description: Documentation for REST API
-    title: for the RESTful Server
+    description: Documentation for REST API of KFC
+    title: Khod Felts Chat API
     version: 1.0.0
 paths:
     /:
@@ -22,15 +22,50 @@ produces:
     - application/json
 responses:
     AlreadyExistsError:
-        description: AlreadyExistsError message returned as an HTTP Status Code
+        description: AlreadyExistsError message returned when entity already exists
+        headers:
+            StatusCode:
+                description: |-
+                    HTTP Status Code
+                    in: header
+                format: int64
+                type: integer
     BadRequest:
-        description: BadRequest message returned as an HTTP Status Code
+        description: BadRequest message returned when request was incorrect
+        headers:
+            StatusCode:
+                description: |-
+                    HTTP Status Code
+                    in: header
+                format: int64
+                type: integer
     InternalServerError:
-        description: InternalServerError message returned as an HTTP Status Code
+        description: InternalServerError message returned when something not-normal happened during processing request
+        headers:
+            StatusCode:
+                description: |-
+                    HTTP Status Code
+                    in: header
+                format: int64
+                type: integer
     NotFound:
-        description: NotFound message returned as an HTTP Status Code
+        description: NotFound message returned as when requested entity not found
+        headers:
+            StatusCode:
+                description: |-
+                    HTTP Status Code
+                    in: header
+                format: int64
+                type: integer
     OK:
-        description: OK message returned as an HTTP Status Code
+        description: OK message returned when request was successfully processed
+        headers:
+            StatusCode:
+                description: |-
+                    HTTP Status Code
+                    in: header
+                format: int64
+                type: integer
 schemes:
     - http
 swagger: "2.0"

@@ -3,16 +3,24 @@ package auth
 import (
 	"encoding/json"
 	"errors"
+	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"io"
 	"net/http"
 
-	"github.com/DKhorkov/kfc/internal/domains"
+	"github.com/gorilla/mux"
+
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
-func RegisterHandler(u interfaces.AuthUseCases) http.HandlerFunc {
+const (
+	ForgetPasswordTokenRouteKey = "forget_password_token"
+)
+
+func ForgetPasswordHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		forgetPasswordToken := mux.Vars(r)[ForgetPasswordTokenRouteKey]
+
 		data, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -20,31 +28,29 @@ func RegisterHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		var dto domains.RegisterDTO
+		var dto schemas.ForgetPasswordDTO
 		if err = json.Unmarshal(data, &dto); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
 
-		user, err := u.RegisterUser(r.Context(), dto)
+		err = u.ForgetPassword(r.Context(), forgetPasswordToken, dto.NewPassword)
 
 		switch {
-		case errors.Is(err, customerrors.ErrUserAlreadyExists):
-			http.Error(w, err.Error(), http.StatusConflict)
-
-			return
 		case errors.Is(err, customerrors.ErrValidationFailed):
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
-		case err != nil:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		case errors.Is(err, customerrors.ErrInvalidJWT):
+			http.Error(w, err.Error(), http.StatusUnauthorized)
 
 			return
-		}
+		case errors.Is(err, customerrors.ErrUserNotFound):
+			http.Error(w, err.Error(), http.StatusNotFound)
 
-		if err = json.NewEncoder(w).Encode(user); err != nil {
+			return
+		case err != nil:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return

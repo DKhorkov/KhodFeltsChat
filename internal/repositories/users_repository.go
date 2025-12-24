@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/DKhorkov/libs/db/postgresql"
+
 	sq "github.com/Masterminds/squirrel"
 
 	"github.com/DKhorkov/kfc/internal/domains"
@@ -154,9 +155,10 @@ func (repo *UsersRepository) GetUsers(
 	}
 
 	defer func() {
-		if rowsErr := rows.Close(); rowsErr != nil {
+		rowsErr := rows.Close()
+		if rowsErr != nil {
 			if err != nil {
-				err = fmt.Errorf("%w; %s", err, rowsErr)
+				err = fmt.Errorf("%w; %w", err, rowsErr)
 
 				return
 			}
@@ -171,7 +173,8 @@ func (repo *UsersRepository) GetUsers(
 		user := domains.User{}
 		columns := postgresql.GetEntityColumns(&user) // Only pointer to use rows.Scan() successfully
 
-		if err = rows.Scan(columns...); err != nil {
+		err = rows.Scan(columns...)
+		if err != nil {
 			return nil, err
 		}
 

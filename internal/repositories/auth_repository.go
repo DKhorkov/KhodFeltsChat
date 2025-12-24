@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/DKhorkov/libs/db/postgresql"
+
 	sq "github.com/Masterminds/squirrel"
 
 	"github.com/DKhorkov/kfc/internal/domains"

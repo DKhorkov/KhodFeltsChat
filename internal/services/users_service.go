@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -40,7 +41,6 @@ func (s *UsersService) GetUsers(
 			return nil
 		},
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -60,9 +60,8 @@ func (s *UsersService) GetUserByID(ctx context.Context, id uint64) (user *domain
 			return nil
 		},
 	)
-
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
+		return nil, fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 	}
 
 	return user, nil
@@ -80,9 +79,8 @@ func (s *UsersService) GetUserByEmail(ctx context.Context, email string) (user *
 			return nil
 		},
 	)
-
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
+		return nil, fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 	}
 
 	return user, nil
@@ -100,9 +98,8 @@ func (s *UsersService) GetUserByUsername(ctx context.Context, username string) (
 			return nil
 		},
 	)
-
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
+		return nil, fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 	}
 
 	return user, nil
@@ -113,7 +110,9 @@ func (s *UsersService) UpdateUser(ctx context.Context, userData domains.UpdateUs
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
 			usersRepository := s.newUsersRepositoryFunc(tx)
-			if err = usersRepository.UpdateUser(ctx, userData); err != nil {
+
+			err = usersRepository.UpdateUser(ctx, userData)
+			if err != nil {
 				return err
 			}
 
@@ -124,7 +123,6 @@ func (s *UsersService) UpdateUser(ctx context.Context, userData domains.UpdateUs
 			return nil
 		},
 	)
-
 	if err != nil {
 		return nil, err
 	}
