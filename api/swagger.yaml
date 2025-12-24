@@ -1,35 +1,487 @@
 basePath: /
 consumes:
     - application/json
+definitions:
+    EmailInput:
+        properties:
+            email:
+                description: Email of the user.
+                example: alexqwerty@yandex.ru
+                type: string
+                x-go-name: Email
+        required:
+            - email
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
+    NewPasswordInput:
+        properties:
+            newPassword:
+                description: New password of the user.
+                example: SomePa$$wordWithDifferentRegisterAndNubmersAndSpecialCharacters228
+                type: string
+                x-go-name: NewPassword
+        required:
+            - newPassword
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
+    User:
+        properties:
+            createdAt:
+                description: Represents datetime when user was registered.
+                format: date-time
+                type: string
+                x-go-name: CreatedAt
+            email:
+                description: Email of the user.
+                example: alexqwerty@yandex.ru
+                type: string
+                x-go-name: Email
+            emailConfirmed:
+                description: Represents whether email of the user confirmed or not.
+                type: boolean
+                x-go-name: EmailConfirmed
+            id:
+                description: Full name of the user.
+                format: uint64
+                minimum: 1
+                type: integer
+                x-go-name: ID
+            updatedAt:
+                description: Represents datetime when user was updated.
+                format: date-time
+                type: string
+                x-go-name: UpdatedAt
+            username:
+                description: Unique username of the user.
+                example: D3M0S
+                maxLength: 70
+                minLength: 5
+                type: string
+                x-go-name: Username
+        required:
+            - id
+            - username
+            - email
+            - emailConfirmed
+            - createdAt
+            - updatedAt
+        title: User represents a user's contact record.
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
 info:
     description: Documentation for REST API of KFC
     title: Khod Felts Chat API
     version: 1.0.0
 paths:
     /:
-        post:
+        get:
             description: Works with all HTTP methods
             operationId: OK
             responses:
-                "200":
-                    $ref: '#/responses/OK'
+                "303":
+                    $ref: '#/responses/SeeOther'
                 "500":
                     $ref: '#/responses/InternalServerError'
             summary: Default Handler for everything that is not a match.
             tags:
                 - DefaultHandler
+    /sessions:
+        delete:
+            description: Logout User and deletes access and refresh tokens.
+            operationId: Logout
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: Logout
+            tags:
+                - sessions
+        post:
+            description: Logins User and provides access and refresh tokens.
+            operationId: Login
+            parameters:
+                - description: Information about User for login
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    properties:
+                        email:
+                            description: Email of the user.
+                            example: alexqwerty@yandex.ru
+                            type: string
+                            x-go-name: Email
+                        password:
+                            description: Password of the user.
+                            example: SomePa$$wordWithDifferentRegisterAndNubmersAndSpecialCharacters228
+                            type: string
+                            x-go-name: Password
+                    required:
+                        - email
+                        - password
+                    type: object
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "403":
+                    $ref: '#/responses/Forbidden'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: Login
+            tags:
+                - sessions
+        put:
+            description: Refreshes accessToken and refreshToken of current user.
+            operationId: RefreshTokens
+            parameters:
+                - description: Refresh token to refresh accessToken and refreshToken of user. SHOULD BE PROVIDED IN COOKIE.
+                  format: byte
+                  in: header
+                  name: refreshToken
+                  required: true
+                  type: string
+                  x-go-name: RefreshToken
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: RefreshTokens
+            tags:
+                - sessions
+    /users:
+        get:
+            description: Provides list of Users.
+            operationId: GetUsers
+            parameters:
+                - description: Maximum amount of entries
+                  format: int64
+                  in: query
+                  name: limit
+                  type: integer
+                  x-go-name: Limit
+                - description: Number of entries to skip from the beginning of the result set before starting to return the desired entries
+                  format: int64
+                  in: query
+                  name: offset
+                  type: integer
+                  x-go-name: Offset
+                - description: Username or it's part to search users that matches it
+                  in: query
+                  name: username
+                  type: string
+                  x-go-name: Username
+            responses:
+                "200":
+                    description: User
+                    schema:
+                        items:
+                            $ref: '#/definitions/User'
+                        type: array
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: GetUsers
+            tags:
+                - users
+        post:
+            description: Registers new User with provided info.
+            operationId: RegisterUser
+            parameters:
+                - description: Information about User for registration
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    properties:
+                        email:
+                            description: Email of the user.
+                            example: alexqwerty@yandex.ru
+                            type: string
+                            x-go-name: Email
+                        password:
+                            description: Password of the user.
+                            example: SomePa$$wordWithDifferentRegisterAndNubmersAndSpecialCharacters228
+                            type: string
+                            x-go-name: Password
+                        username:
+                            description: Unique username of the user.
+                            example: D3M0S
+                            maxLength: 70
+                            minLength: 5
+                            type: string
+                            x-go-name: Username
+                    required:
+                        - email
+                        - username
+                        - password
+                    type: object
+            responses:
+                "201":
+                    description: User
+                    schema:
+                        $ref: '#/definitions/User'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "409":
+                    $ref: '#/responses/Conflict'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: RegisterUser
+            tags:
+                - users
+    /users/{id}:
+        get:
+            description: Provides User with specified ID.
+            operationId: GetUserByID
+            parameters:
+                - description: Unique identifier
+                  format: int64
+                  in: path
+                  name: id
+                  required: true
+                  type: integer
+                  x-go-name: ID
+            responses:
+                "200":
+                    description: User
+                    schema:
+                        $ref: '#/definitions/User'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: GetUserByID
+            tags:
+                - users
+    /users/email/verify:
+        post:
+            description: Sends message with information how to verify email.
+            operationId: SendVerifyEmailMessage
+            parameters:
+                - description: Information for sending message to User
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/EmailInput'
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "409":
+                    $ref: '#/responses/Conflict'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: SendVerifyEmailMessage
+            tags:
+                - users
+    /users/email/verify/{verifyEmailToken}:
+        post:
+            description: Verifies email for user with provided verifyEmailToken.
+            operationId: VerifyEmail
+            parameters:
+                - description: Token to define user for email verification
+                  format: byte
+                  in: path
+                  name: verifyEmailToken
+                  required: true
+                  type: string
+                  x-go-name: VerifyEmailToken
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "409":
+                    $ref: '#/responses/Conflict'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: VerifyEmail
+            tags:
+                - users
+    /users/me:
+        get:
+            description: Provides current authorized User.
+            operationId: GetCurrentUser
+            responses:
+                "200":
+                    description: User
+                    schema:
+                        $ref: '#/definitions/User'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: GetCurrentUser
+            tags:
+                - users
+        put:
+            description: Updates information about User with specified ID.
+            operationId: UpdateCurrentUser
+            parameters:
+                - description: Information about current User for update
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    properties:
+                        username:
+                            description: Unique username of the user.
+                            example: D3M0S
+                            maxLength: 70
+                            minLength: 5
+                            type: string
+                            x-go-name: Username
+                    required:
+                        - username
+                    type: object
+            responses:
+                "200":
+                    description: User
+                    schema:
+                        $ref: '#/definitions/User'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: UpdateCurrentUser
+            tags:
+                - users
+    /users/password/change:
+        post:
+            description: Changes old password to new password of current user.
+            operationId: ChangePassword
+            parameters:
+                - description: Information about User to change password
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    properties:
+                        newPassword:
+                            description: New password of the user.
+                            example: SomePa$$wordWithDifferentRegisterAndNubmersAndSpecialCharacters228
+                            type: string
+                            x-go-name: NewPassword
+                        oldPassword:
+                            description: Old password of the user.
+                            example: SomeOldPa$$wordWithDifferentRegisterAndNubmersAndSpecialCharacters228
+                            type: string
+                            x-go-name: OldPassword
+                    required:
+                        - newPassword
+                        - oldPassword
+                    type: object
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: ChangePassword
+            tags:
+                - users
+    /users/password/forget:
+        post:
+            description: Sends message with information how to forget old password.
+            operationId: SendForgetPasswordMessage
+            parameters:
+                - description: Information for sending message to User
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/EmailInput'
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "403":
+                    $ref: '#/responses/Forbidden'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: SendForgetPasswordMessage
+            tags:
+                - users
+    /users/password/forget/{forgetPasswordToken}:
+        post:
+            description: Changes forgotten password to new password for user with provided forgetPasswordToken.
+            operationId: ForgetPassword
+            parameters:
+                - description: Information about User to forget old password
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/NewPasswordInput'
+                - description: Token to define user for forgetting old password
+                  format: byte
+                  in: path
+                  name: forgetPasswordToken
+                  required: true
+                  type: string
+                  x-go-name: ForgetPasswordToken
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: ForgetPassword
+            tags:
+                - users
 produces:
     - application/json
 responses:
-    AlreadyExistsError:
-        description: AlreadyExistsError message returned when entity already exists
-        headers:
-            StatusCode:
-                description: |-
-                    HTTP Status Code
-                    in: header
-                format: int64
-                type: integer
     BadRequest:
         description: BadRequest message returned when request was incorrect
         headers:
@@ -39,8 +491,35 @@ responses:
                     in: header
                 format: int64
                 type: integer
+    Conflict:
+        description: Conflict message returned when entity already exists or operation already done
+        headers:
+            StatusCode:
+                description: |-
+                    HTTP Status Code
+                    in: header
+                format: int64
+                type: integer
+    Forbidden:
+        description: Forbidden message returned when user has no rights
+        headers:
+            StatusCode:
+                description: |-
+                    HTTP Status Code
+                    in: header
+                format: int64
+                type: integer
     InternalServerError:
         description: InternalServerError message returned when something not-normal happened during processing request
+        headers:
+            StatusCode:
+                description: |-
+                    HTTP Status Code
+                    in: header
+                format: int64
+                type: integer
+    NoContent:
+        description: NoContent message returned when there is no payload in Response Body
         headers:
             StatusCode:
                 description: |-
@@ -66,6 +545,45 @@ responses:
                     in: header
                 format: int64
                 type: integer
+    SeeOther:
+        description: SeeOther message returned when redirect to another URL was made
+        headers:
+            StatusCode:
+                description: |-
+                    HTTP Status Code
+                    in: header
+                format: int64
+                type: integer
+    Unauthorized:
+        description: Unauthorized message returned when no information about current User
+        headers:
+            StatusCode:
+                description: |-
+                    HTTP Status Code
+                    in: header
+                format: int64
+                type: integer
 schemes:
     - http
 swagger: "2.0"
+
+# ТЕГИ ДЛЯ ГРУППИРОВКИ
+tags:
+- name: users
+  description: "Операции с пользователями"
+- name: sessions
+  description: "Управление сессиями (авторизация)"
+- name: chats
+  description: "Управление чатами"
+
+securityDefinitions:
+  cookieAuth:
+    type: apiKey
+    in: cookie
+    name: accessToken
+    description: "Access Token to authorize User"
+  bearerAuth:
+    type: apiKey
+    in: header
+    name: Authorization
+    description: "Bearer token"

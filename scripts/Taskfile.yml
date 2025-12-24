@@ -316,3 +316,25 @@ tasks:
     cmds:
       - mkdir -p {{.DOCS_DIR}}
       - swagger generate spec --scan-models -o {{.DOCS_OUTPUT_FILEPATH}}
+      - |
+        echo '
+        # ТЕГИ ДЛЯ ГРУППИРОВКИ
+        tags:
+        - name: users
+          description: "Операции с пользователями"
+        - name: sessions
+          description: "Управление сессиями (авторизация)"
+        - name: chats
+          description: "Управление чатами"
+        
+        securityDefinitions:
+          cookieAuth:
+            type: apiKey
+            in: cookie
+            name: accessToken
+            description: "Access Token to authorize User"
+          bearerAuth:
+            type: apiKey
+            in: header
+            name: Authorization
+            description: "Bearer token"' >> {{.DOCS_OUTPUT_FILEPATH}}

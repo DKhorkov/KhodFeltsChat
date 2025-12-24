@@ -11,6 +11,18 @@ import (
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
+// swagger:route PUT /sessions sessions RefreshTokens
+//
+// RefreshTokens
+//
+// Refreshes accessToken and refreshToken of current user.
+//
+// Responses:
+//	204: NoContent
+//	401: Unauthorized
+//	500: InternalServerError
+
+// RefreshTokensHandler refreshes accessToken and refreshToken of current user.
 func RefreshTokensHandler(u interfaces.AuthUseCases, cookiesConfig config.CookiesConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		refreshTokenCookie, err := r.Cookie(RefreshTokenCookieName)
@@ -37,6 +49,6 @@ func RefreshTokensHandler(u interfaces.AuthUseCases, cookiesConfig config.Cookie
 		cookies.Set(w, AccessTokenCookieName, tokens.AccessToken, cookiesConfig.AccessToken)
 		cookies.Set(w, RefreshTokenCookieName, tokens.RefreshToken, cookiesConfig.RefreshToken)
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNoContent)
 	}
 }

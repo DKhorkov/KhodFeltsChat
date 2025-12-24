@@ -11,14 +11,29 @@ import (
 )
 
 const (
-	VerifyEmailTokenRouteKey = "verify_email_token"
+	VerifyEmailTokenRouteKey = "verifyEmailToken"
 )
 
+// swagger:route POST /users/email/verify/{verifyEmailToken} users VerifyEmail
+//
+// VerifyEmail
+//
+// Verifies email for user with provided verifyEmailToken.
+//
+// Responses:
+//	204: NoContent
+//	401: Unauthorized
+//	404: NotFound
+//	409: Conflict
+//	500: InternalServerError
+
+// VerifyEmailHandler changes forgotten password to new password of current user.
 func VerifyEmailHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		verifyEmailToken := mux.Vars(r)[VerifyEmailTokenRouteKey]
 
 		err := u.VerifyEmail(r.Context(), verifyEmailToken)
+
 		switch {
 		case errors.Is(err, customerrors.ErrInvalidJWT):
 			http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -38,6 +53,6 @@ func VerifyEmailHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNoContent)
 	}
 }

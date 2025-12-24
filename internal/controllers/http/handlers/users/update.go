@@ -3,17 +3,35 @@ package users
 import (
 	"encoding/json"
 	"errors"
-	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	"io"
 	"net/http"
 
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth"
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
+	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
-func UpdateHandler(u interfaces.UsersUseCases) http.HandlerFunc {
+// swagger:route PUT /users/me users UpdateCurrentUser
+//
+// UpdateCurrentUser
+//
+// Updates information about User with specified ID.
+//
+// Security:
+// - cookieAuth: []
+//
+// Responses:
+//	200: User
+//	400: BadRequest
+//	401: Unauthorized
+//	404: NotFound
+//	500: InternalServerError
+
+// UpdateCurrentUserHandler updates current User.
+func UpdateCurrentUserHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -22,8 +40,8 @@ func UpdateHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 			return
 		}
 
-		var dto domains.RawUpdateUserDTO
-		if err = json.Unmarshal(data, &dto); err != nil {
+		var input schemas.UpdateUserInput
+		if err = json.Unmarshal(data, &input); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
@@ -36,7 +54,10 @@ func UpdateHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 			return
 		}
 
-		dto.AccessToken = accessTokenCookie.Value
+		dto := domains.RawUpdateUserDTO{
+			AccessToken: accessTokenCookie.Value,
+			Username:    input.Body.Username,
+		}
 
 		user, err := u.UpdateUser(r.Context(), dto)
 

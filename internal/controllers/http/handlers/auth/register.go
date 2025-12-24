@@ -6,11 +6,25 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
+// swagger:route POST /users users RegisterUser
+//
+// RegisterUser
+//
+// Registers new User with provided info.
+//
+// Responses:
+//	201: User
+//	400: BadRequest
+//	409: Conflict
+//	500: InternalServerError
+
+// RegisterHandler creates new User.
 func RegisterHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := io.ReadAll(r.Body)
@@ -20,11 +34,17 @@ func RegisterHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		var dto domains.RegisterDTO
-		if err = json.Unmarshal(data, &dto); err != nil {
+		var input schemas.RegisterInput
+		if err = json.Unmarshal(data, &input); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
+		}
+
+		dto := domains.RegisterDTO{
+			Username: input.Body.Username,
+			Email:    input.Body.Email,
+			Password: input.Body.Password,
 		}
 
 		user, err := u.RegisterUser(r.Context(), dto)
@@ -50,6 +70,6 @@ func RegisterHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
 	}
 }

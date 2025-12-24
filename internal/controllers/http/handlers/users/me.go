@@ -3,14 +3,30 @@ package users
 import (
 	"encoding/json"
 	"errors"
-	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	"net/http"
 
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth"
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
+// swagger:route GET /users/me users GetCurrentUser
+//
+// GetCurrentUser
+//
+// Provides current authorized User.
+//
+// Security:
+// - cookieAuth: []
+//
+// Responses:
+//	200: User
+//	401: Unauthorized
+//	404: NotFound
+//	500: InternalServerError
+
+// GetMeHandler provides information about current authorized User.
 func GetMeHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		accessTokenCookie, err := r.Cookie(auth.AccessTokenCookieName)

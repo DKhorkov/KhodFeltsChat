@@ -166,6 +166,7 @@ func (s *AuthService) ForgetPassword(
 			}
 
 			refreshToken, err := authRepository.GetRefreshTokenByUserID(ctx, userID)
+
 			switch {
 			case errors.Is(err, sql.ErrNoRows): // Если токена нет - то ничего удалять не нужно, фактической ошибки нет:
 				return nil
@@ -198,12 +199,14 @@ func (s *AuthService) SendForgetPasswordMessage(ctx context.Context, email strin
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
 			usersRepository := s.newUsersRepositoryFunc(tx)
+
 			user, err := usersRepository.GetUserByEmail(ctx, email)
 			if err != nil {
-				return fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
+				return fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 			}
 
 			emailsRepository := s.newEmailsRepositoryFunc()
+
 			return emailsRepository.SendForgetPasswordMessage(ctx, *user)
 		},
 	)
@@ -214,12 +217,14 @@ func (s *AuthService) SendVerifyEmailMessage(ctx context.Context, email string) 
 		ctx,
 		func(ctx context.Context, tx *sql.Tx) error {
 			usersRepository := s.newUsersRepositoryFunc(tx)
+
 			user, err := usersRepository.GetUserByEmail(ctx, email)
 			if err != nil {
-				return fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
+				return fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 			}
 
 			emailsRepository := s.newEmailsRepositoryFunc()
+
 			return emailsRepository.SendVerifyEmailMessage(ctx, *user)
 		},
 	)

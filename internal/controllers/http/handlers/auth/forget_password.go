@@ -3,20 +3,34 @@ package auth
 import (
 	"encoding/json"
 	"errors"
-	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
 
+	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
 const (
-	ForgetPasswordTokenRouteKey = "forget_password_token"
+	ForgetPasswordTokenRouteKey = "forgetPasswordToken"
 )
 
+// swagger:route POST /users/password/forget/{forgetPasswordToken} users ForgetPassword
+//
+// ForgetPassword
+//
+// Changes forgotten password to new password for user with provided forgetPasswordToken.
+//
+// Responses:
+//	204: NoContent
+//	400: BadRequest
+//	401: Unauthorized
+//	404: NotFound
+//	500: InternalServerError
+
+// ForgetPasswordHandler changes forgotten password to new password of current user.
 func ForgetPasswordHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		forgetPasswordToken := mux.Vars(r)[ForgetPasswordTokenRouteKey]
@@ -28,14 +42,14 @@ func ForgetPasswordHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		var dto schemas.ForgetPasswordDTO
-		if err = json.Unmarshal(data, &dto); err != nil {
+		var input schemas.ForgetPasswordInput
+		if err = json.Unmarshal(data, &input); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
 
-		err = u.ForgetPassword(r.Context(), forgetPasswordToken, dto.NewPassword)
+		err = u.ForgetPassword(r.Context(), forgetPasswordToken, input.Body.NewPassword)
 
 		switch {
 		case errors.Is(err, customerrors.ErrValidationFailed):
@@ -56,6 +70,6 @@ func ForgetPasswordHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNoContent)
 	}
 }

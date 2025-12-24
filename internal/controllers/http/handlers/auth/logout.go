@@ -10,6 +10,21 @@ import (
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
+// swagger:route DELETE /sessions sessions Logout
+//
+// Logout
+//
+// Logout User and deletes access and refresh tokens.
+//
+// Security:
+// - cookieAuth: []
+//
+// Responses:
+//	204: NoContent
+//	401: Unauthorized
+//	500: InternalServerError
+
+// LogoutHandler logouts User.
 func LogoutHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		accessTokenCookie, err := r.Cookie(AccessTokenCookieName)
@@ -36,6 +51,6 @@ func LogoutHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 		cookies.Set(w, AccessTokenCookieName, "", cookies.Config{MaxAge: -1})
 		cookies.Set(w, RefreshTokenCookieName, "", cookies.Config{MaxAge: -1})
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNoContent)
 	}
 }

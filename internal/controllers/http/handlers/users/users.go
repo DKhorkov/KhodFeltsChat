@@ -2,12 +2,12 @@ package users
 
 import (
 	"encoding/json"
-	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	"net/http"
 	"strconv"
 
 	"github.com/DKhorkov/libs/pointers"
 
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	"github.com/DKhorkov/kfc/internal/domains"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
@@ -18,6 +18,17 @@ const (
 	offsetQueryKey   = "offset"
 )
 
+// swagger:route GET /users users GetUsers
+//
+// GetUsers
+//
+// Provides list of Users.
+//
+// Responses:
+//	200: []User
+//	500: InternalServerError
+
+// GetUsersHandler provides Users with filtration and pagination.
 func GetUsersHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var filters *domains.UsersFilters

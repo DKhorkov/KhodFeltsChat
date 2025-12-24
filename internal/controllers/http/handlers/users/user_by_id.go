@@ -3,12 +3,12 @@ package users
 import (
 	"encoding/json"
 	"errors"
-	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
 
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
@@ -17,6 +17,19 @@ const (
 	IDRouteKey = "id"
 )
 
+// swagger:route GET /users/{id} users GetUserByID
+//
+// GetUserByID
+//
+// Provides User with specified ID.
+//
+// Responses:
+//	200: User
+//	400: BadRequest
+//	404: NotFound
+//	500: InternalServerError
+
+// GetUserByIDHandler provides information User with provided ID.
 func GetUserByIDHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userIDStr := mux.Vars(r)[IDRouteKey]

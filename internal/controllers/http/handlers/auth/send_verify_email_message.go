@@ -3,14 +3,28 @@ package auth
 import (
 	"encoding/json"
 	"errors"
-	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"io"
 	"net/http"
 
+	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
+// swagger:route POST /users/email/verify users SendVerifyEmailMessage
+//
+// SendVerifyEmailMessage
+//
+// Sends message with information how to verify email.
+//
+// Responses:
+//	204: NoContent
+//	400: BadRequest
+//	404: NotFound
+//	409: Conflict
+//	500: InternalServerError
+
+// SendVerifyEmailMessageHandler sends message with information how to verify.
 func SendVerifyEmailMessageHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := io.ReadAll(r.Body)
@@ -20,14 +34,15 @@ func SendVerifyEmailMessageHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		var dto schemas.SendVerifyEmailDTO
-		if err = json.Unmarshal(data, &dto); err != nil {
+		var input schemas.SendVerifyEmailInput
+		if err = json.Unmarshal(data, &input); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
 
-		err = u.SendVerifyEmailMessage(r.Context(), dto.Email)
+		err = u.SendVerifyEmailMessage(r.Context(), input.Body.Email)
+
 		switch {
 		case errors.Is(err, customerrors.ErrUserNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -43,6 +58,6 @@ func SendVerifyEmailMessageHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNoContent)
 	}
 }

@@ -64,7 +64,7 @@ func SetupHandlers(
 	postMux.Handle(sendForgetPasswordURL, auth.SendForgetPasswordMessageHandler(authUseCases))
 
 	putMux := rootMux.Methods(http.MethodPut).Subrouter()
-	putMux.Handle(meURL, users.UpdateHandler(usersUseCases))
+	putMux.Handle(meURL, users.UpdateCurrentUserHandler(usersUseCases))
 	putMux.Handle(sessionsURL, auth.RefreshTokensHandler(authUseCases, cookiesConfig))
 
 	deleteMux := rootMux.Methods(http.MethodDelete).Subrouter()
