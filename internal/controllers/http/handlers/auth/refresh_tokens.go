@@ -4,11 +4,10 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/DKhorkov/libs/cookies"
-
 	"github.com/DKhorkov/kfc/internal/config"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/DKhorkov/libs/cookies"
 )
 
 // swagger:route PUT /sessions sessions RefreshTokens
@@ -23,7 +22,10 @@ import (
 //	500: InternalServerError
 
 // RefreshTokensHandler refreshes accessToken and refreshToken of current user.
-func RefreshTokensHandler(u interfaces.AuthUseCases, cookiesConfig config.CookiesConfig) http.HandlerFunc {
+func RefreshTokensHandler(
+	u interfaces.AuthUseCases,
+	cookiesConfig config.CookiesConfig,
+) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		refreshTokenCookie, err := r.Cookie(RefreshTokenCookieName)
 		if err != nil {

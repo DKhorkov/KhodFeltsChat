@@ -4,25 +4,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
-
-	"github.com/DKhorkov/libs/logging"
-	"github.com/DKhorkov/libs/tracing"
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
-
-	middlewares "github.com/DKhorkov/libs/middlewares/http"
 
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/DKhorkov/libs/logging"
+	middlewares "github.com/DKhorkov/libs/middlewares/http"
+	"github.com/DKhorkov/libs/tracing"
+	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 type Controller struct {
 	server *http.Server
 	logger logging.Logger
 	host   string
-	port   int
+	port   string
 }
 
 func New(
@@ -58,7 +57,7 @@ func New(
 		},
 	).Handler(rootMux)
 
-	addr := fmt.Sprintf("%s:%d", httpConfig.Host, httpConfig.Port)
+	addr := net.JoinHostPort(httpConfig.Host, httpConfig.Port)
 	server := &http.Server{
 		Addr:         addr,
 		Handler:      httpHandler,
@@ -76,7 +75,7 @@ func New(
 }
 
 func (c *Controller) Run() {
-	addr := fmt.Sprintf("%s:%d", c.host, c.port)
+	addr := fmt.Sprintf("%s:%s", c.host, c.port)
 	logging.LogInfo(
 		c.logger,
 		"Ready to serve at "+addr,

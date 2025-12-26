@@ -1,15 +1,17 @@
-package contentbuilders
+package contentbuilders_test
 
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
+	"github.com/DKhorkov/kfc/internal/contentbuilders"
 	"github.com/DKhorkov/kfc/internal/domains"
+	"github.com/stretchr/testify/require"
 )
 
 func TestVerifyEmailContentBuilder_Subject(t *testing.T) {
-	builder := NewVerifyEmailContentBuilder("http://example.com/verify-email")
+	t.Parallel()
+
+	builder := contentbuilders.NewVerifyEmailContentBuilder("http://example.com/verify-email")
 
 	testCases := []struct {
 		name     string
@@ -23,6 +25,8 @@ func TestVerifyEmailContentBuilder_Subject(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := builder.Subject()
 			require.Equal(t, tc.expected, result)
 		})
@@ -30,7 +34,9 @@ func TestVerifyEmailContentBuilder_Subject(t *testing.T) {
 }
 
 func TestVerifyEmailContentBuilder_Body(t *testing.T) {
-	builder := NewVerifyEmailContentBuilder("http://example.com/verify-email")
+	t.Parallel()
+
+	builder := contentbuilders.NewVerifyEmailContentBuilder("http://example.com/verify-email")
 
 	testCases := []struct {
 		name     string
@@ -77,6 +83,8 @@ func TestVerifyEmailContentBuilder_Body(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := builder.Body(tc.user)
 			require.Equal(t, tc.expected, result)
 		})

@@ -1,318 +1,277 @@
-# This file contains all available configuration options
-# with their default values (in comments).
-#
-# This file is not a configuration example,
-# it contains the exhaustive configuration with explanations of the options.
-
 version: "2"
 
-# Основные настройки линтеров
 linters:
-  # Default set of linters.
-  # The value can be: `standard`, `all`, `none`, or `fast`.
-  # Default: standard
-  default: all
-
-  # Отключаем конкретные линтеры
-  disable:
-    - depguard
-    - wrapcheck
-    - varnamelen
-    - iface
-    - interfacebloat
-    - lll
-    - funlen
-    - exhaustruct
-    - errname
-    - cyclop
+  # This list of linters is not a recommendation (same thing for all this configuration file).
+  # We intentionally use a limited set of linters.
+  # See the comment on top of this file.
+  enable:
+    - bodyclose # Checks whether HTTP response body is closed successfully.
+    - copyloopvar # A linter detects places where loop variables are copied. [fast, auto-fix]
+    - depguard # Go linter that checks if package imports are in a list of acceptable packages. [fast]
+    - dogsled # Checks assignments with too many blank identifiers (e.g. x, _, _, _, := f()). [fast]
+    - dupl # Detects duplicate fragments of code. [fast]
+    - errcheck # Errcheck is a program for checking for unchecked errors in Go code. These unchecked errors can be critical bugs in some cases.
+    - errorlint # Find code that can cause problems with the error wrapping scheme introduced in Go 1.13. [auto-fix]
+    - funlen # Checks for long functions. [fast]
+    - gocheckcompilerdirectives # Checks that go compiler directive comments (//go:) are valid. [fast]
+    - gochecknoinits # Checks that no init functions are present in Go code. [fast]
+    - goconst # Finds repeated strings that could be replaced by a constant.
+    - gocritic # Provides diagnostics that check for bugs, performance and style issues. [auto-fix]
+    - gocyclo # Computes and checks the cyclomatic complexity of functions. [fast]
+    - godox # Detects usage of FIXME, TODO and other keywords inside comments. [fast]
+    - goprintffuncname # Checks that printf-like functions are named with `f` at the end. [fast]
+    - gosec # Inspects source code for security problems.
+    - govet # Vet examines Go source code and reports suspicious constructs. It is roughly the same as 'go vet' and uses its passes. [auto-fix]
+    - ineffassign # Detects when assignments to existing variables are not used. [fast]
+    - intrange # Intrange is a linter to find places where for loops could make use of an integer range. [auto-fix]
+    - lll # Reports long lines. [fast]
+    - misspell # Finds commonly misspelled English words. [fast, auto-fix]
+    - mnd # An analyzer to detect magic numbers. [fast]
+    - nakedret # Checks that functions with naked returns are not longer than a maximum size (can be zero). [fast, auto-fix]
+    - noctx # Detects function and method with missing usage of context.Context.
+    - nolintlint # Reports ill-formed or insufficient nolint directives. [fast, auto-fix]
+    - revive # Fast, configurable, extensible, flexible, and beautiful linter for Go. Drop-in replacement of golint. [auto-fix]
+    - staticcheck # It's the set of rules from staticcheck. [auto-fix]
+    - testifylint # Checks usage of github.com/stretchr/testify. [auto-fix]
+    - unconvert # Remove unnecessary type conversions.
+    - unparam # Reports unused function parameters.
+    - unused # Checks Go code for unused constants, variables, functions and types.
+    - whitespace # Whitespace is a linter that checks for unnecessary newlines at the start and end of functions, if, for, etc. [fast, auto-fix]
+    - arangolint # Opinionated best practices for arangodb client.
+    - asasalint # Check for pass []any as any in variadic func(...any).
+    - asciicheck # Checks that all code identifiers does not have non-ASCII symbols in the name. [fast]
+    - bidichk # Checks for dangerous unicode character sequences. [fast]
+    - canonicalheader # Canonicalheader checks whether net/http.Header uses canonical header. [auto-fix]
+    - containedctx # Containedctx is a linter that detects struct contained context.Context field.
+    - contextcheck # Check whether the function uses a non-inherited context.
+    - cyclop # Checks function and package cyclomatic complexity. [fast]
+    - decorder # Check declaration order and count of types, constants, variables and functions. [fast]
+    - dupword # Checks for duplicate words in the source code. [fast, auto-fix]
+    - durationcheck # Check for two durations multiplied together.
+    - embeddedstructfieldcheck # Embedded types should be at the top of the field list of a struct, and there must be an empty line separating embedded fields from regular fields. [fast]
+    - err113 # Check errors handling expressions. [auto-fix]
+    - errchkjson # Checks types passed to the json encoding functions. Reports unsupported types and reports occurrences where the check for the returned error can be omitted.
+    - errname # Checks that sentinel errors are prefixed with the `Err` and error types are suffixed with the `Error`.
+    - exhaustive # Check exhaustiveness of enum switch statements.
+    - exhaustruct # Checks if all structure fields are initialized.
+    - exptostd # Detects functions from golang.org/x/exp/ that can be replaced by std functions. [auto-fix]
+    - fatcontext # Detects nested contexts in loops and function literals. [auto-fix]
+    - forbidigo # Forbids identifiers.
+    - forcetypeassert # Find forced type assertions.
+    - funcorder # Checks the order of functions, methods, and constructors. [fast]
+    - ginkgolinter # Enforces standards of using ginkgo and gomega. [auto-fix]
+    - gochecknoglobals # Check that no global variables exist.
+    - gochecksumtype # Run exhaustiveness checks on Go "sum types".
+    - gocognit # Computes and checks the cognitive complexity of functions. [fast]
+    - godoclint # Checks Golang's documentation practice (godoc). [fast]
+    - godot # Check if comments end in a period. [fast, auto-fix]
+    - goheader # Check if file header matches to pattern. [fast, auto-fix]
+    - gomoddirectives # Manage the use of 'replace', 'retract', and 'excludes' directives in go.mod. [fast]
+    - gomodguard # Allow and blocklist linter for direct Go module dependencies. This is different from depguard where there are different block types for example version constraints and module recommendations. [fast]
+    - gosmopolitan # Report certain i18n/l10n anti-patterns in your Go codebase.
+    - grouper # Analyze expression groups. [fast]
+    - iface # Detect the incorrect use of interfaces, helping developers avoid interface pollution. [auto-fix]
+    - importas # Enforces consistent import aliases. [auto-fix]
+    - inamedparam # Reports interfaces with unnamed method parameters. [fast]
+    - interfacebloat # A linter that checks the number of methods inside an interface. [fast]
+    - iotamixing # Checks if iotas are being used in const blocks with other non-iota declarations. [fast]
+    - ireturn # Accept Interfaces, Return Concrete Types.
+    - loggercheck # Checks key value pairs for common logger libraries (kitlog,klog,logr,slog,zap).
+    - maintidx # Maintidx measures the maintainability index of each function. [fast]
+    - makezero # Find slice declarations with non-zero initial length.
+    - mirror # Reports wrong mirror patterns of bytes/strings usage. [auto-fix]
+    - modernize # A suite of analyzers that suggest simplifications to Go code, using modern language and library features.
+    - musttag # Enforce field tags in (un)marshaled structs.
+    - nestif # Reports deeply nested if statements. [fast]
+    - nilerr # Find the code that returns nil even if it checks that the error is not nil.
+    - nilnesserr # Reports constructs that checks for err != nil, but returns a different nil value error.
+    - nilnil # Checks that there is no simultaneous return of `nil` error and an invalid value.
+    - nlreturn # Checks for a new line before return and branch statements to increase code clarity. [fast, auto-fix]
+    - noinlineerr # Disallows inline error handling (`if err := ...; err != nil {`).
+    - nonamedreturns # Reports all named returns.
+    - nosprintfhostport # Checks for misuse of Sprintf to construct a host with port in a URL. [fast]
+    - paralleltest # Detects missing usage of t.Parallel() method in your Go test.
+    - perfsprint # Checks that fmt.Sprintf can be replaced with a faster alternative. [auto-fix]
+    - prealloc # Find slice declarations that could potentially be pre-allocated. [fast]
+    - predeclared # Find code that shadows one of Go's predeclared identifiers. [fast]
+    - promlinter # Check Prometheus metrics naming via promlint. [fast]
+    - protogetter # Reports direct reads from proto message fields when getters should be used. [auto-fix]
+    - reassign # Checks that package variables are not reassigned.
+    - recvcheck # Checks for receiver type consistency.
+    - rowserrcheck # Checks whether Rows.Err of rows is checked successfully.
+    - sloglint # Ensure consistent code style when using log/slog. [auto-fix]
+    - spancheck # Checks for mistakes with OpenTelemetry/Census spans.
+    - sqlclosecheck # Checks that sql.Rows, sql.Stmt, sqlx.NamedStmt, pgx.Query are closed.
+    - tagalign # Check that struct tags are well aligned. [fast, auto-fix]
+    - tagliatelle # Checks the struct tags.
+    - testableexamples # Linter checks if examples are testable (have an expected output). [fast]
+    - testpackage # Linter that makes you use a separate _test package. [fast]
+    - thelper # Thelper detects tests helpers which do not start with the t.Helper() method.
+    - tparallel # Tparallel detects inappropriate usage of t.Parallel() method in your Go test codes.
+    - unqueryvet # Detects SELECT * in SQL queries and SQL builders, preventing performance issues and encouraging explicit column selection. [fast]
+    - usestdlibvars # A linter that detect the possibility to use variables/constants from the Go standard library. [fast, auto-fix]
+    - usetesting # Reports uses of functions with replacement inside the testing package. [auto-fix]
+    #    - varnamelen # Checks that the length of a variable's name matches its scope.
+    - wastedassign # Finds wasted assignment statements.
+    #    - wrapcheck # Checks that errors returned from external packages are wrapped.
+    - wsl_v5 # Add or remove empty lines. [auto-fix]
+    - zerologlint # Detects the wrong usage of `zerolog` that a user forgets to dispatch with `Send` or `Msg`.
+    - wsl  # Add or remove empty lines. [fast, auto-fix]
 
   settings:
+    depguard:
+      rules:
+        logger:
+          deny:
+            # logging is allowed only by logutils.Log,
+            - pkg: "github.com/sirupsen/logrus"
+              desc: logging is allowed only by logutils.Log.
+            - pkg: "github.com/pkg/errors"
+              desc: Should be replaced by standard lib errors package.
+            - pkg: "github.com/instana/testify"
+              desc: It's a fork of github.com/stretchr/testify.
+          files:
+            # logrus is allowed to use only in logutils package.
+            - "!**/pkg/logutils/**.go"
+    dupl:
+      threshold: 100
+    funlen:
+      lines: -1 # the number of lines (code + empty lines) is not a right metric and leads to code without empty line or one-liner.
+      statements: 50
+    goconst:
+      min-len: 2
+      min-occurrences: 3
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      disabled-checks:
+        - dupImport # https://github.com/go-critic/go-critic/issues/845
+        - ifElseChain
+        - octalLiteral
+        - whyNoLint
+    gocyclo:
+      min-complexity: 15
+    godox:
+      keywords:
+        - FIXME
+    mnd:
+      # don't include the "operation" and "assign"
+      checks:
+        - argument
+        - case
+        - condition
+        - return
+      ignored-numbers:
+        - '0'
+        - '1'
+        - '2'
+        - '3'
+      ignored-functions:
+        - strings.SplitN
+    govet:
+      settings:
+        printf:
+          funcs:
+            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Infof
+            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Warnf
+            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Errorf
+            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Fatalf
+      enable:
+        - nilness
+        - shadow
+    errorlint:
+      asserts: false
+    lll:
+      line-length: 140
+    misspell:
+      locale: US
+      ignore-rules:
+        - "importas" # linter name
+    nolintlint:
+      allow-unused: false # report any unused nolint directives
+      require-explanation: true # require an explanation for nolint directives
+      require-specific: true # require nolint directives to be specific about which linter is being skipped
     revive:
       rules:
-        - name: exported
+        - name: indent-error-flow
+        - name: unexported-return
           disabled: true
-    mnd:
-      ignored-files:
-        - "internal/config/config.go"
+        - name: unused-parameter
+        - name: unused-receiver
 
-# Настройки форматтеров (остаются без изменений)
-formatters:
-  # Enable specific formatter.
-  # Default: [] (uses standard Go formatting)
-  enable:
-    - gci
-    - gofmt
-    - gofumpt
-    - goimports
-    - golines
-
-  # Formatters settings.
-  settings:
-    gci:
-      # Section configuration to compare against.
-      # Section names are case-insensitive and may contain parameters in ().
-      # The default order of sections is `standard > default > custom > blank > dot > alias > localmodule`,
-      # If `custom-order` is `true`, it follows the order of `sections` option.
-      # Default: ["standard", "default"]
-      sections:
-        - standard                       # Standard section: captures all standard packages.
-        - default                        # Default section: contains all imports that could not be matched to another section type.
-        - prefix(github.com/org/project) # Custom section: groups all imports with the specified Prefix.
-        - blank                          # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
-        - dot                            # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
-        - alias                          # Alias section: contains all alias imports. This section is not present unless explicitly enabled.
-        - localmodule                    # Local module section: contains all local packages. This section is not present unless explicitly enabled.
-
-      # Checks that no inline comments are present.
-      # Default: false
-      no-inline-comments: true
-
-      # Checks that no prefix comments (comment lines above an import) are present.
-      # Default: false
-      no-prefix-comments: true
-
-      # Enable custom order of sections.
-      # If `true`, make the section order the same as the order of `sections`.
-      # Default: false
-      custom-order: true
-
-      # Drops lexical ordering for custom sections.
-      # Default: false
-      no-lex-order: true
-
-    gofmt:
-      # Simplify code: gofmt with `-s` option.
-      # Default: true
-      simplify: false
-      # Apply the rewrite rules to the source before reformatting.
-      # https://pkg.go.dev/cmd/gofmt
-      # Default: []
-      rewrite-rules:
-        - pattern: 'interface{}'
-          replacement: 'any'
-        - pattern: 'a[b:len(a)]'
-          replacement: 'a[b:]'
-
-    gofumpt:
-      # Module path which contains the source code being formatted.
-      # Default: ""
-      module-path: github.com/org/project
-
-      # Choose whether to use the extra rules.
-      # Default: false
-      extra-rules: true
-
-    goimports:
-      # A list of prefixes, which, if set, checks import paths
-      # with the given prefixes are grouped after 3rd-party packages.
-      # Default: []
-      local-prefixes:
-        - github.com/org/project
-
-    golines:
-      # Target maximum line length.
-      # Default: 100
-      max-len: 200
-      # Length of a tabulation.
-      # Default: 4
-      tab-len: 8
-      # Shorten single-line comments.
-      # Default: false
-      shorten-comments: true
-      # Default: true
-      reformat-tags: false
-      # Split chained methods on the dots as opposed to the arguments.
-      # Default: true
-      chain-split-dots: false
-
-  # Исключения для форматтеров
   exclusions:
-    # Mode of the generated files analysis.
-    #
-    # - `strict`: sources are excluded by strictly following the Go generated file convention.
-    #    Source files that have lines matching only the following regular expression will be excluded: `^// Code generated .* DO NOT EDIT\.$`
-    #    This line must appear before the first non-comment, non-blank text in the file.
-    #    https://go.dev/s/generatedcode
-    # - `lax`: sources are excluded if they contain lines like `autogenerated file`, `code generated`, `do not edit`, etc.
-    # - `disable`: disable the generated files exclusion.
-    #
-    # Default: lax
-    generated: strict
-    # Which file paths to exclude.
-    # Default: []
-    paths:
-      - ".*\\.my\\.go$"
-      - lib/bad.go
-
-# ВАЖНО: В v2 все исключения и настройки запуска переносятся в секцию issues
-issues:
-  # Defines a set of rules to ignore issues.
-  # It does not skip the analysis, and so does not ignore "typecheck" errors.
-  exclusions:
-    # Mode of the generated files analysis.
-    #
-    # - `strict`: sources are excluded by strictly following the Go generated file convention.
-    #    Source files that have lines matching only the following regular expression will be excluded: `^// Code generated .* DO NOT EDIT\.$`
-    #    This line must appear before the first non-comment, non-blank text in the file.
-    #    https://go.dev/s/generatedcode
-    # - `lax`: sources are excluded if they contain lines like `autogenerated file`, `code generated`, `do not edit`, etc.
-    # - `disable`: disable the generated files exclusion.
-    #
-    # Default: lax
-    generated: strict
-    # Log a warning if an exclusion rule is unused.
-    # Default: false
-    warn-unused: true
-    # Predefined exclusion rules.
-    # Default: []
     presets:
       - comments
       - std-error-handling
       - common-false-positives
       - legacy
-
-    # Excluding configuration per-path, per-linter, per-text and per-source.
+    paths:
+      - test/testdata_etc # test files
+      - internal/go # extracted from Go code
+      - internal/x # extracted from x/tools code
+      - pkg/goformatters/gci/internal # extracted from gci code
+      - pkg/goanalysis/runner_checker.go # extracted from x/tools code
     rules:
-      # Exclude some linters from running on tests files.
-      - path: "_test\\.go"
+      - path: (.+)_test\.go
         linters:
-          - bodyclose
           - dupl
-          - funlen
-          - goconst
-          - gosec
-          - noctx
-          - wrapcheck
-
-      # Run some linter only for test files by excluding its issues for everything else.
-      - path-except: _test\.go
-        linters:
-          - forbidigo
-
-      # Exclude known linters from partially hard-vendored code,
-      # which is impossible to exclude via `nolint` comments.
-      # `/` will be replaced by the current OS file path separator to properly work on Windows.
-      - path: internal/hmac/
-        text: "weak cryptographic primitive"
-        linters:
-          - gosec
-
-      # Exclude some `staticcheck` messages.
-      - linters:
-          - staticcheck
-        text: "SA9003:"
-
-      # Exclude `lll` issues for long lines with `go:generate`.
-      - linters:
+          - mnd
           - lll
-        source: "^//go:generate "
+          - thelper
+          - exhaustruct
+          - err113
 
-      - path: "internal/usecases/auth_usecases.go"
-        line: 265
+      - path: internal/repositories/users_repository.go
+        text: "83-105 lines are duplicate of `internal/repositories/users_repository.go:38-57`"
+        linters:
+          - dupl
+
+      - path: internal/repositories/emails_repository_test.go
+        linters:
+          - testpackage
+
+      - path: internal/contentbuilders/forget_password.go
+        text: "^unused-receiver: method receiver 'b'*"
+        linters:
+          - revive
+
+      - path: internal/contentbuilders/verify_email.go
+        text: "^unused-receiver: method receiver 'b'*"
+        linters:
+          - revive
+
+      - path: internal/config/config.go
         linters:
           - mnd
 
-    # Which file paths to exclude: they will be analyzed, but issues from them won't be reported.
-    # "/" will be replaced by the current OS file path separator to properly work on Windows.
-    # Default: []
+      - path: .*_repository\.go
+        linters:
+          - exhaustruct
+
+formatters:
+  enable:
+    - gofmt # Check if the code is formatted according to 'gofmt' command.
+    - goimports # Checks if the code and import statements are formatted according to the 'goimports' command.
+    - gci # Check if code and import statements are formatted, with additional rules.
+    - gofumpt # Check if code and import statements are formatted, with additional rules.
+    - golines # Checks if code is formatted, and fixes long lines.
+    - swaggo # Check if swaggo comments are formatted.
+  settings:
+    gofmt:
+      rewrite-rules:
+        - pattern: 'interface{}'
+          replacement: 'any'
+    goimports:
+      local-prefixes:
+        - github.com/golangci/golangci-lint/v2
+  exclusions:
     paths:
-      - ".*\\.my\\.go$"
-      - lib/bad.go
-    # Which file paths to not exclude.
-    # Default: []
-    paths-except:
-      - ".*\\.my\\.go$"
-      - lib/bad.go
-
-  # Options for analysis running (перенесено из корневого run)
-  run:
-    # Timeout for total work, e.g. 30s, 5m, 5m30s.
-    # If the value is lower or equal to 0, the timeout is disabled.
-    # Default: 0 (disabled)
-    timeout: 5m
-
-    # The mode used to evaluate relative paths.
-    # It's used by exclusions, Go plugins, and some linters.
-    # The value can be:
-    # - `gomod`: the paths will be relative to the directory of the `go.mod` file.
-    # - `gitroot`: the paths will be relative to the git root (the parent directory of `.git`).
-    # - `cfg`: the paths will be relative to the configuration file.
-    # - `wd` (NOT recommended): the paths will be relative to the place where golangci-lint is run.
-    # Default: cfg
-    relative-path-mode: gomod
-
-    # Exit code when at least one issue was found.
-    # Default: 1
-    issues-exit-code: 2
-
-    # Include test files or not.
-    # Default: true
-    tests: false
-
-    # List of build tags, all linters use it.
-    # Default: []
-    build-tags:
-      - mytag
-
-    # If set, we pass it to "go list -mod={option}". From "go help modules":
-    # If invoked with -mod=readonly, the go command is disallowed from the implicit
-    # automatic updating of go.mod described above. Instead, it fails when any changes
-    # to go.mod are needed. This setting is most useful to check that go.mod does
-    # not need updates, such as in a continuous integration and testing system.
-    # If invoked with -mod=vendor, the go command assumes that the vendor
-    # directory holds the correct copies of dependencies and ignores
-    # the dependency descriptions in go.mod.
-    #
-    # Allowed values: readonly|vendor|mod
-    # Default: ""
-    modules-download-mode: readonly
-
-    # Allow multiple parallel golangci-lint instances running.
-    # If false, golangci-lint acquires file lock on start.
-    # Default: false
-    allow-parallel-runners: true
-
-    # Allow multiple golangci-lint instances running, but serialize them around a lock.
-    # If false, golangci-lint exits with an error if it fails to acquire file lock on start.
-    # Default: false
-    allow-serial-runners: true
-
-    # Define the Go version limit.
-    # Default: use Go version from the go.mod file, fallback on the env var `GOVERSION`, fallback on 1.22.
-    go: '1.23'
-
-    # Number of operating system threads (`GOMAXPROCS`) that can execute golangci-lint simultaneously.
-    # Default: 0 (automatically set to match Linux container CPU quota and
-    # fall back to the number of logical CPUs in the machine)
-    concurrency: 4
-
-# Настройки серьёзности ошибок (остаются без изменений)
-severity:
-  # Set the default severity for issues.
-  #
-  # If severity rules are defined and the issues do not match or no severity is provided to the rule
-  # this will be the default severity applied.
-  # Severities should match the supported severity names of the selected out format.
-  # - Code climate: https://docs.codeclimate.com/docs/issues#issue-severity
-  # - Checkstyle: https://checkstyle.sourceforge.io/property_types.html#SeverityLevel
-  # - GitHub: https://help.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-error-message
-  # - TeamCity: https://www.jetbrains.com/help/teamcity/service-messages.html#Inspection+Instance
-  #
-  # `@linter` can be used as severity value to keep the severity from linters (e.g. revive, gosec, ...)
-  #
-  # Default: ""
-  default: error
-
-  # When a list of severity rules are provided, severity information will be added to lint issues.
-  # Severity rules have the same filtering capability as exclude rules
-  # except you are allowed to specify one matcher per severity rule.
-  #
-  # `@linter` can be used as severity value to keep the severity from linters (e.g. revive, gosec, ...)
-  #
-  # Only affects out formats that support setting severity information.
-  #
-  # Default: []
-  rules:
-    - linters:
-        - dupl
-      severity: info
+      - test/testdata_etc # test files
+      - internal/go # extracted from Go code
+      - internal/x # extracted from x/tools code
+      - pkg/goformatters/gci/internal # extracted from gci code
+      - pkg/goanalysis/runner_checker.go # extracted from x/tools code

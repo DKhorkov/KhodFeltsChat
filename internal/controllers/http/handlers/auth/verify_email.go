@@ -4,10 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gorilla/mux"
-
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/gorilla/mux"
 )
 
 const (

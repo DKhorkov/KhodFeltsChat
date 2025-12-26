@@ -2,16 +2,13 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/DKhorkov/libs/db/postgresql"
-
-	sq "github.com/Masterminds/squirrel"
-
 	"github.com/DKhorkov/kfc/internal/domains"
+	pg "github.com/DKhorkov/libs/db/postgresql"
+	sq "github.com/Masterminds/squirrel"
 )
 
 const (
@@ -27,11 +24,11 @@ const (
 )
 
 type UsersRepository struct {
-	tx *sql.Tx
+	tx pg.Transaction
 }
 
 func NewUsersRepository(
-	tx *sql.Tx,
+	tx pg.Transaction,
 ) *UsersRepository {
 	return &UsersRepository{
 		tx: tx,
@@ -51,7 +48,7 @@ func (repo *UsersRepository) GetUserByID(ctx context.Context, id uint64) (*domai
 
 	user := &domains.User{}
 
-	columns := postgresql.GetEntityColumns(user)
+	columns := pg.GetEntityColumns(user)
 	if err = repo.tx.QueryRowContext(ctx, stmt, params...).Scan(columns...); err != nil {
 		return nil, err
 	}
@@ -75,7 +72,7 @@ func (repo *UsersRepository) GetUserByUsername(
 
 	user := &domains.User{}
 
-	columns := postgresql.GetEntityColumns(user)
+	columns := pg.GetEntityColumns(user)
 	if err = repo.tx.QueryRowContext(ctx, stmt, params...).Scan(columns...); err != nil {
 		return nil, err
 	}
@@ -99,7 +96,7 @@ func (repo *UsersRepository) GetUserByEmail(
 
 	user := &domains.User{}
 
-	columns := postgresql.GetEntityColumns(user)
+	columns := pg.GetEntityColumns(user)
 	if err = repo.tx.QueryRowContext(ctx, stmt, params...).Scan(columns...); err != nil {
 		return nil, err
 	}
@@ -171,7 +168,7 @@ func (repo *UsersRepository) GetUsers(
 
 	for rows.Next() {
 		user := domains.User{}
-		columns := postgresql.GetEntityColumns(&user) // Only pointer to use rows.Scan() successfully
+		columns := pg.GetEntityColumns(&user) // Only pointer to use rows.Scan() successfully
 
 		err = rows.Scan(columns...)
 		if err != nil {

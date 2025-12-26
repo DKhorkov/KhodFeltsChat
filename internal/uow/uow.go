@@ -2,7 +2,6 @@ package uow
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	pg "github.com/DKhorkov/libs/db/postgresql"
@@ -22,44 +21,42 @@ func New(pg pg.Connector, opts ...pg.TransactionOption) *UnitOfWork {
 
 func (uow *UnitOfWork) Do(
 	ctx context.Context,
-	f func(ctx context.Context, tx *sql.Tx) error,
+	fn func(ctx context.Context, tx pg.Transaction) error,
 ) error {
 	tx, err := uow.pg.Transaction(ctx, uow.opts...)
 	if err != nil {
 		return err
 	}
 
-	doneChan := make(chan struct{})
-	errChan := make(chan error)
+	// Буферизованный канал, чтобы пишущая горутина не блокировлась и сразу завершилась.
+	// Иначе может быть кейс, что основная функция отработала по контексту.
+	// Далее выход из функции, а канал не закрыт, горутина заблокирована. Происходит утечка.
+	errChan := make(chan error, 1)
 
 	go func() {
-		defer close(doneChan)
 		defer close(errChan)
 
-		err = f(ctx, tx)
-		if err != nil {
-			errChan <- err
-		}
-
-		doneChan <- struct{}{}
+		errChan <- fn(ctx, tx)
 	}()
 
 	select {
-	case <-doneChan:
-		return tx.Commit()
 	case <-ctx.Done():
-		closeErr := tx.Rollback()
-		if closeErr != nil {
-			return fmt.Errorf("%w: %w", err, closeErr)
+		err = tx.Rollback()
+		if err != nil {
+			return fmt.Errorf("%w: %w", ctx.Err(), err)
 		}
 
 		return ctx.Err()
 	case err = <-errChan:
-		closeErr := tx.Rollback()
-		if closeErr != nil {
-			return fmt.Errorf("%w: %w", err, closeErr)
+		if err != nil {
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				err = fmt.Errorf("%w: %w", err, rollbackErr)
+			}
+
+			return err
 		}
 
-		return err
+		return tx.Commit()
 	}
 }

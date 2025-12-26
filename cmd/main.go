@@ -2,12 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
-
-	"github.com/DKhorkov/libs/db/postgresql"
-	"github.com/DKhorkov/libs/loadenv"
-	"github.com/DKhorkov/libs/logging"
-	"github.com/DKhorkov/libs/tracing"
 
 	"github.com/DKhorkov/kfc/internal/app"
 	"github.com/DKhorkov/kfc/internal/config"
@@ -18,6 +12,10 @@ import (
 	"github.com/DKhorkov/kfc/internal/services"
 	"github.com/DKhorkov/kfc/internal/uow"
 	"github.com/DKhorkov/kfc/internal/usecases"
+	"github.com/DKhorkov/libs/db/postgresql"
+	"github.com/DKhorkov/libs/loadenv"
+	"github.com/DKhorkov/libs/logging"
+	"github.com/DKhorkov/libs/tracing"
 )
 
 func main() {
@@ -68,17 +66,17 @@ func main() {
 
 	usersService := services.NewUsersService(
 		unitOfWork,
-		func(tx *sql.Tx) interfaces.UsersRepository {
+		func(tx postgresql.Transaction) interfaces.UsersRepository {
 			return repositories.NewUsersRepository(tx)
 		},
 	)
 
 	authService := services.NewAuthService(
 		unitOfWork,
-		func(tx *sql.Tx) interfaces.AuthRepository {
+		func(tx postgresql.Transaction) interfaces.AuthRepository {
 			return repositories.NewAuthRepository(tx)
 		},
-		func(tx *sql.Tx) interfaces.UsersRepository {
+		func(tx postgresql.Transaction) interfaces.UsersRepository {
 			return repositories.NewUsersRepository(tx)
 		},
 		func() interfaces.EmailsRepository {
@@ -87,7 +85,12 @@ func main() {
 	)
 
 	usersUseCases := usecases.NewUsersUseCases(usersService, cfg.Security, cfg.Validation)
-	authUseCases := usecases.NewAuthUseCases(authService, usersService, cfg.Security, cfg.Validation)
+	authUseCases := usecases.NewAuthUseCases(
+		authService,
+		usersService,
+		cfg.Security,
+		cfg.Validation,
+	)
 
 	c, err := controllers.New(
 		cfg.HTTP,

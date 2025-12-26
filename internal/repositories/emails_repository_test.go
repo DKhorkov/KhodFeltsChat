@@ -4,14 +4,15 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/contentbuilders"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEmailsRepository_Send(t *testing.T) {
+	t.Parallel()
+
 	// Настройка SMTP конфигурации
 	smtpConfig := config.SMTPConfig{
 		Host: "smtp.freesmtpservers.com",
@@ -50,6 +51,8 @@ func TestEmailsRepository_Send(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			err := repo.send(context.Background(), tc.subject, tc.body, tc.recipients)
 			if tc.errorExpected {
 				require.Error(t, err)

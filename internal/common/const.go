@@ -2,7 +2,6 @@ package common
 
 import (
 	"time"
-
 	_ "time/tzdata" // нужно для подгрузки таймзон в докер контейнере
 )
 

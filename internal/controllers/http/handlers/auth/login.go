@@ -6,13 +6,12 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/DKhorkov/libs/cookies"
-
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/DKhorkov/libs/cookies"
 )
 
 const (

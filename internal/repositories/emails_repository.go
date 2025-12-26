@@ -3,11 +3,10 @@ package repositories
 import (
 	"context"
 
-	"gopkg.in/gomail.v2"
-
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"gopkg.in/gomail.v2"
 )
 
 type EmailsRepository struct {
@@ -34,7 +33,10 @@ func (repo *EmailsRepository) SendVerifyEmailMessage(ctx context.Context, user d
 	)
 }
 
-func (repo *EmailsRepository) SendForgetPasswordMessage(ctx context.Context, user domains.User) error {
+func (repo *EmailsRepository) SendForgetPasswordMessage(
+	ctx context.Context,
+	user domains.User,
+) error {
 	return repo.send(
 		ctx,
 		repo.contentBuilders.ForgetPassword.Subject(),
@@ -43,7 +45,11 @@ func (repo *EmailsRepository) SendForgetPasswordMessage(ctx context.Context, use
 	)
 }
 
-func (repo *EmailsRepository) send(_ context.Context, subject, body string, recipients []string) error {
+func (repo *EmailsRepository) send(
+	_ context.Context,
+	subject, body string,
+	recipients []string,
+) error {
 	message := gomail.NewMessage()
 	message.SetHeader("From", repo.smtpConfig.Login)
 	message.SetHeader("To", recipients...)

@@ -6,11 +6,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
-
 	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/gorilla/mux"
 )
 
 const (

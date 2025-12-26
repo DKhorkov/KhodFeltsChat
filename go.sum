@@ -1,5 +1,5 @@
-github.com/DKhorkov/libs v1.13.1 h1:Q23zxd7tUS2sRZW9lSWE+6S1dxaGLopSWlk1a6fERcU=
-github.com/DKhorkov/libs v1.13.1/go.mod h1:qFgOqFdlRAWdKHc8N6Haf5vDejZf4sw4MABTw8D3OSc=
+github.com/DKhorkov/libs v1.13.3 h1:HcXmxDei3DD51qgKzvjMRklLGrCppysvUYC3hHgjncY=
+github.com/DKhorkov/libs v1.13.3/go.mod h1:qFgOqFdlRAWdKHc8N6Haf5vDejZf4sw4MABTw8D3OSc=
 github.com/Masterminds/squirrel v1.5.4 h1:uUcX/aBc8O7Fg9kaISIUsHXdKuqehiXAMQTYX8afzqM=
 github.com/Masterminds/squirrel v1.5.4/go.mod h1:NNaOrjSoIDfDA40n7sr2tPNZRfjzjA400rg+riTZj10=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=

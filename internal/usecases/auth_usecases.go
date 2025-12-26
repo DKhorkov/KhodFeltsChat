@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/DKhorkov/libs/security"
-	"github.com/DKhorkov/libs/validation"
-	"github.com/golang-jwt/jwt/v5"
-
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/DKhorkov/libs/security"
+	"github.com/DKhorkov/libs/validation"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func NewAuthUseCases(
@@ -274,7 +273,10 @@ func (u *AuthUseCases) VerifyEmail(ctx context.Context, verifyEmailToken string)
 	return u.authService.VerifyEmail(ctx, user.ID)
 }
 
-func (u *AuthUseCases) ForgetPassword(ctx context.Context, forgetPasswordToken, newPassword string) error {
+func (u *AuthUseCases) ForgetPassword(
+	ctx context.Context,
+	forgetPasswordToken, newPassword string,
+) error {
 	if !validation.ValidateValueByRules(newPassword, u.validationConfig.PasswordRegExps) {
 		return fmt.Errorf("%w: invalid password", customerrors.ErrValidationFailed)
 	}
@@ -295,7 +297,10 @@ func (u *AuthUseCases) ForgetPassword(ctx context.Context, forgetPasswordToken, 
 	}
 
 	if security.ValidateHash(newPassword, user.Password) {
-		return fmt.Errorf("%w: new password can not be equal to old password", customerrors.ErrValidationFailed)
+		return fmt.Errorf(
+			"%w: new password can not be equal to old password",
+			customerrors.ErrValidationFailed,
+		)
 	}
 
 	hashedPassword, err := security.Hash(newPassword, u.securityConfig.HashCost)
@@ -313,7 +318,10 @@ func (u *AuthUseCases) ChangePassword(
 	newPassword string,
 ) error {
 	if oldPassword == newPassword {
-		return fmt.Errorf("%w: new password can not be equal to old password", customerrors.ErrValidationFailed)
+		return fmt.Errorf(
+			"%w: new password can not be equal to old password",
+			customerrors.ErrValidationFailed,
+		)
 	}
 
 	if !validation.ValidateValueByRules(newPassword, u.validationConfig.PasswordRegExps) {

@@ -10,19 +10,20 @@ import (
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	pg "github.com/DKhorkov/libs/db/postgresql"
 )
 
 type AuthService struct {
 	uow                     interfaces.UnitOfWork
-	newAuthRepositoryFunc   func(tx *sql.Tx) interfaces.AuthRepository
-	newUsersRepositoryFunc  func(tx *sql.Tx) interfaces.UsersRepository
+	newAuthRepositoryFunc   func(tx pg.Transaction) interfaces.AuthRepository
+	newUsersRepositoryFunc  func(tx pg.Transaction) interfaces.UsersRepository
 	newEmailsRepositoryFunc func() interfaces.EmailsRepository
 }
 
 func NewAuthService(
 	uow interfaces.UnitOfWork,
-	newAuthRepositoryFunc func(tx *sql.Tx) interfaces.AuthRepository,
-	newUsersRepositoryFunc func(tx *sql.Tx) interfaces.UsersRepository,
+	newAuthRepositoryFunc func(tx pg.Transaction) interfaces.AuthRepository,
+	newUsersRepositoryFunc func(tx pg.Transaction) interfaces.UsersRepository,
 	newEmailsRepositoryFunc func() interfaces.EmailsRepository,
 ) *AuthService {
 	return &AuthService{
@@ -33,17 +34,26 @@ func NewAuthService(
 	}
 }
 
-func (s *AuthService) RegisterUser(ctx context.Context, userData domains.RegisterDTO) (user *domains.User, err error) {
+func (s *AuthService) RegisterUser(
+	ctx context.Context,
+	userData domains.RegisterDTO,
+) (user *domains.User, err error) {
 	err = s.uow.Do(
 		ctx,
-		func(ctx context.Context, tx *sql.Tx) error {
+		func(ctx context.Context, tx pg.Transaction) error {
 			usersRepository := s.newUsersRepositoryFunc(tx)
 			if user, _ = usersRepository.GetUserByEmail(ctx, userData.Email); user != nil {
-				return fmt.Errorf("%w: user with provided email already exists", customerrors.ErrUserAlreadyExists)
+				return fmt.Errorf(
+					"%w: user with provided email already exists",
+					customerrors.ErrUserAlreadyExists,
+				)
 			}
 
 			if user, _ = usersRepository.GetUserByUsername(ctx, userData.Email); user != nil {
-				return fmt.Errorf("%w: user with provided username already exists", customerrors.ErrUserAlreadyExists)
+				return fmt.Errorf(
+					"%w: user with provided username already exists",
+					customerrors.ErrUserAlreadyExists,
+				)
 			}
 
 			authRepository := s.newAuthRepositoryFunc(tx)
@@ -81,7 +91,7 @@ func (s *AuthService) CreateRefreshToken(
 ) (refreshToken *domains.RefreshToken, err error) {
 	err = s.uow.Do(
 		ctx,
-		func(ctx context.Context, tx *sql.Tx) error {
+		func(ctx context.Context, tx pg.Transaction) error {
 			authRepository := s.newAuthRepositoryFunc(tx)
 
 			_, err = authRepository.CreateRefreshToken(
@@ -114,7 +124,7 @@ func (s *AuthService) GetRefreshTokenByUserID(
 ) (refreshToken *domains.RefreshToken, err error) {
 	err = s.uow.Do(
 		ctx,
-		func(ctx context.Context, tx *sql.Tx) error {
+		func(ctx context.Context, tx pg.Transaction) error {
 			authRepository := s.newAuthRepositoryFunc(tx)
 			if refreshToken, err = authRepository.GetRefreshTokenByUserID(ctx, userID); err != nil {
 				return err
@@ -133,7 +143,7 @@ func (s *AuthService) GetRefreshTokenByUserID(
 func (s *AuthService) ExpireRefreshToken(ctx context.Context, refreshToken string) error {
 	return s.uow.Do(
 		ctx,
-		func(ctx context.Context, tx *sql.Tx) error {
+		func(ctx context.Context, tx pg.Transaction) error {
 			authRepository := s.newAuthRepositoryFunc(tx)
 
 			return authRepository.ExpireRefreshToken(ctx, refreshToken)
@@ -144,7 +154,7 @@ func (s *AuthService) ExpireRefreshToken(ctx context.Context, refreshToken strin
 func (s *AuthService) VerifyEmail(ctx context.Context, userID uint64) error {
 	return s.uow.Do(
 		ctx,
-		func(ctx context.Context, tx *sql.Tx) error {
+		func(ctx context.Context, tx pg.Transaction) error {
 			authRepository := s.newAuthRepositoryFunc(tx)
 
 			return authRepository.VerifyEmail(ctx, userID)
@@ -159,7 +169,7 @@ func (s *AuthService) ForgetPassword(
 ) error {
 	return s.uow.Do(
 		ctx,
-		func(ctx context.Context, tx *sql.Tx) error {
+		func(ctx context.Context, tx pg.Transaction) error {
 			authRepository := s.newAuthRepositoryFunc(tx)
 			if err := authRepository.ChangePassword(ctx, userID, newPassword); err != nil {
 				return err
@@ -186,7 +196,7 @@ func (s *AuthService) ChangePassword(
 ) error {
 	return s.uow.Do(
 		ctx,
-		func(ctx context.Context, tx *sql.Tx) error {
+		func(ctx context.Context, tx pg.Transaction) error {
 			authRepository := s.newAuthRepositoryFunc(tx)
 
 			return authRepository.ChangePassword(ctx, userID, newPassword)
@@ -197,7 +207,7 @@ func (s *AuthService) ChangePassword(
 func (s *AuthService) SendForgetPasswordMessage(ctx context.Context, email string) error {
 	return s.uow.Do(
 		ctx,
-		func(ctx context.Context, tx *sql.Tx) error {
+		func(ctx context.Context, tx pg.Transaction) error {
 			usersRepository := s.newUsersRepositoryFunc(tx)
 
 			user, err := usersRepository.GetUserByEmail(ctx, email)
@@ -215,7 +225,7 @@ func (s *AuthService) SendForgetPasswordMessage(ctx context.Context, email strin
 func (s *AuthService) SendVerifyEmailMessage(ctx context.Context, email string) error {
 	return s.uow.Do(
 		ctx,
-		func(ctx context.Context, tx *sql.Tx) error {
+		func(ctx context.Context, tx pg.Transaction) error {
 			usersRepository := s.newUsersRepositoryFunc(tx)
 
 			user, err := usersRepository.GetUserByEmail(ctx, email)

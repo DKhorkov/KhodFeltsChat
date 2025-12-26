@@ -10,7 +10,11 @@ import (
 //go:generate mockgen -source=services.go -destination=../../mocks/services/users_service.go -package=mockservices -exclude_interfaces=AuthService
 type UsersService interface {
 	GetUserByID(ctx context.Context, id uint64) (*domains.User, error)
-	GetUsers(ctx context.Context, filters *domains.UsersFilters, pagination *domains.Pagination) ([]domains.User, error)
+	GetUsers(
+		ctx context.Context,
+		filters *domains.UsersFilters,
+		pagination *domains.Pagination,
+	) ([]domains.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*domains.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*domains.User, error)
 	UpdateUser(ctx context.Context, userProfileData domains.UpdateUserDTO) (*domains.User, error)

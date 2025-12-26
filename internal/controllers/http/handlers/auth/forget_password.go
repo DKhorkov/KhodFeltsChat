@@ -6,11 +6,10 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/gorilla/mux"
-
 	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/gorilla/mux"
 )
 
 const (

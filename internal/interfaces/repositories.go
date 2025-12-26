@@ -16,7 +16,11 @@ type EmailsRepository interface {
 //go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/users_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,EmailsRepository
 type UsersRepository interface {
 	GetUserByID(ctx context.Context, id uint64) (*domains.User, error)
-	GetUsers(ctx context.Context, filters *domains.UsersFilters, pagination *domains.Pagination) ([]domains.User, error)
+	GetUsers(
+		ctx context.Context,
+		filters *domains.UsersFilters,
+		pagination *domains.Pagination,
+	) ([]domains.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*domains.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*domains.User, error)
 	UpdateUser(ctx context.Context, userProfileData domains.UpdateUserDTO) error

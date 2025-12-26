@@ -2,14 +2,11 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
-	"github.com/DKhorkov/libs/db/postgresql"
-
-	sq "github.com/Masterminds/squirrel"
-
 	"github.com/DKhorkov/kfc/internal/domains"
+	pg "github.com/DKhorkov/libs/db/postgresql"
+	sq "github.com/Masterminds/squirrel"
 )
 
 const (
@@ -23,11 +20,11 @@ const (
 )
 
 type AuthRepository struct {
-	tx *sql.Tx
+	tx pg.Transaction
 }
 
 func NewAuthRepository(
-	tx *sql.Tx,
+	tx pg.Transaction,
 ) *AuthRepository {
 	return &AuthRepository{
 		tx: tx,
@@ -119,7 +116,7 @@ func (repo *AuthRepository) GetRefreshTokenByUserID(
 
 	refreshToken := &domains.RefreshToken{}
 
-	columns := postgresql.GetEntityColumns(refreshToken)
+	columns := pg.GetEntityColumns(refreshToken)
 	if err = repo.tx.QueryRowContext(ctx, stmt, params...).Scan(columns...); err != nil {
 		return nil, err
 	}

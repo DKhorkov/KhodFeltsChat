@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/libs/cookies"
 	"github.com/DKhorkov/libs/db/postgresql"
 	"github.com/DKhorkov/libs/loadenv"
@@ -13,8 +14,6 @@ import (
 	"github.com/DKhorkov/libs/tracing"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-
-	"github.com/DKhorkov/kfc/internal/common"
 )
 
 func New() Config {
@@ -23,7 +22,7 @@ func New() Config {
 		Version:     loadenv.GetEnv("VERSION", "latest"),
 		HTTP: HTTPConfig{
 			Host: loadenv.GetEnv("HOST", "0.0.0.0"),
-			Port: loadenv.GetEnvAsInt("PORT", 8080),
+			Port: loadenv.GetEnv("PORT", "8080"),
 			ReadTimeout: time.Second * time.Duration(
 				loadenv.GetEnvAsInt("HTTP_READ_TIMEOUT", 3),
 			),
@@ -54,8 +53,11 @@ func New() Config {
 			},
 		},
 		Logging: logging.Config{
-			Level:       logging.Levels.DEBUG,
-			LogFilePath: fmt.Sprintf(common.LogsPath, time.Now().In(common.Timezone).Format(common.DateFormat)),
+			Level: logging.Levels.DEBUG,
+			LogFilePath: fmt.Sprintf(
+				common.LogsPath,
+				time.Now().In(common.Timezone).Format(common.DateFormat),
+			),
 		},
 		Email: EmailConfig{
 			SMTP: SMTPConfig{
@@ -308,7 +310,7 @@ func New() Config {
 
 type HTTPConfig struct {
 	Host         string
-	Port         int
+	Port         string
 	IdleTimeout  time.Duration
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
@@ -318,8 +320,6 @@ type EmailConfig struct {
 	SMTP              SMTPConfig
 	VerifyEmailURL    string
 	ForgetPasswordURL string
-	TicketUpdatedURL  string
-	TicketDeletedURL  string
 }
 
 type SMTPConfig struct {

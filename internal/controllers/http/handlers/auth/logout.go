@@ -4,10 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/DKhorkov/libs/cookies"
-
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/DKhorkov/libs/cookies"
 )
 
 // swagger:route DELETE /sessions sessions Logout

@@ -51,10 +51,16 @@ func ChangePasswordHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		err = u.ChangePassword(r.Context(), accessTokenCookie.Value, input.Body.OldPassword, input.Body.NewPassword)
+		err = u.ChangePassword(
+			r.Context(),
+			accessTokenCookie.Value,
+			input.Body.OldPassword,
+			input.Body.NewPassword,
+		)
 
 		switch {
-		case errors.Is(err, customerrors.ErrValidationFailed), errors.Is(err, customerrors.ErrWrongPassword):
+		case errors.Is(err, customerrors.ErrValidationFailed),
+			errors.Is(err, customerrors.ErrWrongPassword):
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return

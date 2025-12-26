@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/DKhorkov/libs/security"
-
 	"github.com/DKhorkov/kfc/internal/domains"
+	"github.com/DKhorkov/libs/security"
 )
 
 type ForgetPasswordContentBuilder struct {

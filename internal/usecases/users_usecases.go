@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/DKhorkov/libs/security"
-	"github.com/DKhorkov/libs/validation"
-
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/DKhorkov/libs/security"
+	"github.com/DKhorkov/libs/validation"
 )
 
 func NewUsersUseCases(

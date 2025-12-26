@@ -1,15 +1,17 @@
-package contentbuilders
+package contentbuilders_test
 
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
+	"github.com/DKhorkov/kfc/internal/contentbuilders"
 	"github.com/DKhorkov/kfc/internal/domains"
+	"github.com/stretchr/testify/require"
 )
 
 func TestForgetPasswordContentBuilder_Subject(t *testing.T) {
-	builder := NewForgetPasswordContentBuilder("http://example.com/forget-password")
+	t.Parallel()
+
+	builder := contentbuilders.NewForgetPasswordContentBuilder("http://example.com/forget-password")
 
 	testCases := []struct {
 		name     string
@@ -23,6 +25,8 @@ func TestForgetPasswordContentBuilder_Subject(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := builder.Subject()
 			require.Equal(t, tc.expected, result)
 		})
@@ -30,7 +34,9 @@ func TestForgetPasswordContentBuilder_Subject(t *testing.T) {
 }
 
 func TestForgetPasswordContentBuilder_Body(t *testing.T) {
-	builder := NewForgetPasswordContentBuilder("http://example.com/forget-password")
+	t.Parallel()
+
+	builder := contentbuilders.NewForgetPasswordContentBuilder("http://example.com/forget-password")
 
 	testCases := []struct {
 		name     string
@@ -83,6 +89,8 @@ func TestForgetPasswordContentBuilder_Body(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := builder.Body(tc.user)
 			require.Equal(t, tc.expected, result)
 		})
