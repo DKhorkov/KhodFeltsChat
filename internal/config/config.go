@@ -169,6 +169,7 @@ func New() Config {
 			},
 			Spans: SpansConfig{
 				Root: tracing.SpanConfig{
+					Name: "Root",
 					Opts: []trace.SpanStartOption{
 						trace.WithAttributes(
 							attribute.String("Environment", loadenv.GetEnv("ENVIRONMENT", "local")),
@@ -201,6 +202,7 @@ func New() Config {
 				},
 				Repositories: SpanRepositories{
 					Auth: tracing.SpanConfig{
+						Name: "Auth repository",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(
@@ -235,6 +237,7 @@ func New() Config {
 						},
 					},
 					Users: tracing.SpanConfig{
+						Name: "Users repository",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(
@@ -269,6 +272,7 @@ func New() Config {
 						},
 					},
 					Emails: tracing.SpanConfig{
+						Name: "Emails repository",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(

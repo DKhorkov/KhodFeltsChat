@@ -6,19 +6,8 @@ import (
 )
 
 const (
-	LoggingTraceSkipLevel                  = 1
-	DateFormat                             = "02.01.2006"
-	GroupTitleMaxLength                    = 50
-	PlantTitleMaxLength                    = 50
-	GroupsPerUserLimitWithoutSubscription  = 3
-	GroupsPerUserLimitWithSubscription     = 20
-	PlantsPerGroupLimitWithoutSubscription = 10
-	PlantsPerGroupLimitWithSubscription    = 50
-
-	ContextDataSeparator = ";"
-
-	FeedbacksLimit = 5
-	FeedbacksTTL   = time.Hour * 24
+	LoggingTraceSkipLevel = 1
+	DateFormat            = "02.01.2006"
 )
 
 var Timezone *time.Location

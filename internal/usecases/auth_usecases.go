@@ -14,6 +14,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+type AuthUseCases struct {
+	authService      interfaces.AuthService
+	usersService     interfaces.UsersService
+	securityConfig   security.Config
+	validationConfig config.ValidationConfig
+}
+
 func NewAuthUseCases(
 	authService interfaces.AuthService,
 	usersService interfaces.UsersService,
@@ -26,13 +33,6 @@ func NewAuthUseCases(
 		securityConfig:   securityConfig,
 		validationConfig: validationConfig,
 	}
-}
-
-type AuthUseCases struct {
-	authService      interfaces.AuthService
-	usersService     interfaces.UsersService
-	securityConfig   security.Config
-	validationConfig config.ValidationConfig
 }
 
 func (u *AuthUseCases) RegisterUser(
@@ -83,7 +83,8 @@ func (u *AuthUseCases) LoginUser(
 		return nil, customerrors.ErrWrongPassword
 	}
 
-	if dbRefreshToken, err := u.authService.GetRefreshTokenByUserID(ctx, user.ID); err == nil {
+	var dbRefreshToken *domains.RefreshToken
+	if dbRefreshToken, err = u.authService.GetRefreshTokenByUserID(ctx, user.ID); err == nil {
 		err = u.authService.ExpireRefreshToken(ctx, dbRefreshToken.Value)
 		if err != nil {
 			return nil, err
@@ -251,17 +252,17 @@ func (u *AuthUseCases) LogoutUser(ctx context.Context, accessToken string) error
 }
 
 func (u *AuthUseCases) VerifyEmail(ctx context.Context, verifyEmailToken string) error {
-	strUserID, err := security.RawDecode(verifyEmailToken)
+	bytesUserID, err := security.RawDecode(verifyEmailToken)
 	if err != nil {
 		return customerrors.ErrInvalidJWT
 	}
 
-	intUserID, err := strconv.Atoi(string(strUserID))
+	intUserID, err := strconv.ParseUint(string(bytesUserID), 10, 64)
 	if err != nil {
 		return err
 	}
 
-	user, err := u.usersService.GetUserByID(ctx, uint64(intUserID))
+	user, err := u.usersService.GetUserByID(ctx, intUserID)
 	if err != nil {
 		return err
 	}
@@ -281,17 +282,17 @@ func (u *AuthUseCases) ForgetPassword(
 		return fmt.Errorf("%w: invalid password", customerrors.ErrValidationFailed)
 	}
 
-	strUserID, err := security.RawDecode(forgetPasswordToken)
+	bytesUserID, err := security.RawDecode(forgetPasswordToken)
 	if err != nil {
 		return customerrors.ErrInvalidJWT
 	}
 
-	intUserID, err := strconv.Atoi(string(strUserID))
+	intUserID, err := strconv.ParseUint(string(bytesUserID), 10, 64)
 	if err != nil {
 		return err
 	}
 
-	user, err := u.usersService.GetUserByID(ctx, uint64(intUserID))
+	user, err := u.usersService.GetUserByID(ctx, intUserID)
 	if err != nil {
 		return err
 	}

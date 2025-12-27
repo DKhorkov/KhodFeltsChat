@@ -87,7 +87,7 @@ linters:
     - nilnesserr # Reports constructs that checks for err != nil, but returns a different nil value error.
     - nilnil # Checks that there is no simultaneous return of `nil` error and an invalid value.
     - nlreturn # Checks for a new line before return and branch statements to increase code clarity. [fast, auto-fix]
-    - noinlineerr # Disallows inline error handling (`if err := ...; err != nil {`).
+    #    - noinlineerr # Disallows inline error handling (`if err := ...; err != nil {`).
     - nonamedreturns # Reports all named returns.
     - nosprintfhostport # Checks for misuse of Sprintf to construct a host with port in a URL. [fast]
     - paralleltest # Detects missing usage of t.Parallel() method in your Go test.
@@ -153,6 +153,9 @@ linters:
         - ifElseChain
         - octalLiteral
         - whyNoLint
+        - hugeParam
+        - sloppyReassign
+        - importShadow
     gocyclo:
       min-complexity: 15
     godox:
@@ -202,6 +205,8 @@ linters:
           disabled: true
         - name: unused-parameter
         - name: unused-receiver
+    cyclop:
+      max-complexity: 15
 
   exclusions:
     presets:
@@ -224,11 +229,12 @@ linters:
           - thelper
           - exhaustruct
           - err113
+          - govet
+          - containedctx
 
-      - path: internal/repositories/users_repository.go
-        text: "83-105 lines are duplicate of `internal/repositories/users_repository.go:38-57`"
+      - path: internal/repositories/auth_repository.go
         linters:
-          - dupl
+          - gocritic
 
       - path: internal/repositories/emails_repository_test.go
         linters:
@@ -247,10 +253,48 @@ linters:
       - path: internal/config/config.go
         linters:
           - mnd
+          - nosprintfhostport
+          - maintidx
 
       - path: .*_repository\.go
         linters:
           - exhaustruct
+          - dupl
+
+      - path: .*_service\.go
+        linters:
+          - nonamedreturns  # Due to UoW logics
+
+      - path: internal/interfaces/content_builders.go
+        linters:
+          - iface
+
+      - path: internal/controllers/http/handlers*
+        linters:
+          - musttag # No need in tags in input field for Body
+
+      - path: internal/controllers/http/controller.go
+        linters:
+          - exhaustruct
+
+      - path: internal/controllers/http/handlers/auth/logout.go
+        line: "50,51"
+        linters:
+          - exhaustruct
+
+      - path: internal/controllers/http/handlers/setup.go
+        line: "53"
+        linters:
+          - exhaustruct
+
+      - path: .*const.go
+        linters:
+          - gochecknoinits
+          - gochecknoglobals
+
+      - path: internal/controllers/http/handlers/auth/send_*
+        linters:
+          - dupl
 
 formatters:
   enable:

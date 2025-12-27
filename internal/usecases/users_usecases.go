@@ -12,6 +12,12 @@ import (
 	"github.com/DKhorkov/libs/validation"
 )
 
+type UsersUseCases struct {
+	usersService     interfaces.UsersService
+	securityConfig   security.Config
+	validationConfig config.ValidationConfig
+}
+
 func NewUsersUseCases(
 	usersService interfaces.UsersService,
 	securityConfig security.Config,
@@ -22,12 +28,6 @@ func NewUsersUseCases(
 		securityConfig:   securityConfig,
 		validationConfig: validationConfig,
 	}
-}
-
-type UsersUseCases struct {
-	usersService     interfaces.UsersService
-	securityConfig   security.Config
-	validationConfig config.ValidationConfig
 }
 
 func (u *UsersUseCases) GetUsers(

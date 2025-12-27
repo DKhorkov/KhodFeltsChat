@@ -38,16 +38,16 @@ func GetUsersHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 		}
 
 		limitStr := r.URL.Query().Get(limitQueryKey)
-		limit, _ := strconv.Atoi(limitStr)
+		limit, _ := strconv.ParseUint(limitStr, 10, 64)
 
 		offsetStr := r.URL.Query().Get(offsetQueryKey)
-		offset, _ := strconv.Atoi(offsetStr)
+		offset, _ := strconv.ParseUint(offsetStr, 10, 64)
 
 		var pagination *domains.Pagination
 		if offset != 0 && limit != 0 {
 			pagination = &domains.Pagination{
-				Offset: pointers.New(uint64(offset)),
-				Limit:  pointers.New(uint64(limit)),
+				Offset: pointers.New(offset),
+				Limit:  pointers.New(limit),
 			}
 		}
 
