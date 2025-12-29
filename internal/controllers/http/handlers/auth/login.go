@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/DKhorkov/kfc/internal/config"
-	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -43,16 +42,11 @@ func LoginHandler(u interfaces.AuthUseCases, cookiesConfig config.CookiesConfig)
 			return
 		}
 
-		var input schemas.LoginInput
-		if err = json.Unmarshal(data, &input); err != nil {
+		var dto domains.LoginDTO
+		if err = json.Unmarshal(data, &dto); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
-		}
-
-		dto := domains.LoginDTO{
-			Email:    input.Body.Email,
-			Password: input.Body.Password,
 		}
 
 		tokens, err := u.LoginUser(r.Context(), dto)

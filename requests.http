@@ -51,7 +51,7 @@ Cookie: refreshToken=ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmxlSEF
 
 PUT http://localhost:8080/users/me
 Content-Type: application/json
-Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjY1OTA1MzAsInZhbHVlIjo3fQ.Gi5ptdxTiAySIpiDEqrpXDtvz9wLofdmdZvrhwJVqxg
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjcwMjc3MjgsInZhbHVlIjo4fQ.BSbV_8ZdAirWPfCgmkIl91s8oALVeyrUYzZxlhRVS7I
 
 {
   "username": "testDemos22823sfsfsf"

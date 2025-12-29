@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
+	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
@@ -44,8 +44,8 @@ func ChangePasswordHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		var input schemas.ChangePasswordInput
-		if err = json.Unmarshal(data, &input); err != nil {
+		var dto domains.ChangePasswordDTO
+		if err = json.Unmarshal(data, &dto); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
@@ -54,8 +54,8 @@ func ChangePasswordHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 		err = u.ChangePassword(
 			r.Context(),
 			accessTokenCookie.Value,
-			input.Body.OldPassword,
-			input.Body.NewPassword,
+			dto.OldPassword,
+			dto.NewPassword,
 		)
 
 		switch {

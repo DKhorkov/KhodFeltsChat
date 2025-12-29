@@ -8,7 +8,6 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth"
 	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
-	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -40,8 +39,8 @@ func UpdateCurrentUserHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 			return
 		}
 
-		var input schemas.UpdateUserInput
-		if err = json.Unmarshal(data, &input); err != nil {
+		var dto domains.RawUpdateUserDTO
+		if err = json.Unmarshal(data, &dto); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
@@ -54,10 +53,7 @@ func UpdateCurrentUserHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 			return
 		}
 
-		dto := domains.RawUpdateUserDTO{
-			AccessToken: accessTokenCookie.Value,
-			Username:    input.Body.Username,
-		}
+		dto.AccessToken = accessTokenCookie.Value
 
 		user, err := u.UpdateUser(r.Context(), dto)
 

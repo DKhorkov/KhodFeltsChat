@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
+	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
@@ -34,14 +34,14 @@ func SendForgetPasswordMessageHandler(u interfaces.AuthUseCases) http.HandlerFun
 			return
 		}
 
-		var input schemas.SendForgetPasswordInput
-		if err = json.Unmarshal(data, &input); err != nil {
+		var dto domains.SendForgetPasswordMessageDTO
+		if err = json.Unmarshal(data, &dto); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
 
-		err = u.SendForgetPasswordMessage(r.Context(), input.Body.Email)
+		err = u.SendForgetPasswordMessage(r.Context(), dto.Email)
 
 		switch {
 		case errors.Is(err, customerrors.ErrUserNotFound):

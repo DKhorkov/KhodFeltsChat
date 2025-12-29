@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -34,17 +33,11 @@ func RegisterHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		var input schemas.RegisterInput
-		if err = json.Unmarshal(data, &input); err != nil {
+		var dto domains.RegisterDTO
+		if err = json.Unmarshal(data, &dto); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
-		}
-
-		dto := domains.RegisterDTO{
-			Username: input.Body.Username,
-			Email:    input.Body.Email,
-			Password: input.Body.Password,
 		}
 
 		user, err := u.RegisterUser(r.Context(), dto)

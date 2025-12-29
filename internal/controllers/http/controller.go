@@ -34,10 +34,13 @@ func New(
 	logger logging.Logger,
 	traceProvider tracing.Provider,
 	spanConfig tracing.SpanConfig,
+	sensitiveFields []string,
 ) (*Controller, error) {
 	rootMux := mux.NewRouter()
 	rootMux.Use(middlewares.TracingMiddleware(traceProvider, spanConfig))
 	rootMux.Use(middlewares.MetricsMiddleware)
+	rootMux.Use(middlewares.RequestIDMiddleware)
+	rootMux.Use(middlewares.LoggingMiddleware(logger, sensitiveFields...))
 
 	handlers.SetupHandlers(
 		rootMux,

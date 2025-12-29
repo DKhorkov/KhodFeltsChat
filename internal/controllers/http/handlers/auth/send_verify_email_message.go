@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
+	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
@@ -34,14 +34,14 @@ func SendVerifyEmailMessageHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		var input schemas.SendVerifyEmailInput
-		if err = json.Unmarshal(data, &input); err != nil {
+		var dto domains.SendVerifyEmailMessageDTO
+		if err = json.Unmarshal(data, &dto); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
 
-		err = u.SendVerifyEmailMessage(r.Context(), input.Body.Email)
+		err = u.SendVerifyEmailMessage(r.Context(), dto.Email)
 
 		switch {
 		case errors.Is(err, customerrors.ErrUserNotFound):

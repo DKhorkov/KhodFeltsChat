@@ -102,6 +102,12 @@ func main() {
 		logger,
 		traceProvider,
 		cfg.Tracing.Spans.Root,
+		[]string{ // Чувствительная информация, которая не должна быть заллогирована
+			"email",
+			"password",
+			"oldPassword",
+			"newPassword",
+		},
 	)
 	if err != nil {
 		panic(err)

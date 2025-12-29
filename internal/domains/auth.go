@@ -26,3 +26,20 @@ type TokensDTO struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
 }
+
+type ForgetPasswordDTO struct {
+	NewPassword string `json:"newPassword"`
+}
+
+type ChangePasswordDTO struct {
+	NewPassword string `json:"newPassword"`
+	OldPassword string `json:"oldPassword"`
+}
+
+type SendVerifyEmailMessageDTO struct {
+	Email string `json:"email"`
+}
+
+type SendForgetPasswordMessageDTO struct {
+	Email string `json:"email"`
+}
