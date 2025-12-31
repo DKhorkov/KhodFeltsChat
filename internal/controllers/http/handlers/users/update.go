@@ -11,6 +11,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/DKhorkov/libs/contextlib"
 )
 
 // swagger:route PUT /users/me users UpdateCurrentUser
@@ -32,6 +33,13 @@ import (
 // UpdateCurrentUserHandler updates current User.
 func UpdateCurrentUserHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userID, err := contextlib.ValueFromContext[uint64](r.Context(), auth.UserIDContextKey)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+
+			return
+		}
+
 		data, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -39,31 +47,20 @@ func UpdateCurrentUserHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 			return
 		}
 
-		var dto domains.RawUpdateUserDTO
+		var dto domains.UpdateUserDTO
 		if err = json.Unmarshal(data, &dto); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
 
-		accessTokenCookie, err := r.Cookie(auth.AccessTokenCookieName)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-
-			return
-		}
-
-		dto.AccessToken = accessTokenCookie.Value
+		dto.ID = userID
 
 		user, err := u.UpdateUser(r.Context(), dto)
 
 		switch {
 		case errors.Is(err, customerrors.ErrValidationFailed):
 			http.Error(w, err.Error(), http.StatusBadRequest)
-
-			return
-		case errors.Is(err, customerrors.ErrInvalidJWT):
-			http.Error(w, err.Error(), http.StatusUnauthorized)
 
 			return
 		case errors.Is(err, customerrors.ErrUserNotFound):

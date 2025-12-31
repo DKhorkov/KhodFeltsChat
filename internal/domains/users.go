@@ -12,11 +12,6 @@ type User struct {
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
-type RawUpdateUserDTO struct {
-	AccessToken string `json:"accessToken"`
-	Username    string `json:"username"`
-}
-
 type UpdateUserDTO struct {
 	ID       uint64 `json:"id"`
 	Username string `json:"username"`

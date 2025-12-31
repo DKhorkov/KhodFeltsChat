@@ -15,19 +15,19 @@ import (
 )
 
 const (
-	docsURL = "/docs"
+	DocsURL = "/docs"
 
-	sessionsURL = "/sessions"
+	SessionsURL = "/sessions"
 
-	usersURL                  = "/users"
-	meURL                     = usersURL + "/me"
-	getUserByIDURL            = usersURL + "/{%s}"
-	passwordURL               = usersURL + "/password"
-	changePasswordURL         = passwordURL + "/change"
-	sendForgetPasswordURL     = passwordURL + "/forget"
-	forgetPasswordURL         = sendForgetPasswordURL + "/{%s}"
-	sendVerifyEmailMessageURL = usersURL + "/email/verify"
-	verifyEmailURL            = sendVerifyEmailMessageURL + "/{%s}"
+	UsersURL                  = "/users"
+	MeURL                     = UsersURL + "/me"
+	GetUserByIDURL            = UsersURL + "/{%s}"
+	PasswordURL               = UsersURL + "/password"
+	ChangePasswordURL         = PasswordURL + "/change"
+	SendForgetPasswordURL     = PasswordURL + "/forget"
+	ForgetPasswordURL         = SendForgetPasswordURL + "/{%s}"
+	SendVerifyEmailMessageURL = UsersURL + "/email/verify"
+	VerifyEmailURL            = SendVerifyEmailMessageURL + "/{%s}"
 )
 
 func SetupHandlers(
@@ -42,10 +42,10 @@ func SetupHandlers(
 
 	getMux := rootMux.Methods(http.MethodGet).Subrouter()
 	getMux.Handle(middlewares.MetricsURLPath, promhttp.Handler())
-	getMux.Handle(usersURL, users.GetUsersHandler(usersUseCases))
-	getMux.Handle(meURL, users.GetMeHandler(usersUseCases))
+	getMux.Handle(UsersURL, users.GetUsersHandler(usersUseCases))
+	getMux.Handle(MeURL, users.GetMeHandler(usersUseCases))
 	getMux.Handle(
-		fmt.Sprintf(getUserByIDURL, users.IDRouteKey),
+		fmt.Sprintf(GetUserByIDURL, users.IDRouteKey),
 		users.GetUserByIDHandler(usersUseCases),
 	)
 
@@ -58,7 +58,7 @@ func SetupHandlers(
 		nil,
 	) // Мидлварь для обаботки файла при переходе по юрлу документации
 	getMux.Handle(
-		docsURL,
+		DocsURL,
 		sh,
 	) // Устанавливаем юрл для получения документации
 	getMux.Handle(
@@ -67,24 +67,24 @@ func SetupHandlers(
 	) // Связываем установленный юрл с отдачей файла
 
 	postMux := rootMux.Methods(http.MethodPost).Subrouter()
-	postMux.Handle(usersURL, auth.RegisterHandler(authUseCases))
-	postMux.Handle(sessionsURL, auth.LoginHandler(authUseCases, cookiesConfig))
-	postMux.Handle(changePasswordURL, auth.ChangePasswordHandler(authUseCases))
+	postMux.Handle(UsersURL, auth.RegisterHandler(authUseCases))
+	postMux.Handle(SessionsURL, auth.LoginHandler(authUseCases, cookiesConfig))
+	postMux.Handle(ChangePasswordURL, auth.ChangePasswordHandler(authUseCases))
 	postMux.Handle(
-		fmt.Sprintf(verifyEmailURL, auth.VerifyEmailTokenRouteKey),
+		fmt.Sprintf(VerifyEmailURL, auth.VerifyEmailTokenRouteKey),
 		auth.VerifyEmailHandler(authUseCases),
 	)
-	postMux.Handle(sendVerifyEmailMessageURL, auth.SendVerifyEmailMessageHandler(authUseCases))
+	postMux.Handle(SendVerifyEmailMessageURL, auth.SendVerifyEmailMessageHandler(authUseCases))
 	postMux.Handle(
-		fmt.Sprintf(forgetPasswordURL, auth.ForgetPasswordTokenRouteKey),
+		fmt.Sprintf(ForgetPasswordURL, auth.ForgetPasswordTokenRouteKey),
 		auth.ForgetPasswordHandler(authUseCases),
 	)
-	postMux.Handle(sendForgetPasswordURL, auth.SendForgetPasswordMessageHandler(authUseCases))
+	postMux.Handle(SendForgetPasswordURL, auth.SendForgetPasswordMessageHandler(authUseCases))
 
 	putMux := rootMux.Methods(http.MethodPut).Subrouter()
-	putMux.Handle(meURL, users.UpdateCurrentUserHandler(usersUseCases))
-	putMux.Handle(sessionsURL, auth.RefreshTokensHandler(authUseCases, cookiesConfig))
+	putMux.Handle(MeURL, users.UpdateCurrentUserHandler(usersUseCases))
+	putMux.Handle(SessionsURL, auth.RefreshTokensHandler(authUseCases, cookiesConfig))
 
 	deleteMux := rootMux.Methods(http.MethodDelete).Subrouter()
-	deleteMux.Handle(sessionsURL, auth.LogoutHandler(authUseCases))
+	deleteMux.Handle(SessionsURL, auth.LogoutHandler(authUseCases))
 }

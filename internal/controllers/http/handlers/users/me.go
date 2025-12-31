@@ -9,6 +9,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/DKhorkov/libs/contextlib"
 )
 
 // swagger:route GET /users/me users GetCurrentUser
@@ -29,20 +30,16 @@ import (
 // GetMeHandler provides information about current authorized User.
 func GetMeHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		accessTokenCookie, err := r.Cookie(auth.AccessTokenCookieName)
+		userID, err := contextlib.ValueFromContext[uint64](r.Context(), auth.UserIDContextKey)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 
 			return
 		}
 
-		user, err := u.GetMe(r.Context(), accessTokenCookie.Value)
+		user, err := u.GetUserByID(r.Context(), userID)
 
 		switch {
-		case errors.Is(err, customerrors.ErrInvalidJWT):
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-
-			return
 		case errors.Is(err, customerrors.ErrUserNotFound):
 			http.Error(w, err.Error(), http.StatusNotFound)
 

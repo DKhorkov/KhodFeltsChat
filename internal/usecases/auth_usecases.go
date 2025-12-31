@@ -37,40 +37,40 @@ func NewAuthUseCases(
 
 func (u *AuthUseCases) RegisterUser(
 	ctx context.Context,
-	userData domains.RegisterDTO,
+	dto domains.RegisterDTO,
 ) (*domains.User, error) {
-	if !validation.ValidateValueByRule(userData.Email, u.validationConfig.EmailRegExp) {
+	if !validation.ValidateValueByRule(dto.Email, u.validationConfig.EmailRegExp) {
 		return nil, fmt.Errorf("%w: invalid email address", customerrors.ErrValidationFailed)
 	}
 
-	if !validation.ValidateValueByRules(userData.Password, u.validationConfig.PasswordRegExps) {
+	if !validation.ValidateValueByRules(dto.Password, u.validationConfig.PasswordRegExps) {
 		return nil, fmt.Errorf("%w: invalid password", customerrors.ErrValidationFailed)
 	}
 
-	if !validation.ValidateValueByRules(userData.Username, u.validationConfig.UsernameRegExps) {
+	if !validation.ValidateValueByRules(dto.Username, u.validationConfig.UsernameRegExps) {
 		return nil, fmt.Errorf("%w: invalid username", customerrors.ErrValidationFailed)
 	}
 
-	hashedPassword, err := security.Hash(userData.Password, u.securityConfig.HashCost)
+	hashedPassword, err := security.Hash(dto.Password, u.securityConfig.HashCost)
 	if err != nil {
 		return nil, err
 	}
 
-	userData.Password = hashedPassword
+	dto.Password = hashedPassword
 
-	return u.authService.RegisterUser(ctx, userData)
+	return u.authService.RegisterUser(ctx, dto)
 }
 
 func (u *AuthUseCases) LoginUser(
 	ctx context.Context,
-	userData domains.LoginDTO,
+	dto domains.LoginDTO,
 ) (*domains.TokensDTO, error) {
-	if !validation.ValidateValueByRule(userData.Email, u.validationConfig.EmailRegExp) {
+	if !validation.ValidateValueByRule(dto.Email, u.validationConfig.EmailRegExp) {
 		return nil, fmt.Errorf("%w: invalid email address", customerrors.ErrValidationFailed)
 	}
 
 	// Check if user with provided email exists and password is valid:
-	user, err := u.usersService.GetUserByEmail(ctx, userData.Email)
+	user, err := u.usersService.GetUserByEmail(ctx, dto.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (u *AuthUseCases) LoginUser(
 		return nil, customerrors.ErrEmailNotConfirmed
 	}
 
-	if !security.ValidateHash(userData.Password, user.Password) {
+	if !security.ValidateHash(dto.Password, user.Password) {
 		return nil, customerrors.ErrWrongPassword
 	}
 
@@ -230,19 +230,7 @@ func (u *AuthUseCases) RefreshTokens(
 	}, nil
 }
 
-func (u *AuthUseCases) LogoutUser(ctx context.Context, accessToken string) error {
-	accessTokenPayload, err := security.ParseJWT(accessToken, u.securityConfig.JWT.SecretKey)
-	if err != nil {
-		return customerrors.ErrInvalidJWT
-	}
-
-	floatUserID, ok := accessTokenPayload.(float64)
-	if !ok {
-		return customerrors.ErrInvalidJWT
-	}
-
-	userID := uint64(floatUserID)
-
+func (u *AuthUseCases) LogoutUser(ctx context.Context, userID uint64) error {
 	refreshToken, _ := u.authService.GetRefreshTokenByUserID(ctx, userID)
 	if refreshToken == nil {
 		return nil
@@ -312,50 +300,33 @@ func (u *AuthUseCases) ForgetPassword(
 	return u.authService.ForgetPassword(ctx, user.ID, hashedPassword)
 }
 
-func (u *AuthUseCases) ChangePassword(
-	ctx context.Context,
-	accessToken string,
-	oldPassword string,
-	newPassword string,
-) error {
-	if oldPassword == newPassword {
+func (u *AuthUseCases) ChangePassword(ctx context.Context, dto domains.ChangePasswordDTO) error {
+	if dto.OldPassword == dto.NewPassword {
 		return fmt.Errorf(
 			"%w: new password can not be equal to old password",
 			customerrors.ErrValidationFailed,
 		)
 	}
 
-	if !validation.ValidateValueByRules(newPassword, u.validationConfig.PasswordRegExps) {
+	if !validation.ValidateValueByRules(dto.NewPassword, u.validationConfig.PasswordRegExps) {
 		return fmt.Errorf("%w: invalid password", customerrors.ErrValidationFailed)
 	}
 
-	accessTokenPayload, err := security.ParseJWT(accessToken, u.securityConfig.JWT.SecretKey)
-	if err != nil {
-		return customerrors.ErrInvalidJWT
-	}
-
-	floatUserID, ok := accessTokenPayload.(float64)
-	if !ok {
-		return customerrors.ErrInvalidJWT
-	}
-
-	userID := uint64(floatUserID)
-
-	user, err := u.usersService.GetUserByID(ctx, userID)
+	user, err := u.usersService.GetUserByID(ctx, dto.UserID)
 	if err != nil {
 		return err
 	}
 
-	if !security.ValidateHash(oldPassword, user.Password) {
+	if !security.ValidateHash(dto.OldPassword, user.Password) {
 		return customerrors.ErrWrongPassword
 	}
 
-	hashedPassword, err := security.Hash(newPassword, u.securityConfig.HashCost)
+	hashedPassword, err := security.Hash(dto.NewPassword, u.securityConfig.HashCost)
 	if err != nil {
 		return err
 	}
 
-	return u.authService.ChangePassword(ctx, userID, hashedPassword)
+	return u.authService.ChangePassword(ctx, dto.UserID, hashedPassword)
 }
 
 func (u *AuthUseCases) SendVerifyEmailMessage(ctx context.Context, email string) error {

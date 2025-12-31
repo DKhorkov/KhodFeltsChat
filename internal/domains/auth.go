@@ -32,6 +32,7 @@ type ForgetPasswordDTO struct {
 }
 
 type ChangePasswordDTO struct {
+	UserID      uint64 `json:"userId"`
 	NewPassword string `json:"newPassword"`
 	OldPassword string `json:"oldPassword"`
 }

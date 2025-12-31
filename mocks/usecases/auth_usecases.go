@@ -42,17 +42,17 @@ func (m *MockAuthUseCases) EXPECT() *MockAuthUseCasesMockRecorder {
 }
 
 // ChangePassword mocks base method.
-func (m *MockAuthUseCases) ChangePassword(ctx context.Context, accessToken, oldPassword, newPassword string) error {
+func (m *MockAuthUseCases) ChangePassword(ctx context.Context, dto domains.ChangePasswordDTO) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ChangePassword", ctx, accessToken, oldPassword, newPassword)
+	ret := m.ctrl.Call(m, "ChangePassword", ctx, dto)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ChangePassword indicates an expected call of ChangePassword.
-func (mr *MockAuthUseCasesMockRecorder) ChangePassword(ctx, accessToken, oldPassword, newPassword any) *gomock.Call {
+func (mr *MockAuthUseCasesMockRecorder) ChangePassword(ctx, dto any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangePassword", reflect.TypeOf((*MockAuthUseCases)(nil).ChangePassword), ctx, accessToken, oldPassword, newPassword)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangePassword", reflect.TypeOf((*MockAuthUseCases)(nil).ChangePassword), ctx, dto)
 }
 
 // ForgetPassword mocks base method.
@@ -70,32 +70,32 @@ func (mr *MockAuthUseCasesMockRecorder) ForgetPassword(ctx, forgetPasswordToken,
 }
 
 // LoginUser mocks base method.
-func (m *MockAuthUseCases) LoginUser(ctx context.Context, userData domains.LoginDTO) (*domains.TokensDTO, error) {
+func (m *MockAuthUseCases) LoginUser(ctx context.Context, dto domains.LoginDTO) (*domains.TokensDTO, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoginUser", ctx, userData)
+	ret := m.ctrl.Call(m, "LoginUser", ctx, dto)
 	ret0, _ := ret[0].(*domains.TokensDTO)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // LoginUser indicates an expected call of LoginUser.
-func (mr *MockAuthUseCasesMockRecorder) LoginUser(ctx, userData any) *gomock.Call {
+func (mr *MockAuthUseCasesMockRecorder) LoginUser(ctx, dto any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoginUser", reflect.TypeOf((*MockAuthUseCases)(nil).LoginUser), ctx, userData)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoginUser", reflect.TypeOf((*MockAuthUseCases)(nil).LoginUser), ctx, dto)
 }
 
 // LogoutUser mocks base method.
-func (m *MockAuthUseCases) LogoutUser(ctx context.Context, accessToken string) error {
+func (m *MockAuthUseCases) LogoutUser(ctx context.Context, userID uint64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LogoutUser", ctx, accessToken)
+	ret := m.ctrl.Call(m, "LogoutUser", ctx, userID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // LogoutUser indicates an expected call of LogoutUser.
-func (mr *MockAuthUseCasesMockRecorder) LogoutUser(ctx, accessToken any) *gomock.Call {
+func (mr *MockAuthUseCasesMockRecorder) LogoutUser(ctx, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogoutUser", reflect.TypeOf((*MockAuthUseCases)(nil).LogoutUser), ctx, accessToken)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogoutUser", reflect.TypeOf((*MockAuthUseCases)(nil).LogoutUser), ctx, userID)
 }
 
 // RefreshTokens mocks base method.
@@ -114,18 +114,18 @@ func (mr *MockAuthUseCasesMockRecorder) RefreshTokens(ctx, refreshToken any) *go
 }
 
 // RegisterUser mocks base method.
-func (m *MockAuthUseCases) RegisterUser(ctx context.Context, userData domains.RegisterDTO) (uint64, error) {
+func (m *MockAuthUseCases) RegisterUser(ctx context.Context, dto domains.RegisterDTO) (*domains.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RegisterUser", ctx, userData)
-	ret0, _ := ret[0].(uint64)
+	ret := m.ctrl.Call(m, "RegisterUser", ctx, dto)
+	ret0, _ := ret[0].(*domains.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // RegisterUser indicates an expected call of RegisterUser.
-func (mr *MockAuthUseCasesMockRecorder) RegisterUser(ctx, userData any) *gomock.Call {
+func (mr *MockAuthUseCasesMockRecorder) RegisterUser(ctx, dto any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterUser", reflect.TypeOf((*MockAuthUseCases)(nil).RegisterUser), ctx, userData)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterUser", reflect.TypeOf((*MockAuthUseCases)(nil).RegisterUser), ctx, dto)
 }
 
 // SendForgetPasswordMessage mocks base method.
@@ -156,16 +156,16 @@ func (mr *MockAuthUseCasesMockRecorder) SendVerifyEmailMessage(ctx, email any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendVerifyEmailMessage", reflect.TypeOf((*MockAuthUseCases)(nil).SendVerifyEmailMessage), ctx, email)
 }
 
-// VerifyUserEmail mocks base method.
-func (m *MockAuthUseCases) VerifyUserEmail(ctx context.Context, verifyEmailToken string) error {
+// VerifyEmail mocks base method.
+func (m *MockAuthUseCases) VerifyEmail(ctx context.Context, verifyEmailToken string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VerifyUserEmail", ctx, verifyEmailToken)
+	ret := m.ctrl.Call(m, "VerifyEmail", ctx, verifyEmailToken)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// VerifyUserEmail indicates an expected call of VerifyUserEmail.
-func (mr *MockAuthUseCasesMockRecorder) VerifyUserEmail(ctx, verifyEmailToken any) *gomock.Call {
+// VerifyEmail indicates an expected call of VerifyEmail.
+func (mr *MockAuthUseCasesMockRecorder) VerifyEmail(ctx, verifyEmailToken any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyUserEmail", reflect.TypeOf((*MockAuthUseCases)(nil).VerifyUserEmail), ctx, verifyEmailToken)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyEmail", reflect.TypeOf((*MockAuthUseCases)(nil).VerifyEmail), ctx, verifyEmailToken)
 }

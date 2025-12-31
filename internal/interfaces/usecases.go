@@ -14,19 +14,18 @@ type UsersUseCases interface {
 		pagination *domains.Pagination,
 	) ([]domains.User, error)
 	GetUserByID(ctx context.Context, id uint64) (*domains.User, error)
-	GetMe(ctx context.Context, accessToken string) (*domains.User, error)
-	UpdateUser(ctx context.Context, userData domains.RawUpdateUserDTO) (*domains.User, error)
+	UpdateUser(ctx context.Context, userData domains.UpdateUserDTO) (*domains.User, error)
 }
 
 //go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/auth_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases
 type AuthUseCases interface {
-	RegisterUser(ctx context.Context, userData domains.RegisterDTO) (*domains.User, error)
-	LoginUser(ctx context.Context, userData domains.LoginDTO) (*domains.TokensDTO, error)
-	LogoutUser(ctx context.Context, accessToken string) error
+	RegisterUser(ctx context.Context, dto domains.RegisterDTO) (*domains.User, error)
+	LoginUser(ctx context.Context, dto domains.LoginDTO) (*domains.TokensDTO, error)
+	LogoutUser(ctx context.Context, userID uint64) error
 	RefreshTokens(ctx context.Context, refreshToken string) (*domains.TokensDTO, error)
 	VerifyEmail(ctx context.Context, verifyEmailToken string) error
 	ForgetPassword(ctx context.Context, forgetPasswordToken, newPassword string) error
 	SendForgetPasswordMessage(ctx context.Context, email string) error
-	ChangePassword(ctx context.Context, accessToken, oldPassword, newPassword string) error
+	ChangePassword(ctx context.Context, dto domains.ChangePasswordDTO) error
 	SendVerifyEmailMessage(ctx context.Context, email string) error
 }

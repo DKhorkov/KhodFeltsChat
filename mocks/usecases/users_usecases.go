@@ -41,36 +41,6 @@ func (m *MockUsersUseCases) EXPECT() *MockUsersUseCasesMockRecorder {
 	return m.recorder
 }
 
-// GetMe mocks base method.
-func (m *MockUsersUseCases) GetMe(ctx context.Context, accessToken string) (*domains.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMe", ctx, accessToken)
-	ret0, _ := ret[0].(*domains.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetMe indicates an expected call of GetMe.
-func (mr *MockUsersUseCasesMockRecorder) GetMe(ctx, accessToken any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMe", reflect.TypeOf((*MockUsersUseCases)(nil).GetMe), ctx, accessToken)
-}
-
-// GetUserByEmail mocks base method.
-func (m *MockUsersUseCases) GetUserByEmail(ctx context.Context, email string) (*domains.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserByEmail", ctx, email)
-	ret0, _ := ret[0].(*domains.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUserByEmail indicates an expected call of GetUserByEmail.
-func (mr *MockUsersUseCasesMockRecorder) GetUserByEmail(ctx, email any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByEmail", reflect.TypeOf((*MockUsersUseCases)(nil).GetUserByEmail), ctx, email)
-}
-
 // GetUserByID mocks base method.
 func (m *MockUsersUseCases) GetUserByID(ctx context.Context, id uint64) (*domains.User, error) {
 	m.ctrl.T.Helper()
@@ -102,11 +72,12 @@ func (mr *MockUsersUseCasesMockRecorder) GetUsers(ctx, filters, pagination any) 
 }
 
 // UpdateUser mocks base method.
-func (m *MockUsersUseCases) UpdateUser(ctx context.Context, userData domains.UpdateUserDTO) error {
+func (m *MockUsersUseCases) UpdateUser(ctx context.Context, userData domains.UpdateUserDTO) (*domains.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUser", ctx, userData)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*domains.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // UpdateUser indicates an expected call of UpdateUser.

@@ -44,28 +44,13 @@ func (u *UsersUseCases) GetUserByID(ctx context.Context, id uint64) (*domains.Us
 
 func (u *UsersUseCases) UpdateUser(
 	ctx context.Context,
-	userData domains.RawUpdateUserDTO,
+	userData domains.UpdateUserDTO,
 ) (*domains.User, error) {
 	if !validation.ValidateValueByRules(userData.Username, u.validationConfig.UsernameRegExps) {
 		return nil, fmt.Errorf("%w: invalid username", customerrors.ErrValidationFailed)
 	}
 
-	accessTokenPayload, err := security.ParseJWT(
-		userData.AccessToken,
-		u.securityConfig.JWT.SecretKey,
-	)
-	if err != nil {
-		return nil, customerrors.ErrInvalidJWT
-	}
-
-	floatUserID, ok := accessTokenPayload.(float64)
-	if !ok {
-		return nil, customerrors.ErrInvalidJWT
-	}
-
-	userID := uint64(floatUserID)
-
-	user, err := u.usersService.GetUserByID(ctx, userID)
+	user, err := u.usersService.GetUserByID(ctx, userData.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -77,20 +62,4 @@ func (u *UsersUseCases) UpdateUser(
 			Username: userData.Username,
 		},
 	)
-}
-
-func (u *UsersUseCases) GetMe(ctx context.Context, accessToken string) (*domains.User, error) {
-	accessTokenPayload, err := security.ParseJWT(accessToken, u.securityConfig.JWT.SecretKey)
-	if err != nil {
-		return nil, customerrors.ErrInvalidJWT
-	}
-
-	floatUserID, ok := accessTokenPayload.(float64)
-	if !ok {
-		return nil, customerrors.ErrInvalidJWT
-	}
-
-	userID := uint64(floatUserID)
-
-	return u.usersService.GetUserByID(ctx, userID)
 }

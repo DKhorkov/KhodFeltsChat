@@ -1,12 +1,15 @@
 package auth
 
 import (
-	"errors"
 	"net/http"
 
-	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/DKhorkov/libs/contextlib"
 	"github.com/DKhorkov/libs/cookies"
+)
+
+const (
+	UserIDContextKey = "userID"
 )
 
 // swagger:route DELETE /sessions sessions Logout
@@ -26,21 +29,14 @@ import (
 // LogoutHandler logouts User.
 func LogoutHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		accessTokenCookie, err := r.Cookie(AccessTokenCookieName)
+		userID, err := contextlib.ValueFromContext[uint64](r.Context(), UserIDContextKey)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 
 			return
 		}
 
-		err = u.LogoutUser(r.Context(), accessTokenCookie.Value)
-
-		switch {
-		case errors.Is(err, customerrors.ErrInvalidJWT):
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-
-			return
-		case err != nil:
+		if err = u.LogoutUser(r.Context(), userID); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return
