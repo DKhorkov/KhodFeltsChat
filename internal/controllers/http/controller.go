@@ -52,7 +52,13 @@ func New(
 			securityConfig,
 			[]middlewares.IgnoreURL{
 				{
-					Path:    regexp.MustCompile(`^` + middlewares.MetricsURLPath + `$`),
+					Path:    regexp.MustCompile(`^` + handlers.DocsURL + `$`),
+					Methods: []string{http.MethodGet},
+				},
+				{
+					Path: regexp.MustCompile(
+						`^` + fmt.Sprintf(handlers.SwaggerURL, docsConfig.Filepath) + `$`,
+					),
 					Methods: []string{http.MethodGet},
 				},
 				{

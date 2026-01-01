@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	DocsURL = "/docs"
+	DocsURL    = "/docs"
+	SwaggerURL = "/%s"
 
 	SessionsURL = "/sessions"
 
@@ -49,7 +50,7 @@ func SetupHandlers(
 		users.GetUserByIDHandler(usersUseCases),
 	)
 
-	swaggerURL := "/" + docsConfig.Filepath
+	swaggerURL := fmt.Sprintf(SwaggerURL, docsConfig.Filepath)
 	opts := middleware.RedocOpts{
 		SpecURL: swaggerURL,
 	} // Устанавливаем название юрла файла для обслуживания сваггера
