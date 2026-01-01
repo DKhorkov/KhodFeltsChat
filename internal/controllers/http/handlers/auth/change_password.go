@@ -10,6 +10,7 @@ import (
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/contextlib"
+	middlewares "github.com/DKhorkov/libs/middlewares/http"
 )
 
 // swagger:route POST /users/password/change users ChangePassword
@@ -31,7 +32,10 @@ import (
 // ChangePasswordHandler changes old password to new password of current user.
 func ChangePasswordHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := contextlib.ValueFromContext[uint64](r.Context(), UserIDContextKey)
+		userID, err := contextlib.ValueFromContext[uint64](
+			r.Context(),
+			middlewares.UserIDContextKey,
+		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 

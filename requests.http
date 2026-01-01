@@ -33,13 +33,13 @@ Content-Type: application/json
 
 GET http://localhost:8080/users/me
 Content-Type: application/json
-Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjY1OTIxNTQsInZhbHVlIjo3fQ.UaUcGZEPChfOvP-we5vrRI_kbNJSP2ZQnI_254pH6DY
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjcyNjAzOTYsInZhbHVlIjo4fQ.awOV0Qw11xlih47h-yVvTB2Se2EU_F_T0L4nbeNFT0E
 
 ###
 
 DELETE http://localhost:8080/sessions
 Content-Type: application/json
-Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjcyMDk0MzcsInZhbHVlIjo4fQ.uNeKF6zpFbK89uSsELr2ZaNGutzEa1w8qkEMJcCMeEY
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjcyNjAzOTYsInZhbHVlIjo4fQ.awOV0Qw11xlih47h-yVvTB2Se2EU_F_T0L4nbeNFT0E
 
 ###
 

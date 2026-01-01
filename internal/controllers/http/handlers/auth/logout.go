@@ -6,10 +6,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/contextlib"
 	"github.com/DKhorkov/libs/cookies"
-)
-
-const (
-	UserIDContextKey = "userID"
+	middlewares "github.com/DKhorkov/libs/middlewares/http"
 )
 
 // swagger:route DELETE /sessions sessions Logout
@@ -29,7 +26,10 @@ const (
 // LogoutHandler logouts User.
 func LogoutHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := contextlib.ValueFromContext[uint64](r.Context(), UserIDContextKey)
+		userID, err := contextlib.ValueFromContext[uint64](
+			r.Context(),
+			middlewares.UserIDContextKey,
+		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 

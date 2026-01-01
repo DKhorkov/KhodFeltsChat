@@ -5,11 +5,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth"
 	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/contextlib"
+	middlewares "github.com/DKhorkov/libs/middlewares/http"
 )
 
 // swagger:route GET /users/me users GetCurrentUser
@@ -30,7 +30,10 @@ import (
 // GetMeHandler provides information about current authorized User.
 func GetMeHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, err := contextlib.ValueFromContext[uint64](r.Context(), auth.UserIDContextKey)
+		userID, err := contextlib.ValueFromContext[uint64](
+			r.Context(),
+			middlewares.UserIDContextKey,
+		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 

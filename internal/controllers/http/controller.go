@@ -11,8 +11,8 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth"
 	"github.com/DKhorkov/kfc/internal/interfaces"
-	serviceMiddlewares "github.com/DKhorkov/kfc/internal/middlewares"
 	"github.com/DKhorkov/libs/logging"
 	middlewares "github.com/DKhorkov/libs/middlewares/http"
 	"github.com/DKhorkov/libs/security"
@@ -47,9 +47,10 @@ func New(
 	rootMux.Use(middlewares.RequestIDMiddleware)
 	rootMux.Use(middlewares.LoggingMiddleware(logger, sensitiveFields...))
 	rootMux.Use(
-		serviceMiddlewares.AuthMiddleware(
+		middlewares.AuthMiddleware(
+			auth.AccessTokenCookieName,
 			securityConfig,
-			[]serviceMiddlewares.IgnoreURL{
+			[]middlewares.IgnoreURL{
 				{
 					Path:    regexp.MustCompile(`^` + middlewares.MetricsURLPath + `$`),
 					Methods: []string{http.MethodGet},
