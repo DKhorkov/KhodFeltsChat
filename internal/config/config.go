@@ -33,6 +33,11 @@ func New() Config {
 				loadenv.GetEnvAsInt("HTTP_WRITE_TIMEOUT", 2),
 			),
 		},
+		Websocket: WebsocketConfig{
+			HandshakeTimeout: time.Second * time.Duration(
+				loadenv.GetEnvAsInt("WEBSOCKET_HANDSHAKE_TIMEOUT", 2),
+			),
+		},
 		Database: postgresql.Config{
 			Host:         loadenv.GetEnv("POSTGRES_HOST", "0.0.0.0"),
 			Port:         loadenv.GetEnvAsInt("POSTGRES_PORT", 5432),
@@ -379,6 +384,10 @@ type CookiesConfig struct {
 	RefreshToken cookies.Config
 }
 
+type WebsocketConfig struct {
+	HandshakeTimeout time.Duration
+}
+
 type Config struct {
 	HTTP        HTTPConfig
 	Security    security.Config
@@ -393,4 +402,5 @@ type Config struct {
 	Docs        DocsConfig
 	Cookies     CookiesConfig
 	Tracing     TracingConfig
+	Websocket   WebsocketConfig
 }

@@ -5,11 +5,12 @@ go 1.24.0
 toolchain go1.24.11
 
 require (
-	github.com/DKhorkov/libs v1.14.9
+	github.com/DKhorkov/libs v1.14.10
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/go-openapi/runtime v0.29.2
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/gorilla/mux v1.8.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/prometheus/client_golang v1.22.0
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.11.1

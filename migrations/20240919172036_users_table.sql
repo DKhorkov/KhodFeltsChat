@@ -3,7 +3,7 @@
 CREATE TABLE IF NOT EXISTS users
 (
     id                 SERIAL PRIMARY KEY,
-    username           VARCHAR      NOT NULL,
+    username           VARCHAR      NOT NULL UNIQUE,
     email              VARCHAR(255) NOT NULL UNIQUE,
     email_confirmed    BOOLEAN      NOT NULL DEFAULT FALSE,
     password           VARCHAR(255) NOT NULL,

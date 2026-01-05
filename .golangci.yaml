@@ -287,6 +287,11 @@ linters:
         linters:
           - exhaustruct
 
+      - path: internal/controllers/http/handlers/ws/ws.go
+        line: "87"
+        linters:
+          - exhaustruct
+
       - path: .*const.go
         linters:
           - gochecknoinits
@@ -295,6 +300,14 @@ linters:
       - path: internal/controllers/http/handlers/auth/send_*
         linters:
           - dupl
+
+      - path: cmd/main.go
+        linters:
+          - exhaustruct
+
+      - path: cmd/main.go
+        linters:
+          - exhaustruct
 
 formatters:
   enable:

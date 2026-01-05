@@ -479,6 +479,25 @@ paths:
             summary: ForgetPassword
             tags:
                 - users
+    /ws:
+        get:
+            description: Creates websocket connection for current user.
+            operationId: CreateWebsocket
+            responses:
+                "101":
+                    $ref: '#/responses/SwitchingProtocols'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: CreateWebsocket
+            tags:
+                - websockets
 produces:
     - application/json
 responses:
@@ -554,6 +573,15 @@ responses:
                     in: header
                 format: int64
                 type: integer
+    SwitchingProtocols:
+        description: SwitchingProtocols message returned when HTTP connection was upgraded to WebSocket
+        headers:
+            StatusCode:
+                description: |-
+                    HTTP Status Code
+                    in: header
+                format: int64
+                type: integer
     Unauthorized:
         description: Unauthorized message returned when no information about current User
         headers:
@@ -575,6 +603,8 @@ tags:
   description: "Управление сессиями (авторизация)"
 - name: chats
   description: "Управление чатами"
+- name: websockets
+  description: "Веб-сокеты"
 
 securityDefinitions:
   cookieAuth:

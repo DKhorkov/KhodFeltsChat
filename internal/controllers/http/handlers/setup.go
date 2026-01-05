@@ -7,7 +7,9 @@ import (
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/users"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/ws"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/DKhorkov/libs/logging"
 	middlewares "github.com/DKhorkov/libs/middlewares/http"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
@@ -29,6 +31,8 @@ const (
 	ForgetPasswordURL         = SendForgetPasswordURL + "/{%s}"
 	SendVerifyEmailMessageURL = UsersURL + "/email/verify"
 	VerifyEmailURL            = SendVerifyEmailMessageURL + "/{%s}"
+
+	WebsocketURL = "/ws"
 )
 
 func SetupHandlers(
@@ -37,6 +41,9 @@ func SetupHandlers(
 	cookiesConfig config.CookiesConfig,
 	usersUseCases interfaces.UsersUseCases,
 	authUseCases interfaces.AuthUseCases,
+	chatsUseCases interfaces.ChatsUseCases,
+	logger logging.Logger,
+	upgrader interfaces.Upgrader,
 ) {
 	rootMux.NotFoundHandler = http.HandlerFunc(DefaultHandler)
 	rootMux.MethodNotAllowedHandler = http.HandlerFunc(NotAllowedHandler)
@@ -49,6 +56,15 @@ func SetupHandlers(
 		fmt.Sprintf(GetUserByIDURL, users.IDRouteKey),
 		users.GetUserByIDHandler(usersUseCases),
 	)
+
+	websocketHandler := ws.New(
+		upgrader,
+		usersUseCases,
+		chatsUseCases,
+		logger,
+	)
+
+	getMux.Handle(WebsocketURL, http.HandlerFunc(websocketHandler.Handle))
 
 	swaggerURL := fmt.Sprintf(SwaggerURL, docsConfig.Filepath)
 	opts := middleware.RedocOpts{

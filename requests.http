@@ -99,3 +99,13 @@ Content-Type: application/json
 {
   "newPassword": "SomeTestP@ssword228"
 }
+
+###
+
+GET http://localhost:8080/ws
+Content-Type: application/json
+Connection: Upgrade
+Upgrade: websocket
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Version: 13
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjcyMDk1NDgsInZhbHVlIjo4fQ.CAFCH8zxXcyk0irbf5XOa0oVDF1Osf25rUCgBnFZRKY

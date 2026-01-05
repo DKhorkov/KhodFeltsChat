@@ -326,6 +326,8 @@ tasks:
           description: "Управление сессиями (авторизация)"
         - name: chats
           description: "Управление чатами"
+        - name: websockets
+          description: "Веб-сокеты"
         
         securityDefinitions:
           cookieAuth:

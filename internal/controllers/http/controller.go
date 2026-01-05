@@ -35,8 +35,10 @@ func New(
 	cookiesConfig config.CookiesConfig,
 	usersUseCases interfaces.UsersUseCases,
 	authUseCases interfaces.AuthUseCases,
+	chatsUseCases interfaces.ChatsUseCases,
 	logger logging.Logger,
 	traceProvider tracing.Provider,
+	upgrader interfaces.Upgrader,
 	spanConfig tracing.SpanConfig,
 	securityConfig security.Config,
 	sensitiveFields []string,
@@ -112,6 +114,9 @@ func New(
 		cookiesConfig,
 		usersUseCases,
 		authUseCases,
+		chatsUseCases,
+		logger,
+		upgrader,
 	)
 
 	httpHandler := cors.New(

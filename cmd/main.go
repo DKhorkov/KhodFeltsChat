@@ -16,6 +16,7 @@ import (
 	"github.com/DKhorkov/libs/loadenv"
 	"github.com/DKhorkov/libs/logging"
 	"github.com/DKhorkov/libs/tracing"
+	"github.com/gorilla/websocket"
 )
 
 func main() {
@@ -92,6 +93,12 @@ func main() {
 		cfg.Validation,
 	)
 
+	chatsUseCases := usecases.NewChatsUseCases()
+
+	upgrader := &websocket.Upgrader{
+		HandshakeTimeout: cfg.Websocket.HandshakeTimeout,
+	}
+
 	c, err := controllers.New(
 		cfg.HTTP,
 		cfg.CORS,
@@ -99,8 +106,10 @@ func main() {
 		cfg.Cookies,
 		usersUseCases,
 		authUseCases,
+		chatsUseCases,
 		logger,
 		traceProvider,
+		upgrader,
 		cfg.Tracing.Spans.Root,
 		cfg.Security,
 		[]string{ // Чувствительная информация, которая не должна быть заллогирована

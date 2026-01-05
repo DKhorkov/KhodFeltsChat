@@ -99,3 +99,11 @@ type NoContent struct {
 	// in: header
 	StatusCode int
 }
+
+// SwitchingProtocols message returned when HTTP connection was upgraded to WebSocket
+// swagger:response SwitchingProtocols
+type SwitchingProtocols struct {
+	// HTTP Status Code
+	// in: header
+	StatusCode int
+}
