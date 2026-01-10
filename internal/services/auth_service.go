@@ -37,7 +37,12 @@ func NewAuthService(
 func (s *AuthService) RegisterUser(
 	ctx context.Context,
 	userData domains.RegisterDTO,
-) (user *domains.User, err error) {
+) (*domains.User, error) {
+	var (
+		user *domains.User
+		err  error
+	)
+
 	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
@@ -88,7 +93,12 @@ func (s *AuthService) CreateRefreshToken(
 	userID uint64,
 	value string,
 	ttl time.Duration,
-) (refreshToken *domains.RefreshToken, err error) {
+) (*domains.RefreshToken, error) {
+	var (
+		refreshToken *domains.RefreshToken
+		err          error
+	)
+
 	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
@@ -121,7 +131,12 @@ func (s *AuthService) CreateRefreshToken(
 func (s *AuthService) GetRefreshTokenByUserID(
 	ctx context.Context,
 	userID uint64,
-) (refreshToken *domains.RefreshToken, err error) {
+) (*domains.RefreshToken, error) {
+	var (
+		refreshToken *domains.RefreshToken
+		err          error
+	)
+
 	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {

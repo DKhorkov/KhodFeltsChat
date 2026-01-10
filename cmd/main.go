@@ -85,15 +85,35 @@ func main() {
 		},
 	)
 
+	chatsService := services.NewChatsService(
+		unitOfWork,
+		func(tx postgresql.Transaction) interfaces.ChatsRepository {
+			return repositories.NewChatsRepository(tx)
+		},
+		func(tx postgresql.Transaction) interfaces.MessagesRepository {
+			return repositories.NewMessagesRepository(tx)
+		},
+	)
+
+	messagesService := services.NewMessagesService(
+		unitOfWork,
+		func(tx postgresql.Transaction) interfaces.ChatsRepository {
+			return repositories.NewChatsRepository(tx)
+		},
+		func(tx postgresql.Transaction) interfaces.MessagesRepository {
+			return repositories.NewMessagesRepository(tx)
+		},
+	)
+
 	usersUseCases := usecases.NewUsersUseCases(usersService, cfg.Security, cfg.Validation)
+	messagesUseCases := usecases.NewMessagesUseCases(messagesService, chatsService, usersService)
+	chatsUseCases := usecases.NewChatsUseCases(chatsService, usersService)
 	authUseCases := usecases.NewAuthUseCases(
 		authService,
 		usersService,
 		cfg.Security,
 		cfg.Validation,
 	)
-
-	chatsUseCases := usecases.NewChatsUseCases()
 
 	upgrader := &websocket.Upgrader{
 		HandshakeTimeout: cfg.Websocket.HandshakeTimeout,
@@ -107,6 +127,7 @@ func main() {
 		usersUseCases,
 		authUseCases,
 		chatsUseCases,
+		messagesUseCases,
 		logger,
 		traceProvider,
 		upgrader,

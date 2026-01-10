@@ -263,8 +263,8 @@ tasks:
     cmds:
       - task: prepare_env_file_prod
       - task: docker_build_prod
-      - sudo docker tag plants_care_bot d3m0s/plants_care_bot
-      - sudo docker push d3m0s/plants_care_bot
+      - sudo docker tag kfc d3m0s/kfc
+      - sudo docker push d3m0s/kfc
 
   connect_to_database_container:
     desc: "Connects to database container."

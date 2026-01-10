@@ -6,14 +6,11 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
 	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/gorilla/mux"
-)
-
-const (
-	IDRouteKey = "id"
 )
 
 // swagger:route GET /users/{id} users GetUserByID
@@ -31,7 +28,7 @@ const (
 // GetUserByIDHandler provides information User with provided ID.
 func GetUserByIDHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userIDStr := mux.Vars(r)[IDRouteKey]
+		userIDStr := mux.Vars(r)[common.IDRouteKey]
 
 		userID, err := strconv.ParseUint(userIDStr, 10, 64)
 		if err != nil {

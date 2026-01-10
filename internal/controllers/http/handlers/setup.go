@@ -6,6 +6,9 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/chats"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/messages"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/users"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/ws"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -33,6 +36,9 @@ const (
 	VerifyEmailURL            = SendVerifyEmailMessageURL + "/{%s}"
 
 	WebsocketURL = "/ws"
+
+	ChatsURL           = "/chats"
+	GetChatMessagesURL = ChatsURL + "/{%s}/messages"
 )
 
 func SetupHandlers(
@@ -42,6 +48,7 @@ func SetupHandlers(
 	usersUseCases interfaces.UsersUseCases,
 	authUseCases interfaces.AuthUseCases,
 	chatsUseCases interfaces.ChatsUseCases,
+	messagesUseCases interfaces.MessagesUseCases,
 	logger logging.Logger,
 	upgrader interfaces.Upgrader,
 ) {
@@ -53,7 +60,7 @@ func SetupHandlers(
 	getMux.Handle(UsersURL, users.GetUsersHandler(usersUseCases))
 	getMux.Handle(MeURL, users.GetMeHandler(usersUseCases))
 	getMux.Handle(
-		fmt.Sprintf(GetUserByIDURL, users.IDRouteKey),
+		fmt.Sprintf(GetUserByIDURL, common.IDRouteKey),
 		users.GetUserByIDHandler(usersUseCases),
 	)
 
@@ -61,10 +68,16 @@ func SetupHandlers(
 		upgrader,
 		usersUseCases,
 		chatsUseCases,
+		messagesUseCases,
 		logger,
 	)
 
 	getMux.Handle(WebsocketURL, http.HandlerFunc(websocketHandler.Handle))
+	getMux.Handle(ChatsURL, chats.GetUserChatsHandler(chatsUseCases))
+	getMux.Handle(
+		fmt.Sprintf(GetChatMessagesURL, common.IDRouteKey),
+		messages.GetChatMessagesHandler(messagesUseCases),
+	)
 
 	swaggerURL := fmt.Sprintf(SwaggerURL, docsConfig.Filepath)
 	opts := middleware.RedocOpts{
@@ -97,6 +110,7 @@ func SetupHandlers(
 		auth.ForgetPasswordHandler(authUseCases),
 	)
 	postMux.Handle(SendForgetPasswordURL, auth.SendForgetPasswordMessageHandler(authUseCases))
+	postMux.Handle(ChatsURL, chats.CreateChatHandler(chatsUseCases))
 
 	putMux := rootMux.Methods(http.MethodPut).Subrouter()
 	putMux.Handle(MeURL, users.UpdateCurrentUserHandler(usersUseCases))

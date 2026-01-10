@@ -7,13 +7,13 @@ import (
 	"github.com/DKhorkov/kfc/internal/domains"
 )
 
-//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/emails_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,UsersRepository
+//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/emails_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,UsersRepository,MessagesRepository,ChatsRepository
 type EmailsRepository interface {
 	SendVerifyEmailMessage(ctx context.Context, user domains.User) error
 	SendForgetPasswordMessage(ctx context.Context, user domains.User) error
 }
 
-//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/users_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,EmailsRepository
+//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/users_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,EmailsRepository,MessagesRepository,ChatsRepository
 type UsersRepository interface {
 	GetUserByID(ctx context.Context, id uint64) (*domains.User, error)
 	GetUsers(
@@ -26,7 +26,7 @@ type UsersRepository interface {
 	UpdateUser(ctx context.Context, userProfileData domains.UpdateUserDTO) error
 }
 
-//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/auth_repository.go -package=mockrepositories -exclude_interfaces=UsersRepository,EmailsRepository
+//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/auth_repository.go -package=mockrepositories -exclude_interfaces=UsersRepository,EmailsRepository,MessagesRepository,ChatsRepository
 type AuthRepository interface {
 	RegisterUser(ctx context.Context, userData domains.RegisterDTO) (userID uint64, err error)
 	CreateRefreshToken(
@@ -39,4 +39,33 @@ type AuthRepository interface {
 	ExpireRefreshToken(ctx context.Context, refreshToken string) error
 	VerifyEmail(ctx context.Context, userID uint64) error
 	ChangePassword(ctx context.Context, userID uint64, newPassword string) error
+}
+
+//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/chats_service.go -package=mockrepositories -exclude_interfaces=UsersRepository,AuthRepository,MessagesRepository,EmailsRepository
+type ChatsRepository interface {
+	GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error)
+	GetUserChats(
+		ctx context.Context,
+		userID uint64,
+		pagination *domains.Pagination,
+	) ([]domains.Chat, error)
+	CreateChat(ctx context.Context, chat domains.Chat) (uint64, error)
+	GetChatByID(ctx context.Context, id uint64) (*domains.Chat, error)
+	ChangeChatIsReadStatus(
+		ctx context.Context,
+		userID uint64,
+		chatID uint64,
+		isRead bool,
+	) error
+}
+
+//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/messages_service.go -package=mockrepositories -exclude_interfaces=UsersRepository,AuthRepository,ChatsRepository,EmailsRepository
+type MessagesRepository interface {
+	SaveMessage(ctx context.Context, message domains.Message) (uint64, error)
+	GetChatMessages(
+		ctx context.Context,
+		chatID uint64,
+		pagination *domains.Pagination,
+	) ([]domains.Message, error)
+	GetMessageByID(ctx context.Context, id uint64) (*domains.Message, error)
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/domains"
 )
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/users_service.go -package=mockservices -exclude_interfaces=AuthService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/users_service.go -package=mockservices -exclude_interfaces=AuthService,ChatsService,MessagesService
 type UsersService interface {
 	GetUserByID(ctx context.Context, id uint64) (*domains.User, error)
 	GetUsers(
@@ -20,7 +20,7 @@ type UsersService interface {
 	UpdateUser(ctx context.Context, userProfileData domains.UpdateUserDTO) (*domains.User, error)
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/auth_service.go -package=mockservices -exclude_interfaces=UsersService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/auth_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService
 type AuthService interface {
 	RegisterUser(ctx context.Context, userData domains.RegisterDTO) (*domains.User, error)
 	CreateRefreshToken(
@@ -36,4 +36,26 @@ type AuthService interface {
 	ChangePassword(ctx context.Context, userID uint64, newPassword string) error
 	SendForgetPasswordMessage(ctx context.Context, email string) error
 	SendVerifyEmailMessage(ctx context.Context, email string) error
+}
+
+//go:generate mockgen -source=services.go -destination=../../mocks/services/chats_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,MessagesService
+type ChatsService interface {
+	GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error)
+	GetUserChats(
+		ctx context.Context,
+		userID uint64,
+		pagination *domains.Pagination,
+	) ([]domains.Chat, error)
+	CreateChat(ctx context.Context, chat domains.Chat) (*domains.Chat, error)
+}
+
+//go:generate mockgen -source=services.go -destination=../../mocks/services/messages_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,ChatsService
+type MessagesService interface {
+	SaveMessage(ctx context.Context, message domains.Message) (*domains.Message, error)
+	GetChatMessages(
+		ctx context.Context,
+		userID uint64,
+		chatID uint64,
+		pagination *domains.Pagination,
+	) ([]domains.Message, error)
 }

@@ -261,10 +261,6 @@ linters:
           - exhaustruct
           - dupl
 
-      - path: .*_service\.go
-        linters:
-          - nonamedreturns  # Due to UoW logics
-
       - path: internal/interfaces/content_builders.go
         linters:
           - iface
