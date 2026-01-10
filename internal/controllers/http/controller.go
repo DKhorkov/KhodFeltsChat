@@ -36,6 +36,7 @@ func New(
 	usersUseCases interfaces.UsersUseCases,
 	authUseCases interfaces.AuthUseCases,
 	chatsUseCases interfaces.ChatsUseCases,
+	messagesUseCases interfaces.MessagesUseCases,
 	logger logging.Logger,
 	traceProvider tracing.Provider,
 	upgrader interfaces.Upgrader,
@@ -115,6 +116,7 @@ func New(
 		usersUseCases,
 		authUseCases,
 		chatsUseCases,
+		messagesUseCases,
 		logger,
 		upgrader,
 	)

@@ -1,12 +1,44 @@
 package domains
 
+import (
+	"time"
+)
+
 type Message struct {
-	ChatID string  `json:"chatId"`
-	Text   string  `json:"text"`
-	Sender *Sender `json:"sender,omitempty"`
+	ID        uint64    `json:"id"`
+	ChatID    uint64    `json:"chatId"`
+	Sender    Sender    `json:"sender"`
+	Text      string    `json:"text"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 type Sender struct {
-	UserID   uint64 `json:"userId"`
+	ID       uint64 `json:"id"`
 	Username string `json:"username"`
+}
+
+func NewMessage() *Message {
+	return &Message{}
+}
+
+func (m *Message) From(user User) *Message {
+	m.Sender = Sender{
+		ID:       user.ID,
+		Username: user.Username,
+	}
+
+	return m
+}
+
+func (m *Message) Received() *Message {
+	m.CreatedAt = time.Now()
+
+	return m
+}
+
+func (m *Message) Updated() *Message {
+	m.UpdatedAt = time.Now()
+
+	return m
 }

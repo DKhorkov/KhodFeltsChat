@@ -3,8 +3,8 @@ package users
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
 	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	"github.com/DKhorkov/kfc/internal/domains"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -13,8 +13,6 @@ import (
 
 const (
 	usernameQueryKey = "username"
-	limitQueryKey    = "limit"
-	offsetQueryKey   = "offset"
 )
 
 // swagger:route GET /users users GetUsers
@@ -37,19 +35,7 @@ func GetUsersHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 			}
 		}
 
-		limitStr := r.URL.Query().Get(limitQueryKey)
-		limit, _ := strconv.ParseUint(limitStr, 10, 64)
-
-		offsetStr := r.URL.Query().Get(offsetQueryKey)
-		offset, _ := strconv.ParseUint(offsetStr, 10, 64)
-
-		var pagination *domains.Pagination
-		if offset != 0 && limit != 0 {
-			pagination = &domains.Pagination{
-				Offset: pointers.New(offset),
-				Limit:  pointers.New(limit),
-			}
-		}
+		pagination := common.GetPaginationFromRequest(r)
 
 		users, err := u.GetUsers(r.Context(), filters, pagination)
 		if err != nil {

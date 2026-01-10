@@ -16,25 +16,28 @@ import (
 )
 
 type Handler struct {
-	upgrader    interfaces.Upgrader
-	users       interfaces.UsersUseCases
-	chats       interfaces.ChatsUseCases
-	logger      logging.Logger
-	connections *sync.Map
+	upgrader         interfaces.Upgrader
+	usersUseCases    interfaces.UsersUseCases
+	chatsUseCases    interfaces.ChatsUseCases
+	messagesUseCases interfaces.MessagesUseCases
+	logger           logging.Logger
+	connections      *sync.Map
 }
 
 func New(
 	upgrader interfaces.Upgrader,
 	usersUseCases interfaces.UsersUseCases,
 	chatsUseCases interfaces.ChatsUseCases,
+	messagesUseCases interfaces.MessagesUseCases,
 	logger logging.Logger,
 ) Handler {
 	return Handler{
-		upgrader:    upgrader,
-		users:       usersUseCases,
-		chats:       chatsUseCases,
-		logger:      logger,
-		connections: new(sync.Map),
+		upgrader:         upgrader,
+		usersUseCases:    usersUseCases,
+		chatsUseCases:    chatsUseCases,
+		messagesUseCases: messagesUseCases,
+		logger:           logger,
+		connections:      new(sync.Map),
 	}
 }
 
@@ -65,7 +68,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.users.GetUserByID(r.Context(), userID)
+	user, err := h.usersUseCases.GetUserByID(r.Context(), userID)
 
 	switch {
 	case errors.Is(err, customerrors.ErrUserNotFound):
@@ -108,14 +111,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 	for {
-		message := domains.Message{
-			Sender: &domains.Sender{
-				UserID:   user.ID,
-				Username: user.Username,
-			},
-		}
+		message := domains.NewMessage().From(*user).Received()
 
-		if err := conn.ReadJSON(&message); err != nil {
+		if err := conn.ReadJSON(message); err != nil {
 			if websocket.IsUnexpectedCloseError(
 				err,
 				websocket.CloseNormalClosure,
@@ -133,7 +131,7 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 			return
 		}
 
-		chatMembers, err := h.chats.GetChatMembers(message.ChatID)
+		chatMembers, err := h.chatsUseCases.GetChatMembers(nil, message.ChatID)
 		if err != nil {
 			logging.LogError(
 				h.logger,
@@ -145,10 +143,24 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 			return
 		}
 
-		if !h.senderIsChatMember(*message.Sender, chatMembers) {
+		if !h.senderIsChatMember(message.Sender, chatMembers) {
 			logging.LogInfo(
 				h.logger,
 				"Sender is not a chat member",
+				"Message", message,
+			)
+
+			return
+		}
+
+		// Сохраняем сообщение в БД и возвращаем полное доменное сообщение:
+		var savedMessage *domains.Message
+
+		if savedMessage, err = h.messagesUseCases.SaveMessage(nil, *message); err != nil {
+			logging.LogError(
+				h.logger,
+				"Failed to save message",
+				err,
 				"Message", message,
 			)
 
@@ -171,7 +183,7 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 				logging.LogInfo(
 					h.logger,
 					"Failed to parse connection from sync.Map value",
-					"Message", message,
+					"Message", savedMessage,
 					"ChatMember", member,
 				)
 
@@ -180,12 +192,12 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 				continue
 			}
 
-			if err = connection.WriteJSON(message); err != nil {
+			if err = connection.WriteJSON(savedMessage); err != nil {
 				logging.LogError(
 					h.logger,
 					"Failed to write message",
 					err,
-					"Message", message,
+					"Message", savedMessage,
 					"ChatMember", member,
 				)
 
@@ -207,7 +219,7 @@ func (h *Handler) senderIsChatMember(sender domains.Sender, chatMembers []domain
 	return slices.ContainsFunc(
 		chatMembers,
 		func(member domains.User) bool {
-			return member.ID == sender.UserID
+			return member.ID == sender.ID
 		},
 	)
 }

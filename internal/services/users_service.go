@@ -29,7 +29,12 @@ func (s *UsersService) GetUsers(
 	ctx context.Context,
 	filters *domains.UsersFilters,
 	pagination *domains.Pagination,
-) (users []domains.User, err error) {
+) ([]domains.User, error) {
+	var (
+		users []domains.User
+		err   error
+	)
+
 	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
@@ -48,7 +53,12 @@ func (s *UsersService) GetUsers(
 	return users, nil
 }
 
-func (s *UsersService) GetUserByID(ctx context.Context, id uint64) (user *domains.User, err error) {
+func (s *UsersService) GetUserByID(ctx context.Context, id uint64) (*domains.User, error) {
+	var (
+		user *domains.User
+		err  error
+	)
+
 	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
@@ -70,7 +80,12 @@ func (s *UsersService) GetUserByID(ctx context.Context, id uint64) (user *domain
 func (s *UsersService) GetUserByEmail(
 	ctx context.Context,
 	email string,
-) (user *domains.User, err error) {
+) (*domains.User, error) {
+	var (
+		user *domains.User
+		err  error
+	)
+
 	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
@@ -92,7 +107,12 @@ func (s *UsersService) GetUserByEmail(
 func (s *UsersService) GetUserByUsername(
 	ctx context.Context,
 	username string,
-) (user *domains.User, err error) {
+) (*domains.User, error) {
+	var (
+		user *domains.User
+		err  error
+	)
+
 	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
@@ -114,7 +134,12 @@ func (s *UsersService) GetUserByUsername(
 func (s *UsersService) UpdateUser(
 	ctx context.Context,
 	userData domains.UpdateUserDTO,
-) (user *domains.User, err error) {
+) (*domains.User, error) {
+	var (
+		user *domains.User
+		err  error
+	)
+
 	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
