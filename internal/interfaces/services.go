@@ -47,6 +47,7 @@ type ChatsService interface {
 		pagination *domains.Pagination,
 	) ([]domains.Chat, error)
 	CreateChat(ctx context.Context, chat domains.Chat) (*domains.Chat, error)
+	PrivateChatExists(ctx context.Context, members []domains.User) (bool, error)
 }
 
 //go:generate mockgen -source=services.go -destination=../../mocks/services/messages_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,ChatsService

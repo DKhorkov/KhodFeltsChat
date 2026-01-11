@@ -69,6 +69,11 @@ func (repo *MessagesRepository) GetChatMessages(
 		fmt.Sprintf("%s.%s", messagesTableName, chatIDColumnName),
 		fmt.Sprintf("%s.%s", usersTableName, idColumnName),
 		fmt.Sprintf("%s.%s", usersTableName, usernameColumnName),
+		fmt.Sprintf("%s.%s", usersTableName, emailColumnName),
+		fmt.Sprintf("%s.%s", usersTableName, emailConfirmedColumnName),
+		fmt.Sprintf("%s.%s", usersTableName, passwordColumnName),
+		fmt.Sprintf("%s.%s", usersTableName, createdAtColumnName),
+		fmt.Sprintf("%s.%s", usersTableName, updatedAtColumnName),
 		fmt.Sprintf("%s.%s", messagesTableName, textColumnName),
 		fmt.Sprintf("%s.%s", messagesTableName, createdAtColumnName),
 		fmt.Sprintf("%s.%s", messagesTableName, updatedAtColumnName),
@@ -92,7 +97,7 @@ func (repo *MessagesRepository) GetChatMessages(
 				fmt.Sprintf("%s.%s", messagesTableName, chatIDColumnName): chatID,
 			},
 		).
-		OrderBy(fmt.Sprintf("%s %s", idColumnName, desc)).
+		OrderBy(fmt.Sprintf("%s.%s %s", messagesTableName, idColumnName, desc)).
 		PlaceholderFormat(sq.Dollar)
 
 	if pagination != nil && pagination.Limit != nil {
@@ -160,6 +165,11 @@ func (repo *MessagesRepository) GetMessageByID(
 		fmt.Sprintf("%s.%s", messagesTableName, chatIDColumnName),
 		fmt.Sprintf("%s.%s", usersTableName, idColumnName),
 		fmt.Sprintf("%s.%s", usersTableName, usernameColumnName),
+		fmt.Sprintf("%s.%s", usersTableName, emailColumnName),
+		fmt.Sprintf("%s.%s", usersTableName, emailConfirmedColumnName),
+		fmt.Sprintf("%s.%s", usersTableName, passwordColumnName),
+		fmt.Sprintf("%s.%s", usersTableName, createdAtColumnName),
+		fmt.Sprintf("%s.%s", usersTableName, updatedAtColumnName),
 		fmt.Sprintf("%s.%s", messagesTableName, textColumnName),
 		fmt.Sprintf("%s.%s", messagesTableName, createdAtColumnName),
 		fmt.Sprintf("%s.%s", messagesTableName, updatedAtColumnName),
@@ -203,9 +213,14 @@ func (repo *MessagesRepository) pgMessageToDomainMessage(messagePg MessagePg) *d
 	return &domains.Message{
 		ID:     messagePg.ID,
 		ChatID: messagePg.ChatID,
-		Sender: domains.Sender{
-			ID:       messagePg.SenderID,
-			Username: messagePg.SenderUsername,
+		Sender: domains.User{
+			ID:             messagePg.SenderID,
+			Username:       messagePg.SenderUsername,
+			Email:          messagePg.SenderEmail,
+			EmailConfirmed: messagePg.SenderEmailConfirmed,
+			Password:       messagePg.SenderPassword,
+			CreatedAt:      messagePg.CreatedAt,
+			UpdatedAt:      messagePg.UpdatedAt,
 		},
 		Text:      messagePg.Text,
 		CreatedAt: messagePg.CreatedAt,
@@ -214,11 +229,16 @@ func (repo *MessagesRepository) pgMessageToDomainMessage(messagePg MessagePg) *d
 }
 
 type MessagePg struct {
-	ID             uint64
-	ChatID         uint64
-	SenderID       uint64
-	SenderUsername string
-	Text           string
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID                   uint64
+	ChatID               uint64
+	SenderID             uint64
+	SenderUsername       string
+	SenderEmail          string
+	SenderEmailConfirmed bool
+	SenderPassword       string
+	SenderCreatedAt      time.Time
+	SenderUpdatedAt      time.Time
+	Text                 string
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
 }

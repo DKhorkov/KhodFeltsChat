@@ -57,6 +57,7 @@ type ChatsRepository interface {
 		chatID uint64,
 		isRead bool,
 	) error
+	PrivateChatExists(ctx context.Context, members []domains.User) (bool, error)
 }
 
 //go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/messages_service.go -package=mockrepositories -exclude_interfaces=UsersRepository,AuthRepository,ChatsRepository,EmailsRepository

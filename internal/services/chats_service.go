@@ -85,6 +85,7 @@ func (s *ChatsService) GetUserChats(
 
 			for i := range chats {
 				var members []domains.User
+
 				if members, err = chatsRepository.GetChatMembers(ctx, chats[i].ID); err != nil {
 					return err
 				}
@@ -148,4 +149,32 @@ func (s *ChatsService) CreateChat(
 	}
 
 	return createdChat, nil
+}
+
+func (s *ChatsService) PrivateChatExists(
+	ctx context.Context,
+	members []domains.User,
+) (bool, error) {
+	var (
+		exists bool
+		err    error
+	)
+
+	err = s.uow.Do(
+		ctx,
+		func(ctx context.Context, tx pg.Transaction) error {
+			chatsRepository := s.newChatsRepositoryFunc(tx)
+
+			if exists, err = chatsRepository.PrivateChatExists(ctx, members); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }

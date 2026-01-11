@@ -32,7 +32,13 @@ type AuthUseCases interface {
 
 //go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/chats_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,MessagesUseCases
 type ChatsUseCases interface {
-	ChatsService
+	GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error)
+	GetUserChats(
+		ctx context.Context,
+		userID uint64,
+		pagination *domains.Pagination,
+	) ([]domains.Chat, error)
+	CreateChat(ctx context.Context, chat domains.Chat) (*domains.Chat, error)
 }
 
 //go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/messages_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases

@@ -1,11 +1,13 @@
 package ws
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"slices"
 	"sync"
 
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -111,6 +113,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 	for {
+		ctx := context.Background()
 		message := domains.NewMessage().From(*user).Received()
 
 		if err := conn.ReadJSON(message); err != nil {
@@ -120,7 +123,8 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 				websocket.CloseGoingAway,
 				websocket.CloseAbnormalClosure,
 			) {
-				logging.LogError(
+				logging.LogErrorContext(
+					ctx,
 					h.logger,
 					"Failed to read message",
 					err,
@@ -131,9 +135,10 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 			return
 		}
 
-		chatMembers, err := h.chatsUseCases.GetChatMembers(nil, message.ChatID)
+		chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, message.ChatID)
 		if err != nil {
-			logging.LogError(
+			logging.LogErrorContext(
+				ctx,
 				h.logger,
 				"Failed to get chat members",
 				err,
@@ -144,7 +149,8 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 		}
 
 		if !h.senderIsChatMember(message.Sender, chatMembers) {
-			logging.LogInfo(
+			logging.LogInfoContext(
+				ctx,
 				h.logger,
 				"Sender is not a chat member",
 				"Message", message,
@@ -156,8 +162,9 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 		// Сохраняем сообщение в БД и возвращаем полное доменное сообщение:
 		var savedMessage *domains.Message
 
-		if savedMessage, err = h.messagesUseCases.SaveMessage(nil, *message); err != nil {
-			logging.LogError(
+		if savedMessage, err = h.messagesUseCases.SaveMessage(ctx, *message); err != nil {
+			logging.LogErrorContext(
+				ctx,
 				h.logger,
 				"Failed to save message",
 				err,
@@ -166,6 +173,8 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 
 			return
 		}
+
+		messageToSend := mappers.MapMessage(*savedMessage)
 
 		for _, member := range chatMembers {
 			// Не отправляем обратно отправителю:
@@ -180,10 +189,11 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 
 			connection, ok := value.(*websocket.Conn)
 			if !ok {
-				logging.LogInfo(
+				logging.LogInfoContext(
+					ctx,
 					h.logger,
 					"Failed to parse connection from sync.Map value",
-					"Message", savedMessage,
+					"Message", messageToSend,
 					"ChatMember", member,
 				)
 
@@ -192,17 +202,19 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 				continue
 			}
 
-			if err = connection.WriteJSON(savedMessage); err != nil {
-				logging.LogError(
+			if err = connection.WriteJSON(messageToSend); err != nil {
+				logging.LogErrorContext(
+					ctx,
 					h.logger,
 					"Failed to write message",
 					err,
-					"Message", savedMessage,
+					"Message", messageToSend,
 					"ChatMember", member,
 				)
 
 				if err = connection.Close(); err != nil {
-					logging.LogError(
+					logging.LogErrorContext(
+						ctx,
 						h.logger,
 						"Failed to close connection",
 						err,
@@ -215,7 +227,7 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 	}
 }
 
-func (h *Handler) senderIsChatMember(sender domains.Sender, chatMembers []domains.User) bool {
+func (h *Handler) senderIsChatMember(sender domains.User, chatMembers []domains.User) bool {
 	return slices.ContainsFunc(
 		chatMembers,
 		func(member domains.User) bool {

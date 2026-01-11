@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -57,7 +58,7 @@ func RegisterHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		if err = json.NewEncoder(w).Encode(user); err != nil {
+		if err = json.NewEncoder(w).Encode(mappers.MapUser(*user)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return

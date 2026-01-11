@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -32,8 +33,8 @@ func CreateChatHandler(u interfaces.ChatsUseCases) http.HandlerFunc {
 			return
 		}
 
-		var chat *domains.Chat
-		if err = json.Unmarshal(data, chat); err != nil {
+		var chat domains.Chat
+		if err = json.Unmarshal(data, &chat); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
@@ -42,7 +43,7 @@ func CreateChatHandler(u interfaces.ChatsUseCases) http.HandlerFunc {
 		// Добавляем текущего пользователя в участники чата:
 		chat.Members = append(chat.Members, domains.User{ID: userID})
 
-		chat, err = u.CreateChat(r.Context(), *chat)
+		createdChat, err := u.CreateChat(r.Context(), chat)
 
 		switch {
 		case errors.Is(err, customerrors.ErrInvalidChat):
@@ -55,7 +56,7 @@ func CreateChatHandler(u interfaces.ChatsUseCases) http.HandlerFunc {
 			return
 		}
 
-		if err = json.NewEncoder(w).Encode(chat); err != nil {
+		if err = json.NewEncoder(w).Encode(mappers.MapChat(*createdChat)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return

@@ -2,7 +2,6 @@ package domains
 
 import (
 	"slices"
-	"strings"
 	"time"
 )
 
@@ -18,15 +17,6 @@ const (
 var chatTypes = []ChatType{
 	ChatTypePrivate,
 	ChatTypeGroup,
-}
-
-func chatTypeFromString(value string) (ChatType, bool) {
-	chatType := ChatType(strings.ToLower(value))
-	if !slices.Contains(chatTypes, chatType) {
-		return "", false
-	}
-
-	return chatType, true
 }
 
 type Chat struct {

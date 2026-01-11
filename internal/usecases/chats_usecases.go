@@ -48,5 +48,23 @@ func (u *ChatsUseCases) CreateChat(ctx context.Context, chat domains.Chat) (*dom
 		)
 	}
 
+	// Проверяем существование пользователей:
+	for _, member := range chat.Members {
+		if _, err := u.usersService.GetUserByID(ctx, member.ID); err != nil {
+			return nil, err
+		}
+	}
+
+	if chat.Type == domains.ChatTypePrivate {
+		exists, err := u.chatsService.PrivateChatExists(ctx, chat.Members)
+		if err != nil {
+			return nil, err
+		}
+
+		if exists {
+			return nil, customerrors.ErrChatAlreadyExists
+		}
+	}
+
 	return u.chatsService.CreateChat(ctx, chat)
 }

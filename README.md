@@ -170,4 +170,14 @@ To print status of all migrations, use next command:
 task -d scripts migrations_status
 ```
 
+## Websockets
 
+To connect via websocket, use next command:
+```shell
+websocat ws://localhost:8080/ws -H "Cookie: accessToken=<TOKEN_VALUE>"
+```
+
+Message structure for sending:
+```
+{"chatId": 1, "text": "some message for user"}
+```

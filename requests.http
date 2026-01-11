@@ -4,7 +4,7 @@ POST http://localhost:8080/users
 Content-Type: application/json
 
 {
-  "email": "alexqwerty35@yandex.ru",
+  "email": "alexqwerty228@yandex.ru",
   "username": "testDemos",
   "password": "SomeTestP@ssword228"
 }
@@ -108,4 +108,31 @@ Connection: Upgrade
 Upgrade: websocket
 Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
 Sec-WebSocket-Version: 13
-Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjcyMDk1NDgsInZhbHVlIjo4fQ.CAFCH8zxXcyk0irbf5XOa0oVDF1Osf25rUCgBnFZRKY
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjgxMjY3MTEsInZhbHVlIjo4fQ.HeO8C4iuZKxeC40kvHYJ731NqrwWFX5VFep5Watmqms
+
+###
+
+POST http://localhost:8080/chats
+Content-Type: application/json
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjgxMzg3NzksInZhbHVlIjo5fQ.QGlWINTO24rNAmukfg_b5onM_ECBZjWYP4mjSQLBH-8
+
+{
+  "type": "private",
+  "members": [
+    {"id":  12}
+  ]
+}
+
+###
+
+GET http://localhost:8080/chats?limit=3&offset=0
+Content-Type: application/json
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjgxMzk4NjksInZhbHVlIjo4fQ.EDC1g59iOI50AF79i1mnPux0qz0bf1e9l0tao0o8GeM
+
+
+###
+
+GET http://localhost:8080/chats/1/messages?limit=2&offset=0
+Content-Type: application/json
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjgxMzk4NjksInZhbHVlIjo4fQ.EDC1g59iOI50AF79i1mnPux0qz0bf1e9l0tao0o8GeM
+

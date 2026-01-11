@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/DKhorkov/kfc/internal/domains"
@@ -10,6 +12,7 @@ import (
 )
 
 const (
+	selectExists          = "1"
 	chatsTableName        = "chats"
 	chatsMembersTableName = "chats_members"
 	titleColumnName       = "title"
@@ -17,6 +20,7 @@ const (
 	typeColumnName        = "type"
 	chatIDColumnName      = "chat_id"
 	isReadColumnName      = "is_read"
+	existsSubquery        = "EXISTS (?)"
 )
 
 type ChatsRepository struct {
@@ -149,7 +153,19 @@ func (repo *ChatsRepository) GetUserChats(
 				fmt.Sprintf("%s.%s", chatsMembersTableName, userIDColumnName): userID,
 			},
 		).
-		OrderBy(fmt.Sprintf("%s %s", idColumnName, desc)).
+		OrderByClause(
+			fmt.Sprintf(
+				"COALESCE((SELECT MAX(%s) FROM %s WHERE %s = %s.%s), %s.%s) %s",
+				createdAtColumnName,
+				messagesTableName,
+				chatIDColumnName,
+				chatsTableName,
+				idColumnName,
+				chatsTableName,
+				updatedAtColumnName,
+				desc,
+			),
+		).
 		PlaceholderFormat(sq.Dollar)
 
 	if pagination != nil && pagination.Limit != nil {
@@ -296,10 +312,11 @@ func (repo *ChatsRepository) ChangeChatIsReadStatus(
 	stmt, params, err := sq.
 		Update(chatsMembersTableName).
 		Where(
-			sq.And{
-				sq.Eq{userIDColumnName: userID},
-				sq.Eq{chatIDColumnName: chatID},
-			}).
+			sq.Eq{
+				userIDColumnName: userID,
+				chatIDColumnName: chatID,
+			},
+		).
 		Set(isReadColumnName, isRead).
 		PlaceholderFormat(sq.Dollar). // pq postgres driver works only with $ placeholders
 		ToSql()
@@ -310,4 +327,62 @@ func (repo *ChatsRepository) ChangeChatIsReadStatus(
 	_, err = repo.tx.ExecContext(ctx, stmt, params...)
 
 	return err
+}
+
+func (repo *ChatsRepository) PrivateChatExists(
+	ctx context.Context,
+	members []domains.User,
+) (bool, error) {
+	builder := sq.
+		Select(selectExists).
+		From(chatsTableName).
+		Where(
+			sq.Eq{
+				fmt.Sprintf("%s.%s", chatsTableName, typeColumnName): domains.ChatTypePrivate,
+			},
+		)
+
+	for i, member := range members {
+		tableAlias := fmt.Sprintf("%s%d", chatsMembersTableName, i)
+		subquery := sq.
+			Select(selectExists).
+			From(fmt.Sprintf("%s %s", chatsMembersTableName, tableAlias)).
+			Where(
+				sq.And{
+					sq.Expr(
+						fmt.Sprintf(
+							"%s.%s = %s.%s",
+							tableAlias,
+							chatIDColumnName,
+							chatsTableName,
+							idColumnName,
+						),
+					),
+					sq.Eq{
+						fmt.Sprintf("%s.%s", tableAlias, userIDColumnName): member.ID,
+					},
+				},
+			)
+
+		builder = builder.
+			Where(
+				sq.Expr(existsSubquery, subquery),
+			)
+	}
+
+	stmt, params, err := builder.PlaceholderFormat(sq.Dollar).ToSql()
+	if err != nil {
+		return false, err
+	}
+
+	var exists bool
+	if err = repo.tx.QueryRowContext(ctx, stmt, params...).Scan(&exists); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil // Запись не найдена
+		}
+
+		return false, err
+	}
+
+	return exists, nil
 }

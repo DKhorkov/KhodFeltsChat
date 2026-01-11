@@ -17,7 +17,7 @@ func GetPaginationFromRequest(r *http.Request) *domains.Pagination {
 	offsetStr := r.URL.Query().Get(offsetQueryKey)
 	offset, _ := strconv.ParseUint(offsetStr, 10, 64)
 
-	if offset != 0 && limit != 0 {
+	if offset != 0 || limit != 0 {
 		pagination = &domains.Pagination{
 			Offset: pointers.New(offset),
 			Limit:  pointers.New(limit),

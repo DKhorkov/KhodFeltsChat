@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/contextlib"
@@ -39,7 +40,7 @@ func GetUserChatsHandler(u interfaces.ChatsUseCases) http.HandlerFunc {
 			return
 		}
 
-		if err = json.NewEncoder(w).Encode(chats); err != nil {
+		if err = json.NewEncoder(w).Encode(mappers.MapChats(chats)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return
