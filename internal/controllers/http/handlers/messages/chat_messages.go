@@ -15,6 +15,24 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// swagger:route GET /chats/{id}/messages chats GetChatMessages
+//
+// GetChatMessages
+//
+// Provides list of messages, which were sent to the chat with specified id, with pagination.
+//
+// Security:
+// - cookieAuth: []
+//
+// Responses:
+//	200: []Message
+//	400: BadRequest
+//	401: Unauthorized
+//	403: Forbidden
+//	404: NotFound
+//	500: InternalServerError
+
+// GetChatMessagesHandler provides chat messages with pagination.
 func GetChatMessagesHandler(u interfaces.MessagesUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := contextlib.ValueFromContext[uint64](

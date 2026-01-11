@@ -5,7 +5,7 @@ import "time"
 // User represents a user's contact record.
 // swagger:model
 type User struct {
-	// Full name of the user.
+	// Unique identifier of the user.
 	// required: true
 	// nullable: false
 	// minimum: 1

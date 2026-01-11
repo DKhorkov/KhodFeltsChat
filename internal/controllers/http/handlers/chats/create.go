@@ -14,6 +14,22 @@ import (
 	middlewares "github.com/DKhorkov/libs/middlewares/http"
 )
 
+// swagger:route POST /chats chats CreateChat
+//
+// CreateChat
+//
+// CreateChat creates new chat with provided info.
+//
+// Security:
+// - cookieAuth: []
+//
+// Responses:
+//	201: Chat
+//	400: BadRequest
+//	401: Unauthorized
+//	500: InternalServerError
+
+// CreateChatHandler creates new Chat.
 func CreateChatHandler(u interfaces.ChatsUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := contextlib.ValueFromContext[uint64](

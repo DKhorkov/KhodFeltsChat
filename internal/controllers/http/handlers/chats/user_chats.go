@@ -13,6 +13,22 @@ import (
 	middlewares "github.com/DKhorkov/libs/middlewares/http"
 )
 
+// swagger:route GET /chats chats GetUserChats
+//
+// GetUserChats
+//
+// Provides list of chats for current user with pagination.
+//
+// Security:
+// - cookieAuth: []
+//
+// Responses:
+//	200: []Chat
+//	401: Unauthorized
+//	404: NotFound
+//	500: InternalServerError
+
+// GetUserChatsHandler provides chats for current user with pagination.
 func GetUserChatsHandler(u interfaces.ChatsUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := contextlib.ValueFromContext[uint64](

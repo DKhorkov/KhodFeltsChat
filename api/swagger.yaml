@@ -2,6 +2,73 @@ basePath: /
 consumes:
     - application/json
 definitions:
+    Chat:
+        properties:
+            createdAt:
+                description: Represents datetime when chat was created.
+                format: date-time
+                type: string
+                x-go-name: CreatedAt
+            description:
+                description: Description of the chat.
+                example: Long description of a party
+                minLength: 1
+                type: string
+                x-go-name: Description
+            id:
+                description: Unique identifier of the chat.
+                format: uint64
+                minimum: 1
+                type: integer
+                x-go-name: ID
+            isRead:
+                description: Whether chat was read or not.
+                example: true
+                type: boolean
+                x-go-name: IsRead
+            members:
+                description: Members of the chat.
+                items:
+                    $ref: '#/definitions/User'
+                type: array
+                x-go-name: Members
+            messages:
+                description: Messages which were sent to the chat.
+                items:
+                    $ref: '#/definitions/Message'
+                type: array
+                x-go-name: Messages
+            title:
+                description: Title of the chat.
+                example: Party
+                maxLength: 100
+                minLength: 1
+                type: string
+                x-go-name: Title
+            type:
+                description: Type of the chat.
+                enum:
+                    - private
+                    - group
+                example: private
+                maxLength: 40
+                minLength: 1
+                type: string
+                x-go-name: Type
+            updatedAt:
+                description: Represents datetime when chat was updated.
+                format: date-time
+                type: string
+                x-go-name: UpdatedAt
+        required:
+            - id
+            - type
+            - createdAt
+            - updatedAt
+            - isRead
+        title: Chat represents a chat record, where users can send a message.
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
     EmailInput:
         properties:
             email:
@@ -13,6 +80,61 @@ definitions:
             - email
         type: object
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
+    MemberInput:
+        properties:
+            id:
+                description: Unique identifier of the user.
+                format: uint64
+                minimum: 1
+                type: integer
+                x-go-name: ID
+        required:
+            - id
+        title: MemberInput represents an input of members unique identifier for creating chat.
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
+    Message:
+        properties:
+            chatId:
+                description: Unique identifier of chat, in which message was sent.
+                format: uint64
+                minimum: 1
+                type: integer
+                x-go-name: ChatID
+            createdAt:
+                description: Represents datetime when message was sent.
+                format: date-time
+                type: string
+                x-go-name: CreatedAt
+            id:
+                description: Unique identifier of the message.
+                format: uint64
+                minimum: 1
+                type: integer
+                x-go-name: ID
+            sender:
+                $ref: '#/definitions/Sender'
+            text:
+                description: Text of the message.
+                example: Anything
+                minLength: 1
+                type: string
+                x-go-name: Text
+            updatedAt:
+                description: Represents datetime when message was updated.
+                format: date-time
+                type: string
+                x-go-name: UpdatedAt
+        required:
+            - id
+            - chatId
+            - sender
+            - text
+            - createdAt
+            - updatedAt
+        title: Message represents a message record, which was sent to the chat.
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
     NewPasswordInput:
         properties:
             newPassword:
@@ -22,6 +144,27 @@ definitions:
                 x-go-name: NewPassword
         required:
             - newPassword
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
+    Sender:
+        properties:
+            id:
+                description: Unique identifier of the user.
+                format: uint64
+                minimum: 1
+                type: integer
+                x-go-name: ID
+            username:
+                description: Unique username of the user.
+                example: D3M0S
+                maxLength: 70
+                minLength: 5
+                type: string
+                x-go-name: Username
+        required:
+            - id
+            - username
+        title: Sender represents a user record, who sent message to the chat.
         type: object
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
     User:
@@ -41,7 +184,7 @@ definitions:
                 type: boolean
                 x-go-name: EmailConfirmed
             id:
-                description: Full name of the user.
+                description: Unique identifier of the user.
                 format: uint64
                 minimum: 1
                 type: integer
@@ -85,6 +228,129 @@ paths:
             summary: Default Handler for everything that is not a match.
             tags:
                 - DefaultHandler
+    /chats:
+        get:
+            description: Provides list of chats for current user with pagination.
+            operationId: GetUserChats
+            parameters:
+                - description: Maximum amount of entries
+                  format: int64
+                  in: query
+                  name: limit
+                  type: integer
+                  x-go-name: Limit
+                - description: Number of entries to skip from the beginning of the result set before starting to return the desired entries
+                  format: int64
+                  in: query
+                  name: offset
+                  type: integer
+                  x-go-name: Offset
+            responses:
+                "200":
+                    description: Chat
+                    schema:
+                        items:
+                            $ref: '#/definitions/Chat'
+                        type: array
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: GetUserChats
+            tags:
+                - chats
+        post:
+            description: CreateChat creates new chat with provided info.
+            operationId: CreateChat
+            parameters:
+                - description: Information about Chat for creation
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    properties:
+                        members:
+                            description: Members of the chat. Current User should NOT be provided directly!
+                            items:
+                                $ref: '#/definitions/MemberInput'
+                            type: array
+                            x-go-name: Members
+                        type:
+                            description: Type of the chat.
+                            enum:
+                                - private
+                                - group
+                            example: private
+                            maxLength: 40
+                            minLength: 1
+                            type: string
+                            x-go-name: Type
+                    required:
+                        - type
+                        - members
+                    type: object
+            responses:
+                "201":
+                    description: Chat
+                    schema:
+                        $ref: '#/definitions/Chat'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: CreateChat
+            tags:
+                - chats
+    /chats/{id}/messages:
+        get:
+            description: Provides list of messages, which were sent to the chat with specified id, with pagination.
+            operationId: GetChatMessages
+            parameters:
+                - description: Maximum amount of entries
+                  format: int64
+                  in: query
+                  name: limit
+                  type: integer
+                  x-go-name: Limit
+                - description: Number of entries to skip from the beginning of the result set before starting to return the desired entries
+                  format: int64
+                  in: query
+                  name: offset
+                  type: integer
+                  x-go-name: Offset
+            responses:
+                "200":
+                    description: Message
+                    schema:
+                        items:
+                            $ref: '#/definitions/Message'
+                        type: array
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "403":
+                    $ref: '#/responses/Forbidden'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: GetChatMessages
+            tags:
+                - chats
     /sessions:
         delete:
             description: Logout User and deletes access and refresh tokens.
