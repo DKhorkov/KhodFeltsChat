@@ -21,8 +21,8 @@ func MapMessage(message domains.Message) schemas.Message {
 
 func MapMessages(messages []domains.Message) []schemas.Message {
 	result := make([]schemas.Message, len(messages))
-	for i, message := range messages {
-		result[i] = MapMessage(message)
+	for i := range messages {
+		result[i] = MapMessage(messages[i]) // gocritic - чтобы не копировать каждое сообщение
 	}
 
 	return result

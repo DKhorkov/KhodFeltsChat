@@ -148,7 +148,7 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 			return
 		}
 
-		if !h.senderIsChatMember(message.Sender, chatMembers) {
+		if !senderIsChatMember(message.Sender, chatMembers) {
 			logging.LogInfoContext(
 				ctx,
 				h.logger,
@@ -227,7 +227,7 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 	}
 }
 
-func (h *Handler) senderIsChatMember(sender domains.User, chatMembers []domains.User) bool {
+func senderIsChatMember(sender domains.User, chatMembers []domains.User) bool {
 	return slices.ContainsFunc(
 		chatMembers,
 		func(member domains.User) bool {

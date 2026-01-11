@@ -21,8 +21,8 @@ func MapChat(chat domains.Chat) schemas.Chat {
 
 func MapChats(chats []domains.Chat) []schemas.Chat {
 	result := make([]schemas.Chat, len(chats))
-	for i, chat := range chats {
-		result[i] = MapChat(chat)
+	for i := range chats {
+		result[i] = MapChat(chats[i]) // gocritic - чтобы не копировать каждое сообщение
 	}
 
 	return result

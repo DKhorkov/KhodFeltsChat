@@ -84,7 +84,10 @@ func (s *ChatsService) GetUserChats(
 			}
 
 			for i := range chats {
-				var members []domains.User
+				var (
+					members  []domains.User
+					messages []domains.Message
+				)
 
 				if members, err = chatsRepository.GetChatMembers(ctx, chats[i].ID); err != nil {
 					return err
@@ -92,12 +95,11 @@ func (s *ChatsService) GetUserChats(
 
 				chats[i].Members = members
 
-				messages, err := messageRepository.GetChatMessages(
+				if messages, err = messageRepository.GetChatMessages(
 					ctx,
 					chats[i].ID,
 					messagesPagination,
-				)
-				if err != nil {
+				); err != nil {
 					return err
 				}
 

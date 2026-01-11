@@ -146,7 +146,7 @@ func (repo *MessagesRepository) GetChatMessages(
 			return nil, err
 		}
 
-		messages = append(messages, *repo.pgMessageToDomainMessage(messagePg))
+		messages = append(messages, *pgMessageToDomainMessage(messagePg))
 	}
 
 	if err = rows.Err(); err != nil {
@@ -206,10 +206,10 @@ func (repo *MessagesRepository) GetMessageByID(
 		return nil, err
 	}
 
-	return repo.pgMessageToDomainMessage(*messagePg), nil
+	return pgMessageToDomainMessage(*messagePg), nil
 }
 
-func (repo *MessagesRepository) pgMessageToDomainMessage(messagePg MessagePg) *domains.Message {
+func pgMessageToDomainMessage(messagePg MessagePg) *domains.Message {
 	return &domains.Message{
 		ID:     messagePg.ID,
 		ChatID: messagePg.ChatID,
