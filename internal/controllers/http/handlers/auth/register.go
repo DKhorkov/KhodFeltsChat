@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
 	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
@@ -58,12 +59,16 @@ func RegisterHandler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
+		// Устанавливаем статус код и заголовок Content-Type
+		w.Header().Set(common.ContentTypeHeaderName, common.ApplicationJSONContentType)
+
+		// HTTP статус код должен устанавливаться перед записью тела ответа
+		w.WriteHeader(http.StatusCreated)
+
 		if err = json.NewEncoder(w).Encode(mappers.MapUser(*user)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return
 		}
-
-		w.WriteHeader(http.StatusCreated)
 	}
 }

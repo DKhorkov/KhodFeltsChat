@@ -231,12 +231,21 @@ linters:
           - err113
           - govet
           - containedctx
+          - maintidx
+          - gosmopolitan
+          - gosec
+          - forcetypeassert
+          - testifylint
 
       - path: internal/repositories/auth_repository.go
         linters:
           - gocritic
 
       - path: internal/repositories/emails_repository_test.go
+        linters:
+          - testpackage
+
+      - path: internal/controllers/http/handlers/common/pagination_test.go
         linters:
           - testpackage
 

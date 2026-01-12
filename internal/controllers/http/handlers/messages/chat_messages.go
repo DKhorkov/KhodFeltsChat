@@ -74,12 +74,16 @@ func GetChatMessagesHandler(u interfaces.MessagesUseCases) http.HandlerFunc {
 			return
 		}
 
+		// Устанавливаем статус код и заголовок Content-Type
+		w.Header().Set(common.ContentTypeHeaderName, common.ApplicationJSONContentType)
+
+		// HTTP статус код должен устанавливаться перед записью тела ответа
+		w.WriteHeader(http.StatusOK)
+
 		if err = json.NewEncoder(w).Encode(mappers.MapMessages(messages)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return
 		}
-
-		w.WriteHeader(http.StatusOK)
 	}
 }

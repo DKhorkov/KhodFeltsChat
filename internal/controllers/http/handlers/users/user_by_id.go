@@ -50,12 +50,16 @@ func GetUserByIDHandler(u interfaces.UsersUseCases) http.HandlerFunc {
 			return
 		}
 
+		// Устанавливаем статус код и заголовок Content-Type
+		w.Header().Set(common.ContentTypeHeaderName, common.ApplicationJSONContentType)
+
+		// HTTP статус код должен устанавливаться перед записью тела ответа
+		w.WriteHeader(http.StatusOK)
+
 		if err = json.NewEncoder(w).Encode(mappers.MapUser(*user)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return
 		}
-
-		w.WriteHeader(http.StatusOK)
 	}
 }

@@ -8,6 +8,11 @@ import (
 	"github.com/DKhorkov/libs/pointers"
 )
 
+const (
+	limitQueryKey  = "limit"
+	offsetQueryKey = "offset"
+)
+
 func GetPaginationFromRequest(r *http.Request) *domains.Pagination {
 	var pagination *domains.Pagination
 
