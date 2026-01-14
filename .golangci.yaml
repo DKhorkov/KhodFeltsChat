@@ -236,6 +236,10 @@ linters:
           - gosec
           - forcetypeassert
           - testifylint
+          - noctx
+          - gocognit
+          - gocyclo
+          - cyclop
 
       - path: internal/repositories/auth_repository.go
         linters:
