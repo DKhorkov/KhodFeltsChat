@@ -85,3 +85,18 @@ func (mr *MockChatsServiceMockRecorder) GetUserChats(ctx, userID, pagination any
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserChats", reflect.TypeOf((*MockChatsService)(nil).GetUserChats), ctx, userID, pagination)
 }
+
+// PrivateChatExists mocks base method.
+func (m *MockChatsService) PrivateChatExists(ctx context.Context, members []domains.User) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PrivateChatExists", ctx, members)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PrivateChatExists indicates an expected call of PrivateChatExists.
+func (mr *MockChatsServiceMockRecorder) PrivateChatExists(ctx, members any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrivateChatExists", reflect.TypeOf((*MockChatsService)(nil).PrivateChatExists), ctx, members)
+}
