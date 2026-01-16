@@ -17,6 +17,8 @@ import (
 )
 
 func TestUsersUseCases_GetUsers(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
 		mockUsersService func(*mockservices.MockUsersService)
 	}
@@ -135,6 +137,8 @@ func TestUsersUseCases_GetUsers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Arrange
 			ctrl := gomock.NewController(t)
 
@@ -170,6 +174,8 @@ func TestUsersUseCases_GetUsers(t *testing.T) {
 }
 
 func TestUsersUseCases_GetUserByID(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
 		mockUsersService func(*mockservices.MockUsersService)
 	}
@@ -265,6 +271,8 @@ func TestUsersUseCases_GetUserByID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Arrange
 			ctrl := gomock.NewController(t)
 
@@ -298,6 +306,8 @@ func TestUsersUseCases_GetUserByID(t *testing.T) {
 }
 
 func TestUsersUseCases_UpdateUser(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
 		mockUsersService func(*mockservices.MockUsersService)
 		validationRules  []string
@@ -461,6 +471,8 @@ func TestUsersUseCases_UpdateUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Arrange
 			ctrl := gomock.NewController(t)
 

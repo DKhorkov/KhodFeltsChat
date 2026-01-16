@@ -13,6 +13,8 @@ import (
 )
 
 func TestMessagesUseCases_SaveMessage(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
 		mockMessagesService func(*mockservices.MockMessagesService)
 		mockUsersService    func(*mockservices.MockUsersService)
@@ -86,6 +88,8 @@ func TestMessagesUseCases_SaveMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Arrange
 			ctrl := gomock.NewController(t)
 
@@ -130,6 +134,8 @@ func TestMessagesUseCases_SaveMessage(t *testing.T) {
 }
 
 func TestMessagesUseCases_GetChatMessages(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
 		mockMessagesService func(*mockservices.MockMessagesService)
 		mockUsersService    func(*mockservices.MockUsersService)
@@ -380,6 +386,8 @@ func TestMessagesUseCases_GetChatMessages(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Arrange
 			ctrl := gomock.NewController(t)
 
@@ -429,6 +437,8 @@ func TestMessagesUseCases_GetChatMessages(t *testing.T) {
 }
 
 func TestMessagesUseCases_GetChatMessages_WithPaginationVariations(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
 		mockMessagesService func(*mockservices.MockMessagesService)
 		mockUsersService    func(*mockservices.MockUsersService)
@@ -555,6 +565,8 @@ func TestMessagesUseCases_GetChatMessages_WithPaginationVariations(t *testing.T)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Arrange
 			ctrl := gomock.NewController(t)
 

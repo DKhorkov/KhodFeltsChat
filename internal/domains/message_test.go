@@ -8,6 +8,8 @@ import (
 )
 
 func TestMessage_NewMessage(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		want *domains.Message
@@ -20,6 +22,8 @@ func TestMessage_NewMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			got := domains.NewMessage()
 			if got == nil {
 				t.Fatal("NewMessage() returned nil")
@@ -54,6 +58,8 @@ func TestMessage_NewMessage(t *testing.T) {
 }
 
 func TestMessage_From(t *testing.T) {
+	t.Parallel()
+
 	now := time.Now()
 
 	users := []domains.User{
@@ -103,6 +109,8 @@ func TestMessage_From(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Сохраняем исходное состояние для проверки неизменности других полей
 			originalMessage := *tt.message
 
@@ -155,6 +163,8 @@ func TestMessage_From(t *testing.T) {
 }
 
 func TestMessage_Received(t *testing.T) {
+	t.Parallel()
+
 	beforeCall := time.Now()
 
 	tests := []struct {
@@ -187,6 +197,8 @@ func TestMessage_Received(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Сохраняем исходное состояние
 			originalMessage := *tt.message
 
@@ -251,6 +263,8 @@ func TestMessage_Received(t *testing.T) {
 }
 
 func TestMessage_Updated(t *testing.T) {
+	t.Parallel()
+
 	beforeCall := time.Now()
 
 	tests := []struct {
@@ -291,6 +305,8 @@ func TestMessage_Updated(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Сохраняем исходное состояние
 			originalMessage := *tt.message
 
@@ -355,6 +371,8 @@ func TestMessage_Updated(t *testing.T) {
 }
 
 func TestMessage_MethodChaining(t *testing.T) {
+	t.Parallel()
+
 	user := domains.User{ID: 1, Username: "testuser"}
 
 	tests := []struct {
@@ -406,6 +424,8 @@ func TestMessage_MethodChaining(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			msg := tt.chain()
 
 			if msg == nil {

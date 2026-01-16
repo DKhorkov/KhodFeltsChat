@@ -240,6 +240,7 @@ linters:
           - gocognit
           - gocyclo
           - cyclop
+          - nestif
 
       - path: internal/repositories/auth_repository.go
         linters:

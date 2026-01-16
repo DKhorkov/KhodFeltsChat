@@ -8,6 +8,8 @@ import (
 )
 
 func TestChat_IsValid(t *testing.T) {
+	t.Parallel()
+
 	now := time.Now()
 
 	// Вспомогательные данные
@@ -165,6 +167,8 @@ func TestChat_IsValid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := tt.chat.IsValid()
 			if result != tt.expected {
 				t.Errorf("IsValid() = %v, want %v", result, tt.expected)
@@ -174,6 +178,8 @@ func TestChat_IsValid(t *testing.T) {
 }
 
 func TestChatTypeConstants(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		chatType domains.ChatType
@@ -193,6 +199,8 @@ func TestChatTypeConstants(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			if string(tt.chatType) != tt.expected {
 				t.Errorf("ChatType = %q, want %q", tt.chatType, tt.expected)
 			}
@@ -201,6 +209,8 @@ func TestChatTypeConstants(t *testing.T) {
 }
 
 func TestMinMembersCount(t *testing.T) {
+	t.Parallel()
+
 	// Тест для проверки минимального количества участников
 	chat := domains.Chat{
 		ID:        1,

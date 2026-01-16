@@ -15,6 +15,8 @@ import (
 )
 
 func TestChatsUseCases_GetChatMembers(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
 		mockChatsService func(*mockservices.MockChatsService)
 		mockUsersService func(*mockservices.MockUsersService)
@@ -107,6 +109,8 @@ func TestChatsUseCases_GetChatMembers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Arrange
 			ctrl := gomock.NewController(t)
 
@@ -142,6 +146,8 @@ func TestChatsUseCases_GetChatMembers(t *testing.T) {
 }
 
 func TestChatsUseCases_GetUserChats(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
 		mockChatsService func(*mockservices.MockChatsService)
 		mockUsersService func(*mockservices.MockUsersService)
@@ -282,6 +288,8 @@ func TestChatsUseCases_GetUserChats(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Arrange
 			ctrl := gomock.NewController(t)
 
@@ -317,6 +325,8 @@ func TestChatsUseCases_GetUserChats(t *testing.T) {
 }
 
 func TestChatsUseCases_CreateChat(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
 		mockChatsService func(*mockservices.MockChatsService)
 		mockUsersService func(*mockservices.MockUsersService)
@@ -598,6 +608,8 @@ func TestChatsUseCases_CreateChat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Arrange
 			ctrl := gomock.NewController(t)
 
