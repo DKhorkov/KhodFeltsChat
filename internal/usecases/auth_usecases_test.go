@@ -500,10 +500,6 @@ func TestAuthUseCases_LoginUser(t *testing.T) {
 func TestUseCases_RefreshTokens(t *testing.T) {
 	t.Parallel()
 
-	ctrl := gomock.NewController(t)
-	authService := mockservices.NewMockAuthService(ctrl)
-	usersService := mockservices.NewMockUsersService(ctrl)
-
 	securityConfig := security.Config{
 		JWT: security.JWTConfig{
 			SecretKey:       "secret",
@@ -578,13 +574,6 @@ func TestUseCases_RefreshTokens(t *testing.T) {
 	require.NoError(t, err)
 
 	encodedRefreshToken := security.RawEncode([]byte(refreshToken))
-
-	useCases := usecases.NewAuthUseCases(
-		authService,
-		usersService,
-		securityConfig,
-		validationConfig,
-	)
 
 	testCases := []struct {
 		name         string
@@ -740,6 +729,17 @@ func TestUseCases_RefreshTokens(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			authService := mockservices.NewMockAuthService(ctrl)
+			usersService := mockservices.NewMockUsersService(ctrl)
+
+			useCases := usecases.NewAuthUseCases(
+				authService,
+				usersService,
+				securityConfig,
+				validationConfig,
+			)
 
 			if tc.setupMocks != nil {
 				tc.setupMocks(
