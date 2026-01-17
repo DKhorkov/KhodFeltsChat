@@ -6,9 +6,108 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/contentbuilders"
+	"github.com/DKhorkov/kfc/internal/domains"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/stretchr/testify/require"
 )
+
+func TestEmailsRepository_SendVerifyEmailMessage(t *testing.T) {
+	t.Parallel()
+
+	// Настройка SMTP конфигурации
+	smtpConfig := config.SMTPConfig{
+		Host: "smtp.freesmtpservers.com",
+		Port: 25,
+	}
+
+	testCases := []struct {
+		name          string
+		user          domains.User
+		errorExpected bool
+	}{
+		{
+			name:          "dialer error",
+			user:          domains.User{Email: "alexqwerty35@yandex.ru"},
+			errorExpected: true,
+		},
+	}
+
+	contentBuilders := interfaces.ContentBuilders{
+		VerifyEmail: contentbuilders.NewVerifyEmailContentBuilder(
+			"test",
+		),
+		ForgetPassword: contentbuilders.NewForgetPasswordContentBuilder(
+			"test",
+		),
+	}
+
+	repo := NewEmailsRepository(
+		smtpConfig,
+		contentBuilders,
+	)
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := repo.SendVerifyEmailMessage(context.Background(), tc.user)
+			if tc.errorExpected {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestEmailsRepository_SendForgetPasswordMessage(t *testing.T) {
+	t.Parallel()
+
+	// Настройка SMTP конфигурации
+	smtpConfig := config.SMTPConfig{
+		Host: "smtp.freesmtpservers.com",
+		Port: 25,
+	}
+
+	testCases := []struct {
+		name          string
+		user          domains.User
+		errorExpected bool
+	}{
+		{
+			name:          "dialer error",
+			user:          domains.User{Email: "alexqwerty35@yandex.ru"},
+			errorExpected: true,
+		},
+	}
+
+	contentBuilders := interfaces.ContentBuilders{
+		VerifyEmail: contentbuilders.NewVerifyEmailContentBuilder(
+			"test",
+		),
+		ForgetPassword: contentbuilders.NewForgetPasswordContentBuilder(
+			"test",
+		),
+	}
+
+	repo := NewEmailsRepository(
+		smtpConfig,
+		contentBuilders,
+	)
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := repo.SendForgetPasswordMessage(context.Background(), tc.user)
+			if tc.errorExpected {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
 
 func TestEmailsRepository_Send(t *testing.T) {
 	t.Parallel()
