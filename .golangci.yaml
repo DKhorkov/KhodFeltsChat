@@ -334,10 +334,6 @@ linters:
         linters:
           - exhaustruct
 
-      - path: cmd/main.go
-        linters:
-          - exhaustruct
-
       - path: internal/domains/chat.go
         linters:
           - gochecknoglobals

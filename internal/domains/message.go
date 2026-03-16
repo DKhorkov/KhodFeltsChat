@@ -11,6 +11,9 @@ type Message struct {
 	Text      string    `json:"text"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+
+	// TODO добавить параметр isRead и ручку MarkMessagesRead - принимать массив айдишников сообщений
+	// TODO сообщения должны джойниться на новую many-to-many табличку со статусом прочитанности для пользователя
 }
 
 func NewMessage() *Message {

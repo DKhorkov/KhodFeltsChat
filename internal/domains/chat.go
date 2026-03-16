@@ -11,7 +11,8 @@ const (
 	ChatTypePrivate ChatType = "private"
 	ChatTypeGroup   ChatType = "group"
 
-	minMembersCount = 1 // группа на одного
+	minMembersCount         = 1 // группа на одного
+	privateChatMembersCount = 2
 )
 
 var chatTypes = []ChatType{
@@ -26,7 +27,7 @@ type Chat struct {
 	Type        ChatType  `json:"type"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
-	IsRead      bool      `json:"isRead"`
+	IsRead      bool      `json:"isRead"` // TODO добавить ручку MarkChatRead
 	Members     []User    `json:"members,omitempty"`
 	Messages    []Message `json:"messages,omitempty"`
 }
@@ -37,6 +38,10 @@ func (c *Chat) IsValid() bool {
 	}
 
 	if len(c.Members) < minMembersCount {
+		return false
+	}
+
+	if c.Type == ChatTypePrivate && len(c.Messages) != privateChatMembersCount {
 		return false
 	}
 
