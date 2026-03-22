@@ -699,8 +699,8 @@ func TestAuthService_ExpireRefreshToken(t *testing.T) {
 	}
 
 	type args struct {
-		ctx          context.Context
-		refreshToken string
+		ctx            context.Context
+		refreshTokenID uint64
 	}
 
 	tests := []struct {
@@ -724,13 +724,13 @@ func TestAuthService_ExpireRefreshToken(t *testing.T) {
 				},
 				mockAuthRepository: func(ar *mockrepositories.MockAuthRepository) {
 					ar.EXPECT().
-						ExpireRefreshToken(gomock.Any(), "old_token").
+						ExpireRefreshToken(gomock.Any(), uint64(1)).
 						Return(nil)
 				},
 			},
 			args: args{
-				ctx:          context.Background(),
-				refreshToken: "old_token",
+				ctx:            context.Background(),
+				refreshTokenID: 1,
 			},
 			wantErr: false,
 		},
@@ -748,13 +748,13 @@ func TestAuthService_ExpireRefreshToken(t *testing.T) {
 				},
 				mockAuthRepository: func(ar *mockrepositories.MockAuthRepository) {
 					ar.EXPECT().
-						ExpireRefreshToken(gomock.Any(), "old_token").
+						ExpireRefreshToken(gomock.Any(), uint64(1)).
 						Return(errors.New("database error"))
 				},
 			},
 			args: args{
-				ctx:          context.Background(),
-				refreshToken: "old_token",
+				ctx:            context.Background(),
+				refreshTokenID: 1,
 			},
 			wantErr: true,
 			err:     errors.New("database error"),
@@ -791,7 +791,7 @@ func TestAuthService_ExpireRefreshToken(t *testing.T) {
 			)
 
 			// Act
-			err := service.ExpireRefreshToken(tt.args.ctx, tt.args.refreshToken)
+			err := service.ExpireRefreshToken(tt.args.ctx, tt.args.refreshTokenID)
 
 			// Assert
 			if tt.wantErr {
@@ -973,7 +973,7 @@ func TestAuthService_ForgetPassword(t *testing.T) {
 						Return(refreshToken, nil)
 
 					ar.EXPECT().
-						ExpireRefreshToken(gomock.Any(), "refresh_token_value").
+						ExpireRefreshToken(gomock.Any(), refreshToken.ID).
 						Return(nil)
 				},
 			},
@@ -1092,7 +1092,7 @@ func TestAuthService_ForgetPassword(t *testing.T) {
 						Return(refreshToken, nil)
 
 					ar.EXPECT().
-						ExpireRefreshToken(gomock.Any(), "refresh_token_value").
+						ExpireRefreshToken(gomock.Any(), refreshToken.ID).
 						Return(errors.New("expire error"))
 				},
 			},

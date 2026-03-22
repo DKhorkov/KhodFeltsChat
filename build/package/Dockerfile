@@ -14,6 +14,7 @@ WORKDIR /app
 
 COPY .env .
 COPY ./api ./api
+COPY ./grafana ./grafana
 
 COPY --from=builder /build/main /app/main
 

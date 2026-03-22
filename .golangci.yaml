@@ -321,6 +321,11 @@ linters:
         linters:
           - exhaustruct
 
+      - path: internal/controllers/http/handlers/not_allowed.go
+        line: "23"
+        linters:
+          - gosec
+
       - path: internal/controllers/http/handlers/auth/send_*
         linters:
           - dupl

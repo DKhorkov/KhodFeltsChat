@@ -41,7 +41,7 @@ func (c *Chat) IsValid() bool {
 		return false
 	}
 
-	if c.Type == ChatTypePrivate && len(c.Messages) != privateChatMembersCount {
+	if c.Type == ChatTypePrivate && len(c.Members) != privateChatMembersCount {
 		return false
 	}
 

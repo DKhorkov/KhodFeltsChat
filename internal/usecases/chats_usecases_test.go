@@ -573,23 +573,7 @@ func TestChatsUseCases_CreateChat(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "private chat with single member (should check exists)",
-			fields: fields{
-				mockUsersService: func(us *mockservices.MockUsersService) {
-					us.EXPECT().
-						GetUserByID(gomock.Any(), uint64(1)).
-						Return(&domains.User{ID: 1}, nil)
-				},
-				mockChatsService: func(cs *mockservices.MockChatsService) {
-					// Для приватного чата с одним участником тоже проверяем существование
-					cs.EXPECT().
-						PrivateChatExists(gomock.Any(), gomock.AssignableToTypeOf([]domains.User{})).
-						Return(false, nil)
-					cs.EXPECT().
-						CreateChat(gomock.Any(), gomock.AssignableToTypeOf(domains.Chat{})).
-						Return(&domains.Chat{ID: 104, Type: domains.ChatTypePrivate, Members: []domains.User{{ID: 1}}}, nil)
-				},
-			},
+			name: "private chat with single member  validation fail",
 			args: args{
 				ctx: context.Background(),
 				chat: domains.Chat{
@@ -597,12 +581,7 @@ func TestChatsUseCases_CreateChat(t *testing.T) {
 					Members: []domains.User{{ID: 1}},
 				},
 			},
-			want: &domains.Chat{
-				ID:      104,
-				Type:    domains.ChatTypePrivate,
-				Members: []domains.User{{ID: 1}},
-			},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 

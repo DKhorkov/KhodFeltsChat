@@ -85,7 +85,7 @@ func (u *AuthUseCases) LoginUser(
 
 	var dbRefreshToken *domains.RefreshToken
 	if dbRefreshToken, err = u.authService.GetRefreshTokenByUserID(ctx, user.ID); err == nil {
-		err = u.authService.ExpireRefreshToken(ctx, dbRefreshToken.Value)
+		err = u.authService.ExpireRefreshToken(ctx, dbRefreshToken.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -186,7 +186,7 @@ func (u *AuthUseCases) RefreshTokens(
 	}
 
 	// Expiring old refresh token in Database to have only one valid refresh token instance:
-	if err = u.authService.ExpireRefreshToken(ctx, dbRefreshToken.Value); err != nil {
+	if err = u.authService.ExpireRefreshToken(ctx, dbRefreshToken.ID); err != nil {
 		return nil, customerrors.ErrInvalidJWT
 	}
 
@@ -236,7 +236,7 @@ func (u *AuthUseCases) LogoutUser(ctx context.Context, userID uint64) error {
 		return nil
 	}
 
-	return u.authService.ExpireRefreshToken(ctx, refreshToken.Value)
+	return u.authService.ExpireRefreshToken(ctx, refreshToken.ID)
 }
 
 func (u *AuthUseCases) VerifyEmail(ctx context.Context, verifyEmailToken string) error {

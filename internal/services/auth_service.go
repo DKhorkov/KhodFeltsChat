@@ -155,13 +155,13 @@ func (s *AuthService) GetRefreshTokenByUserID(
 	return refreshToken, nil
 }
 
-func (s *AuthService) ExpireRefreshToken(ctx context.Context, refreshToken string) error {
+func (s *AuthService) ExpireRefreshToken(ctx context.Context, refreshTokenID uint64) error {
 	return s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
 			authRepository := s.newAuthRepositoryFunc(tx)
 
-			return authRepository.ExpireRefreshToken(ctx, refreshToken)
+			return authRepository.ExpireRefreshToken(ctx, refreshTokenID)
 		},
 	)
 }
@@ -199,7 +199,7 @@ func (s *AuthService) ForgetPassword(
 				return err
 			}
 
-			return authRepository.ExpireRefreshToken(ctx, refreshToken.Value)
+			return authRepository.ExpireRefreshToken(ctx, refreshToken.ID)
 		},
 	)
 }

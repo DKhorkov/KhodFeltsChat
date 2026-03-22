@@ -300,7 +300,7 @@ func TestAuthUseCases_LoginUser(t *testing.T) {
 
 					// Expire old token
 					as.EXPECT().
-						ExpireRefreshToken(gomock.Any(), "old_refresh_token").
+						ExpireRefreshToken(gomock.Any(), refreshToken.ID).
 						Return(nil)
 
 					// Create new refresh token
@@ -412,7 +412,7 @@ func TestAuthUseCases_LoginUser(t *testing.T) {
 						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
 						Return(refreshToken, nil)
 					as.EXPECT().
-						ExpireRefreshToken(gomock.Any(), "old_refresh_token").
+						ExpireRefreshToken(gomock.Any(), refreshToken.ID).
 						Return(errors.New("database error"))
 				},
 			},
@@ -794,7 +794,7 @@ func TestAuthUseCases_LogoutUser(t *testing.T) {
 						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
 						Return(refreshToken, nil)
 					as.EXPECT().
-						ExpireRefreshToken(gomock.Any(), "refresh_token_value").
+						ExpireRefreshToken(gomock.Any(), refreshToken.ID).
 						Return(nil)
 				},
 			},
@@ -827,7 +827,7 @@ func TestAuthUseCases_LogoutUser(t *testing.T) {
 						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
 						Return(refreshToken, nil)
 					as.EXPECT().
-						ExpireRefreshToken(gomock.Any(), "refresh_token_value").
+						ExpireRefreshToken(gomock.Any(), refreshToken.ID).
 						Return(errors.New("database error"))
 				},
 			},

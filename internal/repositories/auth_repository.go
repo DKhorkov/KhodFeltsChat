@@ -124,14 +124,10 @@ func (repo *AuthRepository) GetRefreshTokenByUserID(
 	return refreshToken, nil
 }
 
-func (repo *AuthRepository) ExpireRefreshToken(ctx context.Context, refreshToken string) error {
+func (repo *AuthRepository) ExpireRefreshToken(ctx context.Context, refreshTokenID uint64) error {
 	stmt, params, err := sq.
-		Update(refreshTokensTableName).
-		Where(sq.Eq{refreshTokenValueColumnName: refreshToken}).
-		Set(
-			refreshTokenTTLColumnName,
-			time.Now().UTC().Add(time.Hour*time.Duration(-24)),
-		).
+		Delete(refreshTokensTableName).
+		Where(sq.Eq{idColumnName: refreshTokenID}).
 		PlaceholderFormat(sq.Dollar). // pq postgres driver works only with $ placeholders
 		ToSql()
 	if err != nil {

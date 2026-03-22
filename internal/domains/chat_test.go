@@ -55,10 +55,10 @@ func TestChat_IsValid(t *testing.T) {
 			expected: true,
 		},
 		{
-			name: "valid chat with minimum members (one member)",
+			name: "valid chat with minimum members (one member) - group",
 			chat: domains.Chat{
 				ID:        3,
-				Type:      domains.ChatTypePrivate,
+				Type:      domains.ChatTypeGroup,
 				CreatedAt: now,
 				UpdatedAt: now,
 				Members:   []domains.User{defaultUser},
@@ -163,6 +163,20 @@ func TestChat_IsValid(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			name: "invalid private chat - one member",
+			chat: domains.Chat{
+				ID:          11,
+				Title:       &defaultTitle,
+				Description: &defaultDescription,
+				Type:        domains.ChatTypePrivate,
+				CreatedAt:   now.Add(-24 * time.Hour),
+				UpdatedAt:   now,
+				IsRead:      true,
+				Members:     []domains.User{defaultUser},
+			},
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -205,22 +219,5 @@ func TestChatTypeConstants(t *testing.T) {
 				t.Errorf("ChatType = %q, want %q", tt.chatType, tt.expected)
 			}
 		})
-	}
-}
-
-func TestMinMembersCount(t *testing.T) {
-	t.Parallel()
-
-	// Тест для проверки минимального количества участников
-	chat := domains.Chat{
-		ID:        1,
-		Type:      domains.ChatTypePrivate,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Members:   []domains.User{{ID: 1, Username: "singleuser"}},
-	}
-
-	if !chat.IsValid() {
-		t.Error("Chat with one member should be valid")
 	}
 }

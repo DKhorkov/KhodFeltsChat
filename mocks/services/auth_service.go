@@ -72,17 +72,17 @@ func (mr *MockAuthServiceMockRecorder) CreateRefreshToken(ctx, userID, value, tt
 }
 
 // ExpireRefreshToken mocks base method.
-func (m *MockAuthService) ExpireRefreshToken(ctx context.Context, refreshToken string) error {
+func (m *MockAuthService) ExpireRefreshToken(ctx context.Context, refreshTokenID uint64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExpireRefreshToken", ctx, refreshToken)
+	ret := m.ctrl.Call(m, "ExpireRefreshToken", ctx, refreshTokenID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ExpireRefreshToken indicates an expected call of ExpireRefreshToken.
-func (mr *MockAuthServiceMockRecorder) ExpireRefreshToken(ctx, refreshToken any) *gomock.Call {
+func (mr *MockAuthServiceMockRecorder) ExpireRefreshToken(ctx, refreshTokenID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExpireRefreshToken", reflect.TypeOf((*MockAuthService)(nil).ExpireRefreshToken), ctx, refreshToken)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExpireRefreshToken", reflect.TypeOf((*MockAuthService)(nil).ExpireRefreshToken), ctx, refreshTokenID)
 }
 
 // ForgetPassword mocks base method.

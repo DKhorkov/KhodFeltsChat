@@ -376,29 +376,25 @@ func (s *AuthRepositoryTestSuite) TestExpireRefreshToken_Success() {
 	// Тест: Успешное истечение refresh token
 	s.createTestRefreshTokens()
 
-	refreshToken := "valid_refresh_token_1"
-	err := s.repository.ExpireRefreshToken(s.ctx, refreshToken)
+	refreshTokenID := uint64(1)
+	err := s.repository.ExpireRefreshToken(s.ctx, refreshTokenID)
 	s.NoError(err)
 
-	// Проверяем, что TTL стал в прошлом
-	var ttl time.Time
+	// Проверяем, что токен удалился
+	var id int
 
 	err = s.tx.QueryRowContext(
 		s.ctx,
-		`SELECT ttl FROM refresh_tokens WHERE value = $1`,
-		refreshToken,
-	).Scan(&ttl)
-	s.NoError(err)
-
-	// TTL должен быть в прошлом (минус 24 часа от текущего времени)
-	expectedExpiry := time.Now().UTC().Add(-24 * time.Hour)
-	s.WithinDuration(expectedExpiry, ttl, 5*time.Second)
-	s.True(ttl.Before(time.Now().UTC()))
+		`SELECT id FROM refresh_tokens WHERE id = $1`,
+		refreshTokenID,
+	).Scan(&id)
+	s.Error(err)
 }
 
 func (s *AuthRepositoryTestSuite) TestExpireRefreshToken_NotFound() {
 	// Тест: Попытка истечь несуществующий токен
-	err := s.repository.ExpireRefreshToken(s.ctx, "nonexistent_token")
+	refreshTokenID := uint64(10)
+	err := s.repository.ExpireRefreshToken(s.ctx, refreshTokenID)
 	s.NoError(err) // UPDATE без найденных строк не возвращает ошибку
 
 	// Проверяем, что ничего не изменилось
@@ -417,37 +413,32 @@ func (s *AuthRepositoryTestSuite) TestExpireRefreshToken_AlreadyExpired() {
 	s.createTestUsers()
 	s.createTestRefreshTokens()
 
-	refreshToken := "expired_refresh_token"
+	refreshTokenID := uint64(3)
 
 	// Получаем текущий TTL
 	var currentTTL time.Time
 
 	err := s.tx.QueryRowContext(
 		s.ctx,
-		`SELECT ttl FROM refresh_tokens WHERE value = $1`,
-		refreshToken,
+		`SELECT ttl FROM refresh_tokens WHERE id = $1`,
+		refreshTokenID,
 	).Scan(&currentTTL)
 	s.NoError(err)
 	s.True(currentTTL.Before(time.Now().UTC())) // Убеждаемся, что уже истек
 
 	// Выполняем истечение
-	err = s.repository.ExpireRefreshToken(s.ctx, refreshToken)
+	err = s.repository.ExpireRefreshToken(s.ctx, refreshTokenID)
 	s.NoError(err)
 
-	// Проверяем новый TTL
-	var newTTL time.Time
+	// Проверяем, что токен удалился
+	var id int
 
 	err = s.tx.QueryRowContext(
 		s.ctx,
-		`SELECT ttl FROM refresh_tokens WHERE value = $1`,
-		refreshToken,
-	).Scan(&newTTL)
-	s.NoError(err)
-
-	// Новый TTL должен быть еще раньше
-	expectedExpiry := time.Now().UTC().Add(-24 * time.Hour)
-	s.WithinDuration(expectedExpiry, newTTL, 5*time.Second)
-	s.True(newTTL.Before(currentTTL)) // Новый TTL должен быть раньше старого
+		`SELECT id FROM refresh_tokens WHERE id = $1`,
+		refreshTokenID,
+	).Scan(&id)
+	s.Error(err)
 }
 
 func (s *AuthRepositoryTestSuite) TestVerifyEmail_Success() {
