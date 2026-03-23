@@ -13,7 +13,7 @@ const (
 	VerifyEmailTokenRouteKey = "verifyEmailToken"
 )
 
-// swagger:route POST /users/email/verify/{verifyEmailToken} users VerifyEmail
+// swagger:route GET /users/email/verify/{verifyEmailToken} users VerifyEmail
 //
 // VerifyEmail
 //

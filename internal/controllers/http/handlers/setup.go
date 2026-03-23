@@ -78,6 +78,10 @@ func SetupHandlers(
 		fmt.Sprintf(GetChatMessagesURL, common.IDRouteKey),
 		messages.GetChatMessagesHandler(messagesUseCases),
 	)
+	getMux.Handle(
+		fmt.Sprintf(VerifyEmailURL, auth.VerifyEmailTokenRouteKey),
+		auth.VerifyEmailHandler(authUseCases),
+	)
 
 	swaggerURL := fmt.Sprintf(SwaggerURL, docsConfig.Filepath)
 	opts := middleware.RedocOpts{
@@ -100,10 +104,6 @@ func SetupHandlers(
 	postMux.Handle(UsersURL, auth.RegisterHandler(authUseCases))
 	postMux.Handle(SessionsURL, auth.LoginHandler(authUseCases, cookiesConfig))
 	postMux.Handle(ChangePasswordURL, auth.ChangePasswordHandler(authUseCases))
-	postMux.Handle(
-		fmt.Sprintf(VerifyEmailURL, auth.VerifyEmailTokenRouteKey),
-		auth.VerifyEmailHandler(authUseCases),
-	)
 	postMux.Handle(SendVerifyEmailMessageURL, auth.SendVerifyEmailMessageHandler(authUseCases))
 	postMux.Handle(
 		fmt.Sprintf(ForgetPasswordURL, auth.ForgetPasswordTokenRouteKey),

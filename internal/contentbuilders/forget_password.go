@@ -23,15 +23,9 @@ func (b *ForgetPasswordContentBuilder) Subject() string {
 }
 
 func (b *ForgetPasswordContentBuilder) Body(user domains.User) string {
-	link := fmt.Sprintf(
-		"%s/%s",
-		b.forgetPasswordURLBase,
-		security.RawEncode([]byte(strconv.FormatUint(user.ID, 10))),
-	)
-
 	template := `<p>Добрый день, %s!</p>
 <p>На данный email было запрошено письмо для восстановления забытого пароля.</p>
-<p>Пожалуйста, перейдите по <a href="%s">ссылке</a>, чтобы сменить пароль!</p>
+<p>Пожалуйста, используйте токен <b>%s</b>, чтобы сменить пароль!</p>
 <p>Если это были не Вы - проигнорируйте данное письмо!</p>
 <p>С уважением,<br>
 команда Handmade Toys Marketplace.</p>
@@ -40,6 +34,6 @@ func (b *ForgetPasswordContentBuilder) Body(user domains.User) string {
 	return fmt.Sprintf(
 		template,
 		user.Username,
-		link,
+		security.RawEncode([]byte(strconv.FormatUint(user.ID, 10))),
 	)
 }

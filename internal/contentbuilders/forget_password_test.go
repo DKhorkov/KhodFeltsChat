@@ -51,7 +51,7 @@ func TestForgetPasswordContentBuilder_Body(t *testing.T) {
 			},
 			expected: `<p>Добрый день, Alice!</p>
 <p>На данный email было запрошено письмо для восстановления забытого пароля.</p>
-<p>Пожалуйста, перейдите по <a href="http://example.com/forget-password/MQ">ссылке</a>, чтобы сменить пароль!</p>
+<p>Пожалуйста, используйте токен <b>MQ</b>, чтобы сменить пароль!</p>
 <p>Если это были не Вы - проигнорируйте данное письмо!</p>
 <p>С уважением,<br>
 команда Handmade Toys Marketplace.</p>
@@ -65,7 +65,7 @@ func TestForgetPasswordContentBuilder_Body(t *testing.T) {
 			},
 			expected: `<p>Добрый день, Bob <Test>!</p>
 <p>На данный email было запрошено письмо для восстановления забытого пароля.</p>
-<p>Пожалуйста, перейдите по <a href="http://example.com/forget-password/MTIz">ссылке</a>, чтобы сменить пароль!</p>
+<p>Пожалуйста, используйте токен <b>MTIz</b>, чтобы сменить пароль!</p>
 <p>Если это были не Вы - проигнорируйте данное письмо!</p>
 <p>С уважением,<br>
 команда Handmade Toys Marketplace.</p>
@@ -79,7 +79,7 @@ func TestForgetPasswordContentBuilder_Body(t *testing.T) {
 			},
 			expected: `<p>Добрый день, Charlie!</p>
 <p>На данный email было запрошено письмо для восстановления забытого пароля.</p>
-<p>Пожалуйста, перейдите по <a href="http://example.com/forget-password/OTg3NjU0MzIx">ссылке</a>, чтобы сменить пароль!</p>
+<p>Пожалуйста, используйте токен <b>OTg3NjU0MzIx</b>, чтобы сменить пароль!</p>
 <p>Если это были не Вы - проигнорируйте данное письмо!</p>
 <p>С уважением,<br>
 команда Handmade Toys Marketplace.</p>
