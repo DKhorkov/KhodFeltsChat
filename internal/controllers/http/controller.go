@@ -103,7 +103,7 @@ func New(
 					Path: regexp.MustCompile(
 						`^` + strings.ReplaceAll(handlers.VerifyEmailURL, "{%s}", "") + `(.+)$`,
 					),
-					Methods: []string{http.MethodPost},
+					Methods: []string{http.MethodGet},
 				},
 			}...,
 		),
