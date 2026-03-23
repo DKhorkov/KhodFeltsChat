@@ -16,6 +16,7 @@ COPY .env .
 COPY ./api ./api
 COPY ./grafana ./grafana
 
+COPY --from=builder /build/migrations/ /app/migrations/
 COPY --from=builder /build/main /app/main
 
 CMD ["./main"]
