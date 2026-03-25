@@ -561,7 +561,7 @@ paths:
             tags:
                 - users
     /users/email/verify/{verifyEmailToken}:
-        post:
+        get:
             description: Verifies email for user with provided verifyEmailToken.
             operationId: VerifyEmail
             parameters:
