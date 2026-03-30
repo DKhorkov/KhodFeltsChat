@@ -7,24 +7,30 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/domains"
 	pg "github.com/DKhorkov/libs/db/postgresql"
+	"github.com/DKhorkov/libs/logging"
 	sq "github.com/Masterminds/squirrel"
 )
 
 const (
-	messagesTableName  = "messages"
-	senderIDColumnName = "sender_id"
-	textColumnName     = "text"
+	messagesTableName         = "messages"
+	messagesStatusesTableName = "messages_statuses"
+	senderIDColumnName        = "sender_id"
+	textColumnName            = "text"
+	messageIDColumnName       = "message_id"
 )
 
 type MessagesRepository struct {
-	tx pg.Transaction
+	tx     pg.Transaction
+	logger logging.Logger
 }
 
 func NewMessagesRepository(
 	tx pg.Transaction,
+	logger logging.Logger,
 ) *MessagesRepository {
 	return &MessagesRepository{
-		tx: tx,
+		tx:     tx,
+		logger: logger,
 	}
 }
 
@@ -56,11 +62,83 @@ func (repo *MessagesRepository) SaveMessage(
 		return 0, err
 	}
 
+	// Достаем id всех участников чата
+	stmt, params, err = sq.
+		Select(userIDColumnName).
+		From(chatsMembersTableName).
+		Where(sq.Eq{chatIDColumnName: message.ChatID}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return 0, err
+	}
+
+	rows, err := repo.tx.QueryContext(
+		ctx,
+		stmt,
+		params...,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	defer func() {
+		if err = rows.Close(); err != nil {
+			logging.LogErrorContext(ctx, repo.logger, "Failed to close SQL rows", err)
+		}
+	}()
+
+	var userIDs []uint64
+
+	for rows.Next() {
+		var userID uint64
+
+		err = rows.Scan(&userID)
+		if err != nil {
+			return 0, err
+		}
+
+		userIDs = append(userIDs, userID)
+	}
+
+	if err = rows.Err(); err != nil {
+		return 0, err
+	}
+
+	// Сохраняем статус нового сообщения для всех участников чата
+	builder := sq.
+		Insert(messagesStatusesTableName).
+		Columns(
+			messageIDColumnName,
+			userIDColumnName,
+			isReadColumnName,
+		).
+		PlaceholderFormat(sq.Dollar)
+
+	for _, userID := range userIDs {
+		isRead := userID == message.Sender.ID // true для отправителя, false для остальных
+		builder = builder.Values(messageID, userID, isRead)
+	}
+
+	stmt, params, err = builder.ToSql()
+	if err != nil {
+		return 0, err
+	}
+
+	if _, err = repo.tx.ExecContext(
+		ctx,
+		stmt,
+		params...,
+	); err != nil {
+		return 0, err
+	}
+
 	return messageID, nil
 }
 
 func (repo *MessagesRepository) GetChatMessages(
 	ctx context.Context,
+	userID uint64,
 	chatID uint64,
 	pagination *domains.Pagination,
 ) ([]domains.Message, error) {
@@ -77,6 +155,7 @@ func (repo *MessagesRepository) GetChatMessages(
 		fmt.Sprintf("%s.%s", messagesTableName, textColumnName),
 		fmt.Sprintf("%s.%s", messagesTableName, createdAtColumnName),
 		fmt.Sprintf("%s.%s", messagesTableName, updatedAtColumnName),
+		fmt.Sprintf("%s.%s", messagesStatusesTableName, isReadColumnName),
 	}
 
 	builder := sq.
@@ -92,9 +171,24 @@ func (repo *MessagesRepository) GetChatMessages(
 				senderIDColumnName,
 			),
 		).
+		Join(
+			fmt.Sprintf(
+				"%s ON %s.%s = %s.%s",
+				messagesStatusesTableName,
+				messagesStatusesTableName,
+				messageIDColumnName,
+				messagesTableName,
+				idColumnName,
+			),
+		).
 		Where(
-			sq.Eq{
-				fmt.Sprintf("%s.%s", messagesTableName, chatIDColumnName): chatID,
+			sq.And{
+				sq.Eq{
+					fmt.Sprintf("%s.%s", messagesTableName, chatIDColumnName): chatID,
+				},
+				sq.Eq{
+					fmt.Sprintf("%s.%s", messagesStatusesTableName, userIDColumnName): userID,
+				},
 			},
 		).
 		OrderBy(fmt.Sprintf("%s.%s %s", messagesTableName, idColumnName, desc)).
@@ -123,15 +217,8 @@ func (repo *MessagesRepository) GetChatMessages(
 	}
 
 	defer func() {
-		rowsErr := rows.Close()
-		if rowsErr != nil {
-			if err != nil {
-				err = fmt.Errorf("%w; %w", err, rowsErr)
-
-				return
-			}
-
-			err = rowsErr
+		if err = rows.Close(); err != nil {
+			logging.LogErrorContext(ctx, repo.logger, "Failed to close SQL rows", err)
 		}
 	}()
 
@@ -158,7 +245,8 @@ func (repo *MessagesRepository) GetChatMessages(
 
 func (repo *MessagesRepository) GetMessageByID(
 	ctx context.Context,
-	id uint64,
+	userID uint64,
+	messageID uint64,
 ) (*domains.Message, error) {
 	columnsForSelect := []string{
 		fmt.Sprintf("%s.%s", messagesTableName, idColumnName),
@@ -173,6 +261,7 @@ func (repo *MessagesRepository) GetMessageByID(
 		fmt.Sprintf("%s.%s", messagesTableName, textColumnName),
 		fmt.Sprintf("%s.%s", messagesTableName, createdAtColumnName),
 		fmt.Sprintf("%s.%s", messagesTableName, updatedAtColumnName),
+		fmt.Sprintf("%s.%s", messagesStatusesTableName, isReadColumnName),
 	}
 
 	stmt, params, err := sq.
@@ -188,9 +277,24 @@ func (repo *MessagesRepository) GetMessageByID(
 				senderIDColumnName,
 			),
 		).
+		Join(
+			fmt.Sprintf(
+				"%s ON %s.%s = %s.%s",
+				messagesStatusesTableName,
+				messagesStatusesTableName,
+				messageIDColumnName,
+				messagesTableName,
+				idColumnName,
+			),
+		).
 		Where(
-			sq.Eq{
-				fmt.Sprintf("%s.%s", messagesTableName, idColumnName): id,
+			sq.And{
+				sq.Eq{
+					fmt.Sprintf("%s.%s", messagesTableName, idColumnName): messageID,
+				},
+				sq.Eq{
+					fmt.Sprintf("%s.%s", messagesStatusesTableName, userIDColumnName): userID,
+				},
 			},
 		).
 		PlaceholderFormat(sq.Dollar).
@@ -209,6 +313,37 @@ func (repo *MessagesRepository) GetMessageByID(
 	return pgMessageToDomainMessage(*messagePg), nil
 }
 
+func (repo *MessagesRepository) ChangeMessagesIsReadStatus(
+	ctx context.Context,
+	userID uint64,
+	messages []domains.Message,
+	isRead bool,
+) error {
+	messageIDs := make([]uint64, 0, len(messages))
+	for i := range messages {
+		messageIDs = append(messageIDs, messages[i].ID)
+	}
+
+	stmt, params, err := sq.
+		Update(messagesStatusesTableName).
+		Where(
+			sq.Eq{
+				userIDColumnName:    userID,
+				messageIDColumnName: messageIDs,
+			},
+		).
+		Set(isReadColumnName, isRead).
+		PlaceholderFormat(sq.Dollar). // pq postgres driver works only with $ placeholders
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.tx.ExecContext(ctx, stmt, params...)
+
+	return err
+}
+
 func pgMessageToDomainMessage(messagePg MessagePg) *domains.Message {
 	return &domains.Message{
 		ID:     messagePg.ID,
@@ -225,6 +360,7 @@ func pgMessageToDomainMessage(messagePg MessagePg) *domains.Message {
 		Text:      messagePg.Text,
 		CreatedAt: messagePg.CreatedAt,
 		UpdatedAt: messagePg.UpdatedAt,
+		IsRead:    messagePg.IsRead,
 	}
 }
 
@@ -241,4 +377,5 @@ type MessagePg struct {
 	Text                 string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
+	IsRead               bool
 }

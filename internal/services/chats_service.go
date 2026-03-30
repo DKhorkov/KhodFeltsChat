@@ -97,6 +97,7 @@ func (s *ChatsService) GetUserChats(
 
 				if messages, err = messageRepository.GetChatMessages(
 					ctx,
+					userID,
 					chats[i].ID,
 					messagesPagination,
 				); err != nil {

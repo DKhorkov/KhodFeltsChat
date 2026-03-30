@@ -44,7 +44,11 @@ func (s *MessagesService) SaveMessage(
 				return err
 			}
 
-			if createdMessage, err = messagesRepository.GetMessageByID(ctx, messageID); err != nil {
+			if createdMessage, err = messagesRepository.GetMessageByID(
+				ctx,
+				message.Sender.ID,
+				messageID,
+			); err != nil {
 				return err
 			}
 
@@ -103,6 +107,7 @@ func (s *MessagesService) GetChatMessages(
 			messagesRepository := s.newMessagesRepositoryFunc(tx)
 			if messages, err = messagesRepository.GetChatMessages(
 				ctx,
+				userID,
 				chatID,
 				pagination,
 			); err != nil {
@@ -114,6 +119,15 @@ func (s *MessagesService) GetChatMessages(
 				userID,
 				chatID,
 				true, // При получении сообщений чат считается просмотренным для текущего пользователя
+			); err != nil {
+				return err
+			}
+
+			if err = messagesRepository.ChangeMessagesIsReadStatus(
+				ctx,
+				userID,
+				messages,
+				true, // При получении сообщений помечаем их прочитанными для текущего пользователя
 			); err != nil {
 				return err
 			}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/domains"
 	pg "github.com/DKhorkov/libs/db/postgresql"
+	"github.com/DKhorkov/libs/logging"
 	sq "github.com/Masterminds/squirrel"
 )
 
@@ -24,14 +25,17 @@ const (
 )
 
 type ChatsRepository struct {
-	tx pg.Transaction
+	tx     pg.Transaction
+	logger logging.Logger
 }
 
 func NewChatsRepository(
 	tx pg.Transaction,
+	logger logging.Logger,
 ) *ChatsRepository {
 	return &ChatsRepository{
-		tx: tx,
+		tx:     tx,
+		logger: logger,
 	}
 }
 
@@ -87,15 +91,8 @@ func (repo *ChatsRepository) GetChatMembers(
 	}
 
 	defer func() {
-		rowsErr := rows.Close()
-		if rowsErr != nil {
-			if err != nil {
-				err = fmt.Errorf("%w; %w", err, rowsErr)
-
-				return
-			}
-
-			err = rowsErr
+		if err = rows.Close(); err != nil {
+			logging.LogErrorContext(ctx, repo.logger, "Failed to close SQL rows", err)
 		}
 	}()
 
@@ -191,15 +188,8 @@ func (repo *ChatsRepository) GetUserChats(
 	}
 
 	defer func() {
-		rowsErr := rows.Close()
-		if rowsErr != nil {
-			if err != nil {
-				err = fmt.Errorf("%w; %w", err, rowsErr)
-
-				return
-			}
-
-			err = rowsErr
+		if err = rows.Close(); err != nil {
+			logging.LogErrorContext(ctx, repo.logger, "Failed to close SQL rows", err)
 		}
 	}()
 

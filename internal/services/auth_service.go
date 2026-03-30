@@ -54,7 +54,7 @@ func (s *AuthService) RegisterUser(
 				)
 			}
 
-			if user, _ = usersRepository.GetUserByUsername(ctx, userData.Email); user != nil {
+			if user, _ = usersRepository.GetUserByUsername(ctx, userData.Username); user != nil {
 				return fmt.Errorf(
 					"%w: user with provided username already exists",
 					customerrors.ErrUserAlreadyExists,

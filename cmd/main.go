@@ -68,7 +68,7 @@ func main() {
 	usersService := services.NewUsersService(
 		unitOfWork,
 		func(tx postgresql.Transaction) interfaces.UsersRepository {
-			return repositories.NewUsersRepository(tx)
+			return repositories.NewUsersRepository(tx, logger)
 		},
 	)
 
@@ -78,7 +78,7 @@ func main() {
 			return repositories.NewAuthRepository(tx)
 		},
 		func(tx postgresql.Transaction) interfaces.UsersRepository {
-			return repositories.NewUsersRepository(tx)
+			return repositories.NewUsersRepository(tx, logger)
 		},
 		func() interfaces.EmailsRepository {
 			return repositories.NewEmailsRepository(cfg.Email.SMTP, contentBuilders)
@@ -88,20 +88,20 @@ func main() {
 	chatsService := services.NewChatsService(
 		unitOfWork,
 		func(tx postgresql.Transaction) interfaces.ChatsRepository {
-			return repositories.NewChatsRepository(tx)
+			return repositories.NewChatsRepository(tx, logger)
 		},
 		func(tx postgresql.Transaction) interfaces.MessagesRepository {
-			return repositories.NewMessagesRepository(tx)
+			return repositories.NewMessagesRepository(tx, logger)
 		},
 	)
 
 	messagesService := services.NewMessagesService(
 		unitOfWork,
 		func(tx postgresql.Transaction) interfaces.ChatsRepository {
-			return repositories.NewChatsRepository(tx)
+			return repositories.NewChatsRepository(tx, logger)
 		},
 		func(tx postgresql.Transaction) interfaces.MessagesRepository {
-			return repositories.NewMessagesRepository(tx)
+			return repositories.NewMessagesRepository(tx, logger)
 		},
 	)
 
