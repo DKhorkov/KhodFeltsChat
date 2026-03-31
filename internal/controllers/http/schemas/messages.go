@@ -41,6 +41,12 @@ type Message struct {
 	// nullable: false
 	// format: date-time
 	UpdatedAt time.Time `json:"updatedAt"`
+
+	// Whether message was read or not for User.
+	// required: true
+	// nullable: false
+	// example: true
+	IsRead bool `json:"isRead"`
 }
 
 // Sender represents a user record, who sent message to the chat.

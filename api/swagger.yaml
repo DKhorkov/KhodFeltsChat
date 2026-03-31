@@ -112,6 +112,11 @@ definitions:
                 minimum: 1
                 type: integer
                 x-go-name: ID
+            isRead:
+                description: Whether message was read or not for User.
+                example: true
+                type: boolean
+                x-go-name: IsRead
             sender:
                 $ref: '#/definitions/Sender'
             text:
@@ -132,6 +137,7 @@ definitions:
             - text
             - createdAt
             - updatedAt
+            - isRead
         title: Message represents a message record, which was sent to the chat.
         type: object
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
