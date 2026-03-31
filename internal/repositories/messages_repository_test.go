@@ -34,6 +34,7 @@ type MessagesRepositoryTestSuite struct {
 	pool        *sql.DB
 	tx          postgresql.Transaction
 	repository  *repositories.MessagesRepository
+	logger      logging.Logger
 }
 
 func (s *MessagesRepositoryTestSuite) SetupSuite() {
@@ -44,7 +45,7 @@ func (s *MessagesRepositoryTestSuite) SetupSuite() {
 	s.NoError(err)
 
 	cfg := config.New()
-	logger := logging.New(
+	s.logger = logging.New(
 		cfg.Logging.Level,
 		cfg.Logging.LogFilePath,
 	)
@@ -52,7 +53,7 @@ func (s *MessagesRepositoryTestSuite) SetupSuite() {
 	dbConnector, err := postgresql.New(
 		postgresql.BuildDsn(cfg.Database),
 		cfg.Database.Driver,
-		logger,
+		s.logger,
 		postgresql.WithMaxOpenConnections(cfg.Database.Pool.MaxOpenConnections),
 		postgresql.WithMaxIdleConnections(cfg.Database.Pool.MaxIdleConnections),
 		postgresql.WithMaxConnectionLifetime(cfg.Database.Pool.MaxConnectionLifetime),
@@ -88,7 +89,7 @@ func (s *MessagesRepositoryTestSuite) SetupTest() {
 	s.tx = tx
 
 	// Создаем репозиторий с транзакцией
-	s.repository = repositories.NewMessagesRepository(tx)
+	s.repository = repositories.NewMessagesRepository(tx, s.logger)
 }
 
 func (s *MessagesRepositoryTestSuite) TearDownTest() {
@@ -119,6 +120,7 @@ func (s *MessagesRepositoryTestSuite) TestSaveMessage_Success() {
 	// Создаем тестовые данные
 	s.createTestUsers()
 	s.createTestChats()
+	s.createTestChatMembers()
 
 	// Тест: Успешное сохранение сообщения
 	message := domains.Message{
@@ -155,6 +157,7 @@ func (s *MessagesRepositoryTestSuite) TestSaveMessage_Success() {
 func (s *MessagesRepositoryTestSuite) TestSaveMessage_EmptyText() {
 	s.createTestUsers()
 	s.createTestChats()
+	s.createTestChatMembers()
 
 	// Тест: Сохранение сообщения с пустым текстом
 	message := domains.Message{
@@ -184,6 +187,7 @@ func (s *MessagesRepositoryTestSuite) TestSaveMessage_EmptyText() {
 func (s *MessagesRepositoryTestSuite) TestSaveMessage_LongText() {
 	s.createTestUsers()
 	s.createTestChats()
+	s.createTestChatMembers()
 
 	// Тест: Сохранение сообщения с длинным текстом
 	longText := `Это очень длинное сообщение, которое содержит много текста. 
@@ -252,6 +256,7 @@ func (s *MessagesRepositoryTestSuite) TestSaveMessage_MultipleMessages() {
 	// Создаем тестовые данные
 	s.createTestUsers()
 	s.createTestChats()
+	s.createTestChatMembers()
 
 	// Тест: Сохранение нескольких сообщений
 	messages := []string{
@@ -303,14 +308,14 @@ func (s *MessagesRepositoryTestSuite) TestGetChatMessages_WithoutPagination() {
 	s.createTestMessages()
 
 	// Тест: Получение всех сообщений чата без пагинации
+	userID := uint64(1)
 	chatID := uint64(1)
 
-	messages, err := s.repository.GetChatMessages(s.ctx, chatID, nil)
+	messages, err := s.repository.GetChatMessages(s.ctx, userID, chatID, nil)
 	s.NoError(err)
 	s.NotNil(messages)
 
-	// В чате 1 должно быть как минимум 5 сообщений + 3 для пагинации = 8
-	s.GreaterOrEqual(len(messages), 8)
+	s.GreaterOrEqual(len(messages), 3)
 
 	// Проверяем сортировку по ID в порядке убывания
 	for i := range len(messages) - 1 {
@@ -324,6 +329,7 @@ func (s *MessagesRepositoryTestSuite) TestGetChatMessages_WithoutPagination() {
 	s.NotEmpty(firstMessage.Text)
 	s.NotZero(firstMessage.CreatedAt)
 	s.NotZero(firstMessage.UpdatedAt)
+	s.False(firstMessage.IsRead)
 
 	// Проверяем отправителя
 	s.NotZero(firstMessage.Sender.ID)
@@ -346,24 +352,26 @@ func (s *MessagesRepositoryTestSuite) TestGetChatMessages_WithLimit() {
 	s.createTestMessages()
 
 	// Тест: Получение сообщений с лимитом
+	userID := uint64(1)
 	chatID := uint64(1)
 	pagination := &domains.Pagination{
 		Limit: pointers.New[uint64](3),
 	}
 
-	messages, err := s.repository.GetChatMessages(s.ctx, chatID, pagination)
+	messages, err := s.repository.GetChatMessages(s.ctx, userID, chatID, pagination)
 	s.NoError(err)
 	s.NotNil(messages)
 	s.Equal(3, len(messages))
 
 	// Проверяем сортировку
-	s.Equal(uint64(15), messages[0].ID) // Последнее сообщение
-	s.Equal(uint64(14), messages[1].ID)
-	s.Equal(uint64(13), messages[2].ID)
+	s.Equal(uint64(13), messages[0].ID) // Последнее сообщение
+	s.Equal(uint64(4), messages[1].ID)
+	s.Equal(uint64(1), messages[2].ID)
 
 	// Проверяем, что все сообщения принадлежат указанному чату
 	for _, msg := range messages {
 		s.Equal(chatID, msg.ChatID)
+		s.False(msg.IsRead)
 	}
 }
 
@@ -374,24 +382,25 @@ func (s *MessagesRepositoryTestSuite) TestGetChatMessages_WithOffset() {
 	s.createTestMessages()
 
 	// Тест: Получение сообщений с оффсетом
+	userID := uint64(1)
 	chatID := uint64(1)
 	pagination := &domains.Pagination{
 		Limit:  pointers.New[uint64](2),
 		Offset: pointers.New[uint64](2),
 	}
 
-	messages, err := s.repository.GetChatMessages(s.ctx, chatID, pagination)
+	messages, err := s.repository.GetChatMessages(s.ctx, userID, chatID, pagination)
 	s.NoError(err)
 	s.NotNil(messages)
-	s.Equal(2, len(messages))
+	s.Equal(1, len(messages))
 
 	// Должны пропустить первые 2 сообщения
-	s.Equal(uint64(13), messages[0].ID)
-	s.Equal(uint64(5), messages[1].ID) // После сообщений 15, 14, 13
+	s.Equal(uint64(1), messages[0].ID)
 
 	// Проверяем, что все сообщения принадлежат указанному чату
 	for _, msg := range messages {
 		s.Equal(chatID, msg.ChatID)
+		s.False(msg.IsRead)
 	}
 }
 
@@ -404,14 +413,20 @@ func (s *MessagesRepositoryTestSuite) TestGetChatMessages_EmptyChat() {
 	)
 	s.NoError(err)
 
-	messages, err := s.repository.GetChatMessages(s.ctx, 100, nil)
+	userID := uint64(1)
+	chatID := uint64(100)
+
+	messages, err := s.repository.GetChatMessages(s.ctx, userID, chatID, nil)
 	s.NoError(err)
 	s.Nil(messages) // Должен вернуться nil
 }
 
 func (s *MessagesRepositoryTestSuite) TestGetChatMessages_NonExistentChat() {
+	userID := uint64(1)
+	chatID := uint64(999)
+
 	// Тест: Получение сообщений из несуществующего чата
-	messages, err := s.repository.GetChatMessages(s.ctx, 999, nil)
+	messages, err := s.repository.GetChatMessages(s.ctx, userID, chatID, nil)
 	s.NoError(err)
 	s.Nil(messages) // Должен вернуться nil
 }
@@ -422,12 +437,14 @@ func (s *MessagesRepositoryTestSuite) TestGetChatMessages_DifferentChats() {
 	s.createTestChatMembers()
 	s.createTestMessages()
 
+	userID := uint64(1)
+
 	// Тест: Проверяем, что возвращаются только сообщения указанного чата
-	chat1Messages, err := s.repository.GetChatMessages(s.ctx, 1, nil)
+	chat1Messages, err := s.repository.GetChatMessages(s.ctx, userID, 1, nil)
 	s.NoError(err)
 	s.NotNil(chat1Messages)
 
-	chat2Messages, err := s.repository.GetChatMessages(s.ctx, 2, nil)
+	chat2Messages, err := s.repository.GetChatMessages(s.ctx, userID, 2, nil)
 	s.NoError(err)
 	s.NotNil(chat2Messages)
 
@@ -447,11 +464,13 @@ func (s *MessagesRepositoryTestSuite) TestGetChatMessages_DifferentChats() {
 
 func (s *MessagesRepositoryTestSuite) TestGetChatMessages_ZeroLimit() {
 	// Тест: Получение сообщений с лимитом 0
+	userID := uint64(1)
+	chatID := uint64(1)
 	pagination := &domains.Pagination{
 		Limit: pointers.New[uint64](0),
 	}
 
-	messages, err := s.repository.GetChatMessages(s.ctx, 1, pagination)
+	messages, err := s.repository.GetChatMessages(s.ctx, userID, chatID, pagination)
 	s.NoError(err)
 	s.Nil(messages) // Должен вернуться nil при лимите 0
 }
@@ -463,9 +482,10 @@ func (s *MessagesRepositoryTestSuite) TestGetMessageByID_Success() {
 	s.createTestMessages()
 
 	// Тест: Получение сообщения по ID
+	userID := uint64(1)
 	messageID := uint64(1)
 
-	message, err := s.repository.GetMessageByID(s.ctx, messageID)
+	message, err := s.repository.GetMessageByID(s.ctx, userID, messageID)
 	s.NoError(err)
 	s.NotNil(message)
 
@@ -481,6 +501,7 @@ func (s *MessagesRepositoryTestSuite) TestGetMessageByID_Success() {
 	s.NotZero(message.UpdatedAt)
 	s.NotZero(message.Sender.CreatedAt)
 	s.NotZero(message.Sender.UpdatedAt)
+	s.False(message.IsRead)
 }
 
 func (s *MessagesRepositoryTestSuite) TestGetMessageByID_DifferentSender() {
@@ -490,33 +511,29 @@ func (s *MessagesRepositoryTestSuite) TestGetMessageByID_DifferentSender() {
 	s.createTestMessages()
 
 	// Тест: Получение сообщения от другого отправителя
+	userID := uint64(1)
 	messageID := uint64(2) // Сообщение от Jane
 
-	message, err := s.repository.GetMessageByID(s.ctx, messageID)
-	s.NoError(err)
-	s.NotNil(message)
-
-	s.Equal(messageID, message.ID)
-	s.Equal(uint64(1), message.ChatID)
-	s.Equal(uint64(2), message.Sender.ID)
-	s.Equal("jane_smith", message.Sender.Username)
-	s.Equal("jane@example.com", message.Sender.Email)
-	s.False(message.Sender.EmailConfirmed) // У Jane неподтвержденный email
-	s.Equal("$2a$10$hashedpassword2", message.Sender.Password)
-	s.Equal("Hi John!", message.Text)
+	message, err := s.repository.GetMessageByID(s.ctx, userID, messageID)
+	s.Error(err)
+	s.Nil(message)
 }
 
 func (s *MessagesRepositoryTestSuite) TestGetMessageByID_NotFound() {
+	userID := uint64(1)
+
 	// Тест: Попытка получить несуществующее сообщение
-	message, err := s.repository.GetMessageByID(s.ctx, 999)
+	message, err := s.repository.GetMessageByID(s.ctx, userID, 999)
 	s.Error(err)
 	s.Nil(message)
 	s.Contains(err.Error(), "no rows")
 }
 
 func (s *MessagesRepositoryTestSuite) TestGetMessageByID_ZeroID() {
+	userID := uint64(1)
+
 	// Тест: Попытка получить сообщение с ID = 0
-	message, err := s.repository.GetMessageByID(s.ctx, 0)
+	message, err := s.repository.GetMessageByID(s.ctx, userID, 0)
 	s.Error(err)
 	s.Nil(message)
 }
@@ -528,9 +545,10 @@ func (s *MessagesRepositoryTestSuite) TestGetMessageByID_JoinCorrectness() {
 	s.createTestMessages()
 
 	// Тест: Проверка правильности JOIN
+	userID := uint64(1)
 	messageID := uint64(6) // Сообщение в приватном чате
 
-	message, err := s.repository.GetMessageByID(s.ctx, messageID)
+	message, err := s.repository.GetMessageByID(s.ctx, userID, messageID)
 	s.NoError(err)
 	s.NotNil(message)
 
@@ -538,6 +556,7 @@ func (s *MessagesRepositoryTestSuite) TestGetMessageByID_JoinCorrectness() {
 	s.Equal(uint64(1), message.Sender.ID)
 	s.Equal("john_doe", message.Sender.Username)
 	s.Equal("Hi Alice!", message.Text)
+	s.False(message.IsRead)
 
 	// Проверяем, что это сообщение из приватного чата
 	s.Equal(uint64(2), message.ChatID)
@@ -545,13 +564,14 @@ func (s *MessagesRepositoryTestSuite) TestGetMessageByID_JoinCorrectness() {
 
 func (s *MessagesRepositoryTestSuite) TestGetChatMessages_WithLargeOffset() {
 	// Тест: Пагинация с большим оффсетом
+	userID := uint64(1)
 	chatID := uint64(1)
 	pagination := &domains.Pagination{
 		Limit:  pointers.New[uint64](5),
 		Offset: pointers.New[uint64](100), // Очень большой оффсет
 	}
 
-	messages, err := s.repository.GetChatMessages(s.ctx, chatID, pagination)
+	messages, err := s.repository.GetChatMessages(s.ctx, userID, chatID, pagination)
 	s.NoError(err)
 	s.Nil(messages) // Должен вернуться nil при слишком большом оффсете
 }
@@ -559,6 +579,7 @@ func (s *MessagesRepositoryTestSuite) TestGetChatMessages_WithLargeOffset() {
 func (s *MessagesRepositoryTestSuite) TestMessageOrdering() {
 	s.createTestUsers()
 	s.createTestChats()
+	s.createTestChatMembers()
 	// Тест: Проверка порядка сообщений при разных сценариях
 
 	// Сохраняем несколько сообщений с разными временами
@@ -591,8 +612,10 @@ func (s *MessagesRepositoryTestSuite) TestMessageOrdering() {
 		messageIDs = append(messageIDs, messageID)
 	}
 
+	userID := uint64(1)
+
 	// Получаем сообщения
-	chatMessages, err := s.repository.GetChatMessages(s.ctx, 3, nil)
+	chatMessages, err := s.repository.GetChatMessages(s.ctx, userID, 3, nil)
 	s.NoError(err)
 	s.NotNil(chatMessages)
 
@@ -617,6 +640,50 @@ func (s *MessagesRepositoryTestSuite) TestMessageOrdering() {
 	}
 
 	s.Equal(len(messageIDs), foundCount, "All saved messages should be returned")
+}
+
+func (s *MessagesRepositoryTestSuite) TestChangeMessagesIsReadStatus_Success() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	// Тест: Успешное изменение статуса прочтения
+	userID := uint64(1)
+	messages := []domains.Message{{ID: 1}}
+	newIsRead := true
+
+	// Проверяем начальное состояние (должно быть false)
+	var initialIsRead bool
+
+	err := s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT is_read FROM messages_statuses WHERE user_id = $1 AND message_id = $2`,
+		userID, messages[0].ID,
+	).Scan(&initialIsRead)
+	s.NoError(err)
+	s.False(initialIsRead, "Initial is_read should be false")
+
+	// Изменяем статус
+	err = s.repository.ChangeMessagesIsReadStatus(s.ctx, userID, messages, newIsRead)
+	s.NoError(err)
+
+	// Проверяем конечное состояние
+	var finalIsRead bool
+
+	err = s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT is_read FROM messages_statuses WHERE user_id = $1 AND message_id = $2`,
+		userID, messages[0].ID,
+	).Scan(&finalIsRead)
+	s.NoError(err)
+	s.True(finalIsRead, "Final is_read should be true")
+}
+
+func (s *MessagesRepositoryTestSuite) TestChangeMessagesIsReadStatus_NonExistentRecord() {
+	// Тест: Попытка изменить статус для несуществующей записи
+	err := s.repository.ChangeMessagesIsReadStatus(s.ctx, 999, []domains.Message{{ID: 222}}, true)
+	s.NoError(err) // UPDATE без найденных строк не возвращает ошибку
 }
 
 func (s *MessagesRepositoryTestSuite) createTestUsers() {
@@ -745,6 +812,16 @@ func (s *MessagesRepositoryTestSuite) createTestMessages() {
 			m.senderID,
 			m.text,
 			time.Now().UTC(),
+		)
+		s.NoError(err)
+
+		_, err = s.tx.ExecContext(
+			s.ctx,
+			`INSERT INTO messages_statuses (message_id, user_id, is_read) 
+			 VALUES ($1, $2, $3)`,
+			m.id,
+			m.senderID,
+			false,
 		)
 		s.NoError(err)
 	}

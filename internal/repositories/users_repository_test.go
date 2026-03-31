@@ -35,6 +35,7 @@ type UsersRepositoryTestSuite struct {
 	pool        *sql.DB
 	tx          postgresql.Transaction
 	repository  *repositories.UsersRepository
+	logger      logging.Logger
 }
 
 func (s *UsersRepositoryTestSuite) SetupSuite() {
@@ -45,7 +46,7 @@ func (s *UsersRepositoryTestSuite) SetupSuite() {
 	s.NoError(err)
 
 	cfg := config.New()
-	logger := logging.New(
+	s.logger = logging.New(
 		cfg.Logging.Level,
 		cfg.Logging.LogFilePath,
 	)
@@ -53,7 +54,7 @@ func (s *UsersRepositoryTestSuite) SetupSuite() {
 	dbConnector, err := postgresql.New(
 		postgresql.BuildDsn(cfg.Database),
 		cfg.Database.Driver,
-		logger,
+		s.logger,
 		postgresql.WithMaxOpenConnections(cfg.Database.Pool.MaxOpenConnections),
 		postgresql.WithMaxIdleConnections(cfg.Database.Pool.MaxIdleConnections),
 		postgresql.WithMaxConnectionLifetime(cfg.Database.Pool.MaxConnectionLifetime),
@@ -88,7 +89,7 @@ func (s *UsersRepositoryTestSuite) SetupTest() {
 	s.tx = tx
 
 	// Создаем репозиторий с транзакцией
-	s.repository = repositories.NewUsersRepository(tx)
+	s.repository = repositories.NewUsersRepository(tx, s.logger)
 
 	// Создаем тестовых пользователей
 	s.createTestUsers()

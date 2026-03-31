@@ -43,7 +43,7 @@ func (uow *UnitOfWork) Do(
 	case <-ctx.Done():
 		err = tx.Rollback()
 		if err != nil {
-			return fmt.Errorf("%w: %v", ctx.Err(), err)
+			return fmt.Errorf("%w: %w", ctx.Err(), err)
 		}
 
 		return ctx.Err()
@@ -51,7 +51,7 @@ func (uow *UnitOfWork) Do(
 		if err != nil {
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
-				err = fmt.Errorf("%w: %v", err, rollbackErr)
+				err = fmt.Errorf("%w: %w", err, rollbackErr)
 			}
 
 			return err

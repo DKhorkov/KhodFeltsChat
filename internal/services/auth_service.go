@@ -227,7 +227,7 @@ func (s *AuthService) SendForgetPasswordMessage(ctx context.Context, email strin
 
 			user, err := usersRepository.GetUserByEmail(ctx, email)
 			if err != nil {
-				return fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
+				return fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 			}
 
 			emailsRepository := s.newEmailsRepositoryFunc()
@@ -245,7 +245,7 @@ func (s *AuthService) SendVerifyEmailMessage(ctx context.Context, email string) 
 
 			user, err := usersRepository.GetUserByEmail(ctx, email)
 			if err != nil {
-				return fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
+				return fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 			}
 
 			emailsRepository := s.newEmailsRepositoryFunc()

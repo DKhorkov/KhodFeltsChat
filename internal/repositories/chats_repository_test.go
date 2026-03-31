@@ -34,6 +34,7 @@ type ChatsRepositoryTestSuite struct {
 	pool        *sql.DB
 	tx          postgresql.Transaction
 	repository  *repositories.ChatsRepository
+	logger      logging.Logger
 }
 
 func (s *ChatsRepositoryTestSuite) SetupSuite() {
@@ -44,7 +45,7 @@ func (s *ChatsRepositoryTestSuite) SetupSuite() {
 	s.NoError(err)
 
 	cfg := config.New()
-	logger := logging.New(
+	s.logger = logging.New(
 		cfg.Logging.Level,
 		cfg.Logging.LogFilePath,
 	)
@@ -52,7 +53,7 @@ func (s *ChatsRepositoryTestSuite) SetupSuite() {
 	dbConnector, err := postgresql.New(
 		postgresql.BuildDsn(cfg.Database),
 		cfg.Database.Driver,
-		logger,
+		s.logger,
 		postgresql.WithMaxOpenConnections(cfg.Database.Pool.MaxOpenConnections),
 		postgresql.WithMaxIdleConnections(cfg.Database.Pool.MaxIdleConnections),
 		postgresql.WithMaxConnectionLifetime(cfg.Database.Pool.MaxConnectionLifetime),
@@ -88,7 +89,7 @@ func (s *ChatsRepositoryTestSuite) SetupTest() {
 	s.tx = tx
 
 	// Создаем репозиторий с транзакцией
-	s.repository = repositories.NewChatsRepository(tx)
+	s.repository = repositories.NewChatsRepository(tx, s.logger)
 }
 
 func (s *ChatsRepositoryTestSuite) TearDownTest() {
