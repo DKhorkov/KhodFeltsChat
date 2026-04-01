@@ -54,7 +54,7 @@ func (s *AuthService) RegisterUser(
 				)
 			}
 
-			if user, _ = usersRepository.GetUserByUsername(ctx, userData.Email); user != nil {
+			if user, _ = usersRepository.GetUserByUsername(ctx, userData.Username); user != nil {
 				return fmt.Errorf(
 					"%w: user with provided username already exists",
 					customerrors.ErrUserAlreadyExists,
@@ -227,7 +227,7 @@ func (s *AuthService) SendForgetPasswordMessage(ctx context.Context, email strin
 
 			user, err := usersRepository.GetUserByEmail(ctx, email)
 			if err != nil {
-				return fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
+				return fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 			}
 
 			emailsRepository := s.newEmailsRepositoryFunc()
@@ -245,7 +245,7 @@ func (s *AuthService) SendVerifyEmailMessage(ctx context.Context, email string) 
 
 			user, err := usersRepository.GetUserByEmail(ctx, email)
 			if err != nil {
-				return fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
+				return fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 			}
 
 			emailsRepository := s.newEmailsRepositoryFunc()

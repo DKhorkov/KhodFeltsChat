@@ -43,7 +43,7 @@ func (s *ChatsService) GetChatMembers(
 		func(ctx context.Context, tx pg.Transaction) error {
 			chatsRepository := s.newChatsRepositoryFunc(tx)
 			if _, err = chatsRepository.GetChatByID(ctx, chatID); err != nil {
-				return fmt.Errorf("%w: %v", customerrors.ErrChatNotFound, err)
+				return fmt.Errorf("%w: %w", customerrors.ErrChatNotFound, err)
 			}
 
 			if members, err = chatsRepository.GetChatMembers(ctx, chatID); err != nil {
@@ -97,6 +97,7 @@ func (s *ChatsService) GetUserChats(
 
 				if messages, err = messageRepository.GetChatMessages(
 					ctx,
+					userID,
 					chats[i].ID,
 					messagesPagination,
 				); err != nil {

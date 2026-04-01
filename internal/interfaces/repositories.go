@@ -65,8 +65,15 @@ type MessagesRepository interface {
 	SaveMessage(ctx context.Context, message domains.Message) (uint64, error)
 	GetChatMessages(
 		ctx context.Context,
+		userID uint64,
 		chatID uint64,
 		pagination *domains.Pagination,
 	) ([]domains.Message, error)
-	GetMessageByID(ctx context.Context, id uint64) (*domains.Message, error)
+	GetMessageByID(ctx context.Context, userID uint64, messageID uint64) (*domains.Message, error)
+	ChangeMessagesIsReadStatus(
+		ctx context.Context,
+		userID uint64,
+		messages []domains.Message,
+		isRead bool,
+	) error
 }

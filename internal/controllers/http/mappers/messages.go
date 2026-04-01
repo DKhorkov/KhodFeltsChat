@@ -16,6 +16,7 @@ func MapMessage(message domains.Message) schemas.Message {
 		Text:      message.Text,
 		CreatedAt: message.CreatedAt,
 		UpdatedAt: message.UpdatedAt,
+		IsRead:    message.IsRead,
 	}
 }
 

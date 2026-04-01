@@ -78,7 +78,7 @@ func TestMessagesService_SaveMessage(t *testing.T) {
 						Return(savedMessageID, nil)
 
 					mr.EXPECT().
-						GetMessageByID(gomock.Any(), savedMessageID).
+						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
 						Return(savedMessage, nil)
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
@@ -122,7 +122,7 @@ func TestMessagesService_SaveMessage(t *testing.T) {
 						Return(savedMessageID, nil)
 
 					mr.EXPECT().
-						GetMessageByID(gomock.Any(), savedMessageID).
+						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
 						Return(savedMessage, nil)
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
@@ -188,7 +188,7 @@ func TestMessagesService_SaveMessage(t *testing.T) {
 						Return(savedMessageID, nil)
 
 					mr.EXPECT().
-						GetMessageByID(gomock.Any(), savedMessageID).
+						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
 						Return(nil, errors.New("message not found"))
 				},
 			},
@@ -218,7 +218,7 @@ func TestMessagesService_SaveMessage(t *testing.T) {
 						Return(savedMessageID, nil)
 
 					mr.EXPECT().
-						GetMessageByID(gomock.Any(), savedMessageID).
+						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
 						Return(savedMessage, nil)
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
@@ -253,7 +253,7 @@ func TestMessagesService_SaveMessage(t *testing.T) {
 						Return(savedMessageID, nil)
 
 					mr.EXPECT().
-						GetMessageByID(gomock.Any(), savedMessageID).
+						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
 						Return(savedMessage, nil)
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
@@ -292,7 +292,7 @@ func TestMessagesService_SaveMessage(t *testing.T) {
 						Return(savedMessageID, nil)
 
 					mr.EXPECT().
-						GetMessageByID(gomock.Any(), savedMessageID).
+						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
 						Return(savedMessage, nil)
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
@@ -327,7 +327,7 @@ func TestMessagesService_SaveMessage(t *testing.T) {
 						Return(savedMessageID, nil)
 
 					mr.EXPECT().
-						GetMessageByID(gomock.Any(), savedMessageID).
+						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
 						Return(savedMessage, nil)
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
@@ -475,6 +475,7 @@ func TestMessagesService_GetChatMessages(t *testing.T) {
 							return fn(ctx, tx)
 						})
 				},
+
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
 						GetChatByID(gomock.Any(), uint64(100)).
@@ -484,10 +485,15 @@ func TestMessagesService_GetChatMessages(t *testing.T) {
 						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(100), true).
 						Return(nil)
 				},
+
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
 					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(100), pagination).
+						GetChatMessages(gomock.Any(), uint64(1), uint64(100), pagination).
 						Return(messages, nil)
+
+					mr.EXPECT().
+						ChangeMessagesIsReadStatus(gomock.Any(), uint64(1), messages, true).
+						Return(nil)
 				},
 			},
 			args: args{
@@ -511,6 +517,7 @@ func TestMessagesService_GetChatMessages(t *testing.T) {
 							return fn(ctx, tx)
 						})
 				},
+
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
 						GetChatByID(gomock.Any(), uint64(100)).
@@ -520,10 +527,15 @@ func TestMessagesService_GetChatMessages(t *testing.T) {
 						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(100), true).
 						Return(nil)
 				},
+
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
 					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(100), (*domains.Pagination)(nil)).
+						GetChatMessages(gomock.Any(), uint64(1), uint64(100), (*domains.Pagination)(nil)).
 						Return(messages, nil)
+
+					mr.EXPECT().
+						ChangeMessagesIsReadStatus(gomock.Any(), uint64(1), messages, true).
+						Return(nil)
 				},
 			},
 			args: args{
@@ -610,7 +622,7 @@ func TestMessagesService_GetChatMessages(t *testing.T) {
 				},
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
 					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(100), pagination).
+						GetChatMessages(gomock.Any(), uint64(1), uint64(100), pagination).
 						Return(nil, errors.New("database error"))
 				},
 			},
@@ -647,7 +659,7 @@ func TestMessagesService_GetChatMessages(t *testing.T) {
 				},
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
 					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(100), pagination).
+						GetChatMessages(gomock.Any(), uint64(1), uint64(100), pagination).
 						Return(messages, nil)
 				},
 			},
@@ -673,6 +685,7 @@ func TestMessagesService_GetChatMessages(t *testing.T) {
 							return fn(ctx, tx)
 						})
 				},
+
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
 						GetChatByID(gomock.Any(), uint64(101)).
@@ -682,10 +695,15 @@ func TestMessagesService_GetChatMessages(t *testing.T) {
 						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(101), true).
 						Return(nil)
 				},
+
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
 					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(101), pagination).
+						GetChatMessages(gomock.Any(), uint64(1), uint64(101), pagination).
 						Return([]domains.Message{}, nil)
+
+					mr.EXPECT().
+						ChangeMessagesIsReadStatus(gomock.Any(), uint64(1), []domains.Message{}, true).
+						Return(nil)
 				},
 			},
 			args: args{
@@ -709,6 +727,7 @@ func TestMessagesService_GetChatMessages(t *testing.T) {
 							return fn(ctx, tx)
 						})
 				},
+
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
 						GetChatByID(gomock.Any(), uint64(100)).
@@ -718,14 +737,20 @@ func TestMessagesService_GetChatMessages(t *testing.T) {
 						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(100), true).
 						Return(nil)
 				},
+
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
 					customPagination := &domains.Pagination{
 						Limit:  pointers.New[uint64](50),
 						Offset: pointers.New[uint64](20),
 					}
+
 					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(100), customPagination).
+						GetChatMessages(gomock.Any(), uint64(1), uint64(100), customPagination).
 						Return(messages, nil)
+
+					mr.EXPECT().
+						ChangeMessagesIsReadStatus(gomock.Any(), uint64(1), messages, true).
+						Return(nil)
 				},
 			},
 			args: args{
@@ -752,6 +777,7 @@ func TestMessagesService_GetChatMessages(t *testing.T) {
 							return fn(ctx, tx)
 						})
 				},
+
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
 						GetChatByID(gomock.Any(), uint64(100)).
@@ -761,10 +787,15 @@ func TestMessagesService_GetChatMessages(t *testing.T) {
 						ChangeChatIsReadStatus(gomock.Any(), uint64(2), uint64(100), true).
 						Return(nil)
 				},
+
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
 					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(100), pagination).
+						GetChatMessages(gomock.Any(), uint64(2), uint64(100), pagination).
 						Return(messages, nil)
+
+					mr.EXPECT().
+						ChangeMessagesIsReadStatus(gomock.Any(), uint64(2), messages, true).
+						Return(nil)
 				},
 			},
 			args: args{
@@ -775,6 +806,47 @@ func TestMessagesService_GetChatMessages(t *testing.T) {
 			},
 			want:    messages,
 			wantErr: false,
+		},
+		{
+			name: "ChangeMessagesIsReadStatus error",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+
+				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
+					cr.EXPECT().
+						GetChatByID(gomock.Any(), uint64(100)).
+						Return(chat, nil)
+
+					cr.EXPECT().
+						ChangeChatIsReadStatus(gomock.Any(), uint64(2), uint64(100), true).
+						Return(nil)
+				},
+
+				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
+					mr.EXPECT().
+						GetChatMessages(gomock.Any(), uint64(2), uint64(100), pagination).
+						Return(messages, nil)
+
+					mr.EXPECT().
+						ChangeMessagesIsReadStatus(gomock.Any(), uint64(2), messages, true).
+						Return(errors.New("test"))
+				},
+			},
+			args: args{
+				ctx:        context.Background(),
+				userID:     2,
+				chatID:     100,
+				pagination: pagination,
+			},
+			wantErr: true,
 		},
 	}
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/domains"
 	pg "github.com/DKhorkov/libs/db/postgresql"
+	"github.com/DKhorkov/libs/logging"
 	sq "github.com/Masterminds/squirrel"
 )
 
@@ -24,14 +25,17 @@ const (
 )
 
 type UsersRepository struct {
-	tx pg.Transaction
+	tx     pg.Transaction
+	logger logging.Logger
 }
 
 func NewUsersRepository(
 	tx pg.Transaction,
+	logger logging.Logger,
 ) *UsersRepository {
 	return &UsersRepository{
-		tx: tx,
+		tx:     tx,
+		logger: logger,
 	}
 }
 
@@ -152,15 +156,8 @@ func (repo *UsersRepository) GetUsers(
 	}
 
 	defer func() {
-		rowsErr := rows.Close()
-		if rowsErr != nil {
-			if err != nil {
-				err = fmt.Errorf("%w; %w", err, rowsErr)
-
-				return
-			}
-
-			err = rowsErr
+		if err = rows.Close(); err != nil {
+			logging.LogErrorContext(ctx, repo.logger, "Failed to close SQL rows", err)
 		}
 	}()
 

@@ -71,7 +71,7 @@ func (s *UsersService) GetUserByID(ctx context.Context, id uint64) (*domains.Use
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
+		return nil, fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 	}
 
 	return user, nil
@@ -98,7 +98,7 @@ func (s *UsersService) GetUserByEmail(
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
+		return nil, fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 	}
 
 	return user, nil
@@ -125,7 +125,7 @@ func (s *UsersService) GetUserByUsername(
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", customerrors.ErrUserNotFound, err)
+		return nil, fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 	}
 
 	return user, nil

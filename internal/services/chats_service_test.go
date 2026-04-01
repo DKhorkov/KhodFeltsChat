@@ -320,11 +320,11 @@ func TestChatsService_GetUserChats(t *testing.T) {
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
 					// Get last message for each chat
 					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(100), messagesPagination).
+						GetChatMessages(gomock.Any(), uint64(1), uint64(100), messagesPagination).
 						Return(messages1, nil)
 
 					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(101), messagesPagination).
+						GetChatMessages(gomock.Any(), uint64(1), uint64(101), messagesPagination).
 						Return(messages2, nil)
 				},
 			},
@@ -366,11 +366,11 @@ func TestChatsService_GetUserChats(t *testing.T) {
 				},
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
 					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(100), messagesPagination).
+						GetChatMessages(gomock.Any(), uint64(1), uint64(100), messagesPagination).
 						Return(messages1, nil)
 
 					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(101), messagesPagination).
+						GetChatMessages(gomock.Any(), uint64(1), uint64(101), messagesPagination).
 						Return(messages2, nil)
 				},
 			},
@@ -466,7 +466,7 @@ func TestChatsService_GetUserChats(t *testing.T) {
 				},
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
 					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(100), messagesPagination).
+						GetChatMessages(gomock.Any(), uint64(1), uint64(100), messagesPagination).
 						Return(nil, errors.New("messages error"))
 				},
 			},
@@ -530,7 +530,7 @@ func TestChatsService_GetUserChats(t *testing.T) {
 				},
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
 					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(102), messagesPagination).
+						GetChatMessages(gomock.Any(), uint64(1), uint64(102), messagesPagination).
 						Return([]domains.Message{}, nil)
 				},
 			},

@@ -68,7 +68,7 @@ func TestAuthService_RegisterUser(t *testing.T) {
 
 					// Вторая проверка - username не существует
 					ur.EXPECT().
-						GetUserByUsername(gomock.Any(), "test@example.com").
+						GetUserByUsername(gomock.Any(), "testuser").
 						Return(nil, sql.ErrNoRows)
 
 					// После регистрации получаем пользователя
@@ -146,7 +146,7 @@ func TestAuthService_RegisterUser(t *testing.T) {
 						Return(nil, sql.ErrNoRows)
 
 					ur.EXPECT().
-						GetUserByUsername(gomock.Any(), "test@example.com").
+						GetUserByUsername(gomock.Any(), "testuser").
 						Return(&domains.User{ID: 1}, nil)
 				},
 			},
@@ -180,7 +180,7 @@ func TestAuthService_RegisterUser(t *testing.T) {
 						Return(nil, sql.ErrNoRows)
 
 					ur.EXPECT().
-						GetUserByUsername(gomock.Any(), "test@example.com").
+						GetUserByUsername(gomock.Any(), "testuser").
 						Return(nil, sql.ErrNoRows)
 				},
 				mockAuthRepository: func(ar *mockrepositories.MockAuthRepository) {
@@ -219,7 +219,7 @@ func TestAuthService_RegisterUser(t *testing.T) {
 						Return(nil, sql.ErrNoRows)
 
 					ur.EXPECT().
-						GetUserByUsername(gomock.Any(), "test@example.com").
+						GetUserByUsername(gomock.Any(), "testuser").
 						Return(nil, sql.ErrNoRows)
 
 					ur.EXPECT().
@@ -262,7 +262,7 @@ func TestAuthService_RegisterUser(t *testing.T) {
 						Return(nil, sql.ErrNoRows)
 
 					ur.EXPECT().
-						GetUserByUsername(gomock.Any(), "test@example.com").
+						GetUserByUsername(gomock.Any(), "testuser").
 						Return(nil, sql.ErrNoRows)
 
 					ur.EXPECT().
