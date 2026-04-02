@@ -9,4 +9,5 @@ var (
 	ErrAccessTokenDoesNotBelongToRefreshToken = errors.New(
 		"access token does not belong to refresh token",
 	)
+	ErrNewPasswordEqualToOldPassword = errors.New(`new password equal to old password`)
 )

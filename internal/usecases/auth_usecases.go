@@ -288,7 +288,7 @@ func (u *AuthUseCases) ForgetPassword(
 	if security.ValidateHash(newPassword, user.Password) {
 		return fmt.Errorf(
 			"%w: new password can not be equal to old password",
-			customerrors.ErrValidationFailed,
+			customerrors.ErrNewPasswordEqualToOldPassword,
 		)
 	}
 

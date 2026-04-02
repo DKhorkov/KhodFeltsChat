@@ -1151,7 +1151,7 @@ func TestAuthUseCases_ForgetPassword(t *testing.T) {
 				newPassword:         pass,
 			},
 			wantErr: true,
-			err:     customerrors.ErrValidationFailed,
+			err:     customerrors.ErrNewPasswordEqualToOldPassword,
 		},
 		{
 			name: "error updating password in database",
