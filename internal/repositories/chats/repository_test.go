@@ -1,3 +1,5 @@
+//go:build integration
+
 package chats_test
 
 import (
