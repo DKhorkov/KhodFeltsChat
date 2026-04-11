@@ -242,24 +242,12 @@ linters:
           - cyclop
           - nestif
 
-      - path: internal/repositories/auth_repository.go
-        linters:
-          - gocritic
-
-      - path: internal/repositories/emails_repository_test.go
-        linters:
-          - testpackage
-
-      - path: internal/controllers/http/handlers/common/pagination_test.go
-        linters:
-          - testpackage
-
-      - path: internal/contentbuilders/forget_password.go
+      - path: internal/contentbuilders/forget_password/builder.go
         text: "^unused-receiver: method receiver 'b'*"
         linters:
           - revive
 
-      - path: internal/contentbuilders/verify_email.go
+      - path: internal/contentbuilders/verify_email/builder.go
         text: "^unused-receiver: method receiver 'b'*"
         linters:
           - revive
@@ -270,10 +258,18 @@ linters:
           - nosprintfhostport
           - maintidx
 
-      - path: .*_repository\.go
+      - path: .repository\.go
         linters:
           - exhaustruct
           - dupl
+
+      - path: internal/repositories/auth/repository.go
+        linters:
+          - gocritic
+
+      - path: internal/repositories/emails/repository_test.go
+        linters:
+          - testpackage
 
       - path: internal/interfaces/content_builders.go
         linters:
@@ -295,12 +291,16 @@ linters:
         linters:
           - exhaustruct
 
-      - path: internal/controllers/http/handlers/auth/logout.go
+      - path: internal/controllers/http/handlers/common/pagination_test.go
+        linters:
+          - testpackage
+
+      - path: internal/controllers/http/handlers/auth/logout/handler.go
         line: "50,51"
         linters:
           - exhaustruct
 
-      - path: internal/controllers/http/handlers/auth/logout.go
+      - path: internal/controllers/http/handlers/auth/logout/handler.go
         line: "50,51"
         linters:
           - exhaustruct
@@ -316,17 +316,17 @@ linters:
           - exhaustruct
           - contextcheck
 
-      - path: internal/controllers/http/handlers/chats/create.go
+      - path: internal/controllers/http/handlers/chats/create/handler.go
         line: "44"
         linters:
           - exhaustruct
 
-      - path: internal/controllers/http/handlers/not_allowed.go
+      - path: internal/controllers/http/handlers/not_allowed/handler.go
         line: "23"
         linters:
           - gosec
 
-      - path: internal/controllers/http/handlers/auth/send_*
+      - path: internal/controllers/http/handlers/auth/send_*/handler.go
         linters:
           - dupl
 
@@ -348,11 +348,11 @@ linters:
         linters:
           - exhaustruct
 
-      - path: internal/services/users_service.go
+      - path: internal/services/users/service.go
         linters:
           - dupl
 
-      - path: internal/services/chats_service.go
+      - path: internal/services/chats/service.go
         line: "82"
         linters:
           - exhaustruct

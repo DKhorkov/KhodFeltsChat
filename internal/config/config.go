@@ -75,10 +75,6 @@ func New() Config {
 				"VERIFY_EMAIL_URL",
 				"http://localhost:443/verify-email",
 			),
-			ForgetPasswordURL: loadenv.GetEnv(
-				"FORGET_PASSWORD_URL",
-				"http://localhost:443/forget-password",
-			),
 		},
 		Cache: CacheConfig{
 			Password: loadenv.GetEnv("REDIS_PASSWORD", ""),
@@ -326,9 +322,8 @@ type HTTPConfig struct {
 }
 
 type EmailConfig struct {
-	SMTP              SMTPConfig
-	VerifyEmailURL    string
-	ForgetPasswordURL string
+	SMTP           SMTPConfig
+	VerifyEmailURL string
 }
 
 type SMTPConfig struct {

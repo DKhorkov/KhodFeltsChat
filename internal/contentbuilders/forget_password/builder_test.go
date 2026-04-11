@@ -1,0 +1,98 @@
+package forget_password_test
+
+import (
+	"testing"
+
+	"github.com/DKhorkov/kfc/internal/contentbuilders/forget_password"
+	"github.com/DKhorkov/kfc/internal/domains"
+	"github.com/stretchr/testify/require"
+)
+
+func TestContentBuilder_Subject(t *testing.T) {
+	t.Parallel()
+
+	builder := forget_password.New()
+
+	testCases := []struct {
+		name     string
+		expected string
+	}{
+		{
+			name:     "default subject",
+			expected: "Восстановление пароля от аккаунта",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			result := builder.Subject()
+			require.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+func TestContentBuilder_Body(t *testing.T) {
+	t.Parallel()
+
+	builder := forget_password.New()
+
+	testCases := []struct {
+		name     string
+		user     domains.User
+		expected string
+	}{
+		{
+			name: "basic user",
+			user: domains.User{
+				ID:       1,
+				Username: "Alice",
+			},
+			expected: `<p>Добрый день, Alice!</p>
+<p>На данный email было запрошено письмо для восстановления забытого пароля.</p>
+<p>Пожалуйста, используйте токен <b>MQ</b>, чтобы сменить пароль!</p>
+<p>Если это были не Вы - проигнорируйте данное письмо!</p>
+<p>С уважением,<br>
+команда Handmade Toys Marketplace.</p>
+`,
+		},
+		{
+			name: "user with special characters",
+			user: domains.User{
+				ID:       123,
+				Username: "Bob <Test>",
+			},
+			expected: `<p>Добрый день, Bob <Test>!</p>
+<p>На данный email было запрошено письмо для восстановления забытого пароля.</p>
+<p>Пожалуйста, используйте токен <b>MTIz</b>, чтобы сменить пароль!</p>
+<p>Если это были не Вы - проигнорируйте данное письмо!</p>
+<p>С уважением,<br>
+команда Handmade Toys Marketplace.</p>
+`,
+		},
+		{
+			name: "user with large ID",
+			user: domains.User{
+				ID:       987654321,
+				Username: "Charlie",
+			},
+			expected: `<p>Добрый день, Charlie!</p>
+<p>На данный email было запрошено письмо для восстановления забытого пароля.</p>
+<p>Пожалуйста, используйте токен <b>OTg3NjU0MzIx</b>, чтобы сменить пароль!</p>
+<p>Если это были не Вы - проигнорируйте данное письмо!</p>
+<p>С уважением,<br>
+команда Handmade Toys Marketplace.</p>
+`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			result := builder.Body(tc.user)
+			require.Equal(t, tc.expected, result)
+		})
+	}
+}

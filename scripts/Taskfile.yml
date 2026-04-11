@@ -140,7 +140,7 @@ tasks:
       - |
         printf "integration={{.integration}}\n\n"  # View flag value
         if [ "{{.integration}}" == "true" ]; then
-          go test -v -shuffle=on -coverprofile ./coverage/coverage.out -coverpkg=$(go list ./... | grep -v -F -f .coverignore | paste -sd, -) ./... -tags=integration
+          go test -v -p 1 -shuffle=on -coverprofile ./coverage/coverage.out -coverpkg=$(go list ./... | grep -v -F -f .coverignore | paste -sd, -) ./... -tags=integration
         else
           go test -v -shuffle=on -coverprofile ./coverage/coverage.out -coverpkg=$(go list ./... | grep -v -F -f .coverignore | paste -sd, -) ./...
         fi

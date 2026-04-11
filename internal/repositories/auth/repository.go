@@ -1,0 +1,196 @@
+package auth
+
+import (
+	"context"
+	"time"
+
+	"github.com/DKhorkov/kfc/internal/domains"
+	pg "github.com/DKhorkov/libs/db/postgresql"
+	sq "github.com/Masterminds/squirrel"
+)
+
+const (
+	refreshTokensTableName = "refresh_tokens"
+	usersTableName         = "users"
+
+	refreshTokenValueColumnName = "value"
+	refreshTokenTTLColumnName   = "ttl"
+	userIDColumnName            = "user_id"
+	emailConfirmedColumnName    = "email_confirmed"
+	passwordColumnName          = "password"
+	idColumnName                = "id"
+	usernameColumnName          = "username"
+	emailColumnName             = "email"
+
+	selectAllColumns = "*"
+
+	returningIDSuffix = "RETURNING id"
+)
+
+type Repository struct {
+	tx pg.Transaction
+}
+
+func New(
+	tx pg.Transaction,
+) *Repository {
+	return &Repository{
+		tx: tx,
+	}
+}
+
+func (repo *Repository) RegisterUser(
+	ctx context.Context,
+	userData domains.RegisterDTO,
+) (uint64, error) {
+	stmt, params, err := sq.
+		Insert(usersTableName).
+		Columns(
+			usernameColumnName,
+			emailColumnName,
+			passwordColumnName,
+		).
+		Values(
+			userData.Username,
+			userData.Email,
+			userData.Password,
+		).
+		Suffix(returningIDSuffix).
+		PlaceholderFormat(sq.Dollar). // pq postgres driver works only with $ placeholders
+		ToSql()
+	if err != nil {
+		return 0, err
+	}
+
+	var userID uint64
+	if err = repo.tx.QueryRowContext(ctx, stmt, params...).Scan(&userID); err != nil {
+		return 0, err
+	}
+
+	return userID, nil
+}
+
+func (repo *Repository) CreateRefreshToken(
+	ctx context.Context,
+	userID uint64,
+	refreshToken string,
+	ttl time.Duration,
+) (uint64, error) {
+	stmt, params, err := sq.
+		Insert(refreshTokensTableName).
+		Columns(
+			userIDColumnName,
+			refreshTokenValueColumnName,
+			refreshTokenTTLColumnName,
+		).
+		Values(
+			userID,
+			refreshToken,
+			time.Now().UTC().Add(ttl),
+		).
+		Suffix(returningIDSuffix).
+		PlaceholderFormat(sq.Dollar). // pq postgres driver works only with $ placeholders
+		ToSql()
+	if err != nil {
+		return 0, err
+	}
+
+	var refreshTokenID uint64
+	if err = repo.tx.QueryRowContext(ctx, stmt, params...).Scan(&refreshTokenID); err != nil {
+		return 0, err
+	}
+
+	return refreshTokenID, nil
+}
+
+func (repo *Repository) GetRefreshTokenByUserID(
+	ctx context.Context,
+	userID uint64,
+) (*domains.RefreshToken, error) {
+	stmt, params, err := sq.
+		Select(selectAllColumns).
+		From(refreshTokensTableName).
+		Where(sq.Eq{userIDColumnName: userID}).
+		Where(
+			sq.Expr(
+				refreshTokenTTLColumnName + " > CURRENT_TIMESTAMP",
+			),
+		).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken := &domains.RefreshToken{}
+
+	columns := pg.GetEntityColumns(refreshToken)
+	if err = repo.tx.QueryRowContext(ctx, stmt, params...).Scan(columns...); err != nil {
+		return nil, err
+	}
+
+	return refreshToken, nil
+}
+
+func (repo *Repository) ExpireRefreshToken(ctx context.Context, refreshTokenID uint64) error {
+	stmt, params, err := sq.
+		Delete(refreshTokensTableName).
+		Where(sq.Eq{idColumnName: refreshTokenID}).
+		PlaceholderFormat(sq.Dollar). // pq postgres driver works only with $ placeholders
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.tx.ExecContext(
+		ctx,
+		stmt,
+		params...,
+	)
+
+	return err
+}
+
+func (repo *Repository) VerifyEmail(ctx context.Context, userID uint64) error {
+	stmt, params, err := sq.
+		Update(usersTableName).
+		Where(sq.Eq{idColumnName: userID}).
+		Set(emailConfirmedColumnName, true).
+		PlaceholderFormat(sq.Dollar). // pq postgres driver works only with $ placeholders
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.tx.ExecContext(
+		ctx,
+		stmt,
+		params...,
+	)
+
+	return err
+}
+
+func (repo *Repository) ChangePassword(
+	ctx context.Context,
+	userID uint64,
+	newPassword string,
+) error {
+	stmt, params, err := sq.
+		Update(usersTableName).
+		Where(sq.Eq{idColumnName: userID}).
+		Set(passwordColumnName, newPassword).
+		PlaceholderFormat(sq.Dollar). // pq postgres driver works only with $ placeholders
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.tx.ExecContext(
+		ctx,
+		stmt,
+		params...,
+	)
+
+	return err
+}
