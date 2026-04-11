@@ -1,10 +1,10 @@
-package mappers_test
+package messages_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers/messages"
 	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"github.com/DKhorkov/kfc/internal/domains"
 	"github.com/stretchr/testify/assert"
@@ -357,7 +357,7 @@ func TestMapMessage(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := mappers.MapMessage(tt.input)
+			result := messages.MapMessage(tt.input)
 
 			// Проверяем все поля
 			assert.Equal(t, tt.expected.ID, result.ID)
@@ -735,7 +735,7 @@ func TestMapMessages(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := mappers.MapMessages(tt.input)
+			result := messages.MapMessages(tt.input)
 
 			// Проверяем длину результата
 			require.Len(t, result, len(tt.expected))
@@ -756,14 +756,14 @@ func TestMapMessages(t *testing.T) {
 			// Для больших слайсов проверяем производительность
 			if len(tt.input) >= 10000 {
 				assert.NotPanics(t, func() {
-					mappers.MapMessages(tt.input)
+					messages.MapMessages(tt.input)
 				})
 
 				// Проверяем, что функция работает быстро
 				// (неформальная проверка)
 				start := time.Now()
 
-				mappers.MapMessages(tt.input)
+				messages.MapMessages(tt.input)
 
 				elapsed := time.Since(start)
 
@@ -788,7 +788,7 @@ func TestMapMessagesEdgeCases(t *testing.T) {
 
 		// Важно: в Go нельзя передать nil как []T в параметр типа []T
 		// без приведения типа, но проверим случай с пустым слайсом
-		result := mappers.MapMessages([]domains.Message{})
+		result := messages.MapMessages([]domains.Message{})
 		assert.Empty(t, result)
 		assert.NotNil(t, result) // Всегда должен возвращаться не-nil слайс
 	})
@@ -807,7 +807,7 @@ func TestMapMessagesEdgeCases(t *testing.T) {
 			},
 		}
 
-		result := mappers.MapMessages(input)
+		result := messages.MapMessages(input)
 		require.Len(t, result, 1)
 
 		assert.Equal(t, uint64(0), result[0].ID)
@@ -841,7 +841,7 @@ func TestMapMessagesEdgeCases(t *testing.T) {
 			},
 		}
 
-		result := mappers.MapMessages(input)
+		result := messages.MapMessages(input)
 
 		// Проверяем, что в результате нет следов пароля
 		// Это можно проверить, убедившись что Sender содержит только ID и Username
@@ -881,7 +881,7 @@ func TestMapMessagesEdgeCases(t *testing.T) {
 			},
 		}
 
-		result := mappers.MapMessages(input)
+		result := messages.MapMessages(input)
 
 		// Порядок должен сохраниться
 		assert.Equal(t, uint64(1), result[0].ID)

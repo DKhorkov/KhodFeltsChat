@@ -1,6 +1,8 @@
-package mappers
+package chats
 
 import (
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers/messages"
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers/users"
 	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"github.com/DKhorkov/kfc/internal/domains"
 )
@@ -14,8 +16,8 @@ func MapChat(chat domains.Chat) schemas.Chat {
 		CreatedAt:   chat.CreatedAt,
 		UpdatedAt:   chat.UpdatedAt,
 		IsRead:      chat.IsRead,
-		Members:     MapUsers(chat.Members),
-		Messages:    MapMessages(chat.Messages),
+		Members:     users.MapUsers(chat.Members),
+		Messages:    messages.MapMessages(chat.Messages),
 	}
 }
 

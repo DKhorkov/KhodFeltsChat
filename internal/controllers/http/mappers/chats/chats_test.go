@@ -1,10 +1,10 @@
-package mappers_test
+package chats_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers/chats"
 	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"github.com/DKhorkov/kfc/internal/domains"
 	"github.com/DKhorkov/libs/pointers"
@@ -464,7 +464,7 @@ func TestMapChat(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := mappers.MapChat(tt.input)
+			result := chats.MapChat(tt.input)
 
 			// Проверяем основные поля
 			assert.Equal(t, tt.expected.ID, result.ID)
@@ -802,7 +802,7 @@ func TestMapChats(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := mappers.MapChats(tt.input)
+			result := chats.MapChats(tt.input)
 
 			// Проверяем длину результата
 			require.Len(t, result, len(tt.expected))
@@ -828,7 +828,7 @@ func TestMapChats(t *testing.T) {
 			if len(tt.input) >= 1000 {
 				// Убеждаемся, что функция работает без паники
 				assert.NotPanics(t, func() {
-					mappers.MapChats(tt.input)
+					chats.MapChats(tt.input)
 				})
 			}
 		})

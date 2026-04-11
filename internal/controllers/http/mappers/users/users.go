@@ -1,4 +1,4 @@
-package mappers
+package users
 
 import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"

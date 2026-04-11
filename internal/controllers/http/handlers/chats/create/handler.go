@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
-	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
+	mappers "github.com/DKhorkov/kfc/internal/controllers/http/mappers/chats"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"

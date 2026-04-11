@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
-	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers/users"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -65,7 +65,7 @@ func Handler(u interfaces.AuthUseCases) http.HandlerFunc {
 		// HTTP статус код должен устанавливаться перед записью тела ответа
 		w.WriteHeader(http.StatusCreated)
 
-		if err = json.NewEncoder(w).Encode(mappers.MapUser(*user)); err != nil {
+		if err = json.NewEncoder(w).Encode(users.MapUser(*user)); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return

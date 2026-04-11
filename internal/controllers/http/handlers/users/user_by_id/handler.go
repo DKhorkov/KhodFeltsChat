@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
-	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
+	mappers "github.com/DKhorkov/kfc/internal/controllers/http/mappers/users"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/gorilla/mux"

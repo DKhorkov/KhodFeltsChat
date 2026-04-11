@@ -7,7 +7,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
+	"github.com/DKhorkov/kfc/internal/controllers/http/mappers/messages"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -174,7 +174,7 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 			return
 		}
 
-		messageToSend := mappers.MapMessage(*savedMessage)
+		messageToSend := messages.MapMessage(*savedMessage)
 
 		for _, member := range chatMembers {
 			// Не отправляем обратно отправителю:

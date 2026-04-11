@@ -1,10 +1,10 @@
-package mappers_test
+package users_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/DKhorkov/kfc/internal/controllers/http/mappers"
+	mappers "github.com/DKhorkov/kfc/internal/controllers/http/mappers/users"
 	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"github.com/DKhorkov/kfc/internal/domains"
 	"github.com/stretchr/testify/assert"
