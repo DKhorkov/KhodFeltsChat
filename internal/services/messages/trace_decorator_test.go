@@ -19,6 +19,8 @@ import (
 )
 
 func TestNewTraceDecorator(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name          string
 		traceProvider tracing.Provider
@@ -60,6 +62,8 @@ func TestNewTraceDecorator(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			decorator := messages.NewTraceDecorator(tt.traceProvider, tt.spanConfig, tt.base)
 
 			assert.NotNil(t, decorator)
@@ -68,6 +72,8 @@ func TestNewTraceDecorator(t *testing.T) {
 }
 
 func TestTraceDecorator_SaveMessage(t *testing.T) {
+	t.Parallel()
+
 	now := time.Now()
 
 	tests := []struct {
@@ -94,7 +100,7 @@ func TestTraceDecorator_SaveMessage(t *testing.T) {
 			) {
 				mockProvider.EXPECT().
 					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 						return ctx, mockSpan
 					})
 
@@ -283,8 +289,9 @@ func TestTraceDecorator_SaveMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			mockProvider := mocktracing.NewMockProvider(ctrl)
 			mockBase := mockservices.NewMockMessagesService(ctrl)
@@ -321,6 +328,8 @@ func TestTraceDecorator_SaveMessage(t *testing.T) {
 }
 
 func TestTraceDecorator_GetChatMessages(t *testing.T) {
+	t.Parallel()
+
 	now := time.Now()
 
 	tests := []struct {
@@ -347,7 +356,7 @@ func TestTraceDecorator_GetChatMessages(t *testing.T) {
 			) {
 				mockProvider.EXPECT().
 					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 						return ctx, mockSpan
 					})
 
@@ -553,8 +562,9 @@ func TestTraceDecorator_GetChatMessages(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			mockProvider := mocktracing.NewMockProvider(ctrl)
 			mockBase := mockservices.NewMockMessagesService(ctrl)

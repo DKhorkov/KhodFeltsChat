@@ -18,6 +18,8 @@ import (
 )
 
 func TestNewTraceDecorator(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name          string
 		traceProvider tracing.Provider
@@ -59,6 +61,8 @@ func TestNewTraceDecorator(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			decorator := auth.NewTraceDecorator(tt.traceProvider, tt.spanConfig, tt.base)
 
 			assert.NotNil(t, decorator)
@@ -67,6 +71,8 @@ func TestNewTraceDecorator(t *testing.T) {
 }
 
 func TestTraceDecorator_RegisterUser(t *testing.T) {
+	t.Parallel()
+
 	now := time.Now()
 
 	tests := []struct {
@@ -90,7 +96,7 @@ func TestTraceDecorator_RegisterUser(t *testing.T) {
 			) {
 				mockProvider.EXPECT().
 					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 						return ctx, mockSpan
 					})
 
@@ -167,8 +173,9 @@ func TestTraceDecorator_RegisterUser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			mockProvider := mocktracing.NewMockProvider(ctrl)
 			mockBase := mockservices.NewMockAuthService(ctrl)
@@ -205,6 +212,8 @@ func TestTraceDecorator_RegisterUser(t *testing.T) {
 }
 
 func TestTraceDecorator_CreateRefreshToken(t *testing.T) {
+	t.Parallel()
+
 	now := time.Now()
 	ttl := 24 * time.Hour
 
@@ -229,7 +238,7 @@ func TestTraceDecorator_CreateRefreshToken(t *testing.T) {
 			) {
 				mockProvider.EXPECT().
 					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 						return ctx, mockSpan
 					})
 
@@ -298,8 +307,9 @@ func TestTraceDecorator_CreateRefreshToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			mockProvider := mocktracing.NewMockProvider(ctrl)
 			mockBase := mockservices.NewMockAuthService(ctrl)
@@ -335,6 +345,8 @@ func TestTraceDecorator_CreateRefreshToken(t *testing.T) {
 }
 
 func TestTraceDecorator_GetRefreshTokenByUserID(t *testing.T) {
+	t.Parallel()
+
 	now := time.Now()
 
 	tests := []struct {
@@ -354,7 +366,7 @@ func TestTraceDecorator_GetRefreshTokenByUserID(t *testing.T) {
 			) {
 				mockProvider.EXPECT().
 					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 						return ctx, mockSpan
 					})
 
@@ -431,8 +443,9 @@ func TestTraceDecorator_GetRefreshTokenByUserID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			mockProvider := mocktracing.NewMockProvider(ctrl)
 			mockBase := mockservices.NewMockAuthService(ctrl)
@@ -468,6 +481,8 @@ func TestTraceDecorator_GetRefreshTokenByUserID(t *testing.T) {
 }
 
 func TestTraceDecorator_ExpireRefreshToken(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		refreshTokenID uint64
@@ -484,7 +499,7 @@ func TestTraceDecorator_ExpireRefreshToken(t *testing.T) {
 			) {
 				mockProvider.EXPECT().
 					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 						return ctx, mockSpan
 					})
 
@@ -534,8 +549,9 @@ func TestTraceDecorator_ExpireRefreshToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			mockProvider := mocktracing.NewMockProvider(ctrl)
 			mockBase := mockservices.NewMockAuthService(ctrl)
@@ -569,6 +585,8 @@ func TestTraceDecorator_ExpireRefreshToken(t *testing.T) {
 }
 
 func TestTraceDecorator_VerifyEmail(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name          string
 		userID        uint64
@@ -585,7 +603,7 @@ func TestTraceDecorator_VerifyEmail(t *testing.T) {
 			) {
 				mockProvider.EXPECT().
 					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 						return ctx, mockSpan
 					})
 
@@ -635,8 +653,9 @@ func TestTraceDecorator_VerifyEmail(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			mockProvider := mocktracing.NewMockProvider(ctrl)
 			mockBase := mockservices.NewMockAuthService(ctrl)
@@ -670,6 +689,8 @@ func TestTraceDecorator_VerifyEmail(t *testing.T) {
 }
 
 func TestTraceDecorator_ForgetPassword(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name          string
 		userID        uint64
@@ -688,7 +709,7 @@ func TestTraceDecorator_ForgetPassword(t *testing.T) {
 			) {
 				mockProvider.EXPECT().
 					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 						return ctx, mockSpan
 					})
 
@@ -740,8 +761,9 @@ func TestTraceDecorator_ForgetPassword(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			mockProvider := mocktracing.NewMockProvider(ctrl)
 			mockBase := mockservices.NewMockAuthService(ctrl)
@@ -775,6 +797,8 @@ func TestTraceDecorator_ForgetPassword(t *testing.T) {
 }
 
 func TestTraceDecorator_ChangePassword(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name          string
 		userID        uint64
@@ -793,7 +817,7 @@ func TestTraceDecorator_ChangePassword(t *testing.T) {
 			) {
 				mockProvider.EXPECT().
 					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 						return ctx, mockSpan
 					})
 
@@ -845,8 +869,9 @@ func TestTraceDecorator_ChangePassword(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			mockProvider := mocktracing.NewMockProvider(ctrl)
 			mockBase := mockservices.NewMockAuthService(ctrl)
@@ -880,6 +905,8 @@ func TestTraceDecorator_ChangePassword(t *testing.T) {
 }
 
 func TestTraceDecorator_SendForgetPasswordMessage(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name          string
 		email         string
@@ -896,7 +923,7 @@ func TestTraceDecorator_SendForgetPasswordMessage(t *testing.T) {
 			) {
 				mockProvider.EXPECT().
 					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 						return ctx, mockSpan
 					})
 
@@ -964,8 +991,9 @@ func TestTraceDecorator_SendForgetPasswordMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			mockProvider := mocktracing.NewMockProvider(ctrl)
 			mockBase := mockservices.NewMockAuthService(ctrl)
@@ -999,6 +1027,8 @@ func TestTraceDecorator_SendForgetPasswordMessage(t *testing.T) {
 }
 
 func TestTraceDecorator_SendVerifyEmailMessage(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name          string
 		email         string
@@ -1015,7 +1045,7 @@ func TestTraceDecorator_SendVerifyEmailMessage(t *testing.T) {
 			) {
 				mockProvider.EXPECT().
 					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 						return ctx, mockSpan
 					})
 
@@ -1101,8 +1131,9 @@ func TestTraceDecorator_SendVerifyEmailMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
 
 			mockProvider := mocktracing.NewMockProvider(ctrl)
 			mockBase := mockservices.NewMockAuthService(ctrl)

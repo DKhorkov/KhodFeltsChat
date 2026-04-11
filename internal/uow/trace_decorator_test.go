@@ -17,6 +17,8 @@ import (
 )
 
 func TestNewTraceDecorator(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name          string
 		traceProvider tracing.Provider
@@ -58,6 +60,8 @@ func TestNewTraceDecorator(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			decorator := uow.NewTraceDecorator(tt.traceProvider, tt.spanConfig, tt.base)
 
 			assert.NotNil(t, decorator)
@@ -66,6 +70,8 @@ func TestNewTraceDecorator(t *testing.T) {
 }
 
 func TestTraceDecorator_Do(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name          string
 		setupMocks    func(*mocktracing.MockProvider, *mockuow.MockUnitOfWork, *mocktracing.MockSpan)
@@ -82,7 +88,7 @@ func TestTraceDecorator_Do(t *testing.T) {
 				// Ожидаем создание span
 				mockProvider.EXPECT().
 					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 						return ctx, mockSpan
 					})
 
@@ -93,7 +99,7 @@ func TestTraceDecorator_Do(t *testing.T) {
 						return fn(ctx, nil)
 					})
 			},
-			fn: func(ctx context.Context, tx pg.Transaction) error {
+			fn: func(_ context.Context, _ pg.Transaction) error {
 				return nil
 			},
 			expectedError: nil,
@@ -113,7 +119,7 @@ func TestTraceDecorator_Do(t *testing.T) {
 					Do(gomock.Any(), gomock.Any()).
 					Return(errors.New("database error"))
 			},
-			fn: func(ctx context.Context, tx pg.Transaction) error {
+			fn: func(_ context.Context, _ pg.Transaction) error {
 				return nil
 			},
 			expectedError: errors.New("database error"),
@@ -135,7 +141,7 @@ func TestTraceDecorator_Do(t *testing.T) {
 						return fn(ctx, nil)
 					})
 			},
-			fn: func(ctx context.Context, tx pg.Transaction) error {
+			fn: func(_ context.Context, _ pg.Transaction) error {
 				return errors.New("business logic error")
 			},
 			expectedError: errors.New("business logic error"),
@@ -149,7 +155,7 @@ func TestTraceDecorator_Do(t *testing.T) {
 			) {
 				mockProvider.EXPECT().
 					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, name string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+					DoAndReturn(func(ctx context.Context, name string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
 						assert.NotEmpty(t, name)
 
 						return ctx, mockSpan
@@ -159,7 +165,7 @@ func TestTraceDecorator_Do(t *testing.T) {
 					Do(gomock.Any(), gomock.Any()).
 					Return(nil)
 			},
-			fn: func(ctx context.Context, tx pg.Transaction) error {
+			fn: func(_ context.Context, _ pg.Transaction) error {
 				return nil
 			},
 			expectedError: nil,
@@ -179,7 +185,7 @@ func TestTraceDecorator_Do(t *testing.T) {
 					Do(gomock.Any(), gomock.Any()).
 					Return(nil)
 			},
-			fn: func(ctx context.Context, tx pg.Transaction) error {
+			fn: func(_ context.Context, _ pg.Transaction) error {
 				return nil
 			},
 			expectedError: nil,
@@ -199,7 +205,7 @@ func TestTraceDecorator_Do(t *testing.T) {
 					Do(gomock.Any(), gomock.Any()).
 					Return(nil)
 			},
-			fn: func(ctx context.Context, tx pg.Transaction) error {
+			fn: func(_ context.Context, _ pg.Transaction) error {
 				return nil
 			},
 			expectedError: nil,
@@ -208,6 +214,8 @@ func TestTraceDecorator_Do(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
 
 			mockProvider := mocktracing.NewMockProvider(ctrl)
