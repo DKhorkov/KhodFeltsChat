@@ -5,13 +5,24 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/app"
 	"github.com/DKhorkov/kfc/internal/config"
-	"github.com/DKhorkov/kfc/internal/contentbuilders"
+	"github.com/DKhorkov/kfc/internal/contentbuilders/forget_password"
+	"github.com/DKhorkov/kfc/internal/contentbuilders/verify_email"
 	controllers "github.com/DKhorkov/kfc/internal/controllers/http"
 	"github.com/DKhorkov/kfc/internal/interfaces"
-	"github.com/DKhorkov/kfc/internal/repositories"
-	"github.com/DKhorkov/kfc/internal/services"
+	authrepository "github.com/DKhorkov/kfc/internal/repositories/auth"
+	chatsrepository "github.com/DKhorkov/kfc/internal/repositories/chats"
+	emailsrepository "github.com/DKhorkov/kfc/internal/repositories/emails"
+	messagesrepository "github.com/DKhorkov/kfc/internal/repositories/messages"
+	usersrepository "github.com/DKhorkov/kfc/internal/repositories/users"
+	authservice "github.com/DKhorkov/kfc/internal/services/auth"
+	chatsservice "github.com/DKhorkov/kfc/internal/services/chats"
+	messagesservice "github.com/DKhorkov/kfc/internal/services/messages"
+	usersservice "github.com/DKhorkov/kfc/internal/services/users"
 	"github.com/DKhorkov/kfc/internal/uow"
-	"github.com/DKhorkov/kfc/internal/usecases"
+	authusecases "github.com/DKhorkov/kfc/internal/usecases/auth"
+	chatsusecases "github.com/DKhorkov/kfc/internal/usecases/chats"
+	messagesusecases "github.com/DKhorkov/kfc/internal/usecases/messages"
+	usersusecases "github.com/DKhorkov/kfc/internal/usecases/users"
 	"github.com/DKhorkov/libs/db/postgresql"
 	"github.com/DKhorkov/libs/loadenv"
 	"github.com/DKhorkov/libs/logging"
@@ -55,60 +66,58 @@ func main() {
 	}()
 
 	contentBuilders := interfaces.ContentBuilders{
-		VerifyEmail: contentbuilders.NewVerifyEmailContentBuilder(
+		VerifyEmail: verify_email.New(
 			cfg.Email.VerifyEmailURL,
 		),
-		ForgetPassword: contentbuilders.NewForgetPasswordContentBuilder(
-			cfg.Email.ForgetPasswordURL,
-		),
+		ForgetPassword: forget_password.New(),
 	}
 
 	unitOfWork := uow.New(pg)
 
-	usersService := services.NewUsersService(
+	usersService := usersservice.New(
 		unitOfWork,
 		func(tx postgresql.Transaction) interfaces.UsersRepository {
-			return repositories.NewUsersRepository(tx, logger)
+			return usersrepository.New(tx, logger)
 		},
 	)
 
-	authService := services.NewAuthService(
+	authService := authservice.New(
 		unitOfWork,
 		func(tx postgresql.Transaction) interfaces.AuthRepository {
-			return repositories.NewAuthRepository(tx)
+			return authrepository.New(tx)
 		},
 		func(tx postgresql.Transaction) interfaces.UsersRepository {
-			return repositories.NewUsersRepository(tx, logger)
+			return usersrepository.New(tx, logger)
 		},
 		func() interfaces.EmailsRepository {
-			return repositories.NewEmailsRepository(cfg.Email.SMTP, contentBuilders)
+			return emailsrepository.New(cfg.Email.SMTP, contentBuilders)
 		},
 	)
 
-	chatsService := services.NewChatsService(
+	chatsService := chatsservice.New(
 		unitOfWork,
 		func(tx postgresql.Transaction) interfaces.ChatsRepository {
-			return repositories.NewChatsRepository(tx, logger)
+			return chatsrepository.New(tx, logger)
 		},
 		func(tx postgresql.Transaction) interfaces.MessagesRepository {
-			return repositories.NewMessagesRepository(tx, logger)
+			return messagesrepository.New(tx, logger)
 		},
 	)
 
-	messagesService := services.NewMessagesService(
+	messagesService := messagesservice.New(
 		unitOfWork,
 		func(tx postgresql.Transaction) interfaces.ChatsRepository {
-			return repositories.NewChatsRepository(tx, logger)
+			return chatsrepository.New(tx, logger)
 		},
 		func(tx postgresql.Transaction) interfaces.MessagesRepository {
-			return repositories.NewMessagesRepository(tx, logger)
+			return messagesrepository.New(tx, logger)
 		},
 	)
 
-	usersUseCases := usecases.NewUsersUseCases(usersService, cfg.Security, cfg.Validation)
-	messagesUseCases := usecases.NewMessagesUseCases(messagesService, chatsService, usersService)
-	chatsUseCases := usecases.NewChatsUseCases(chatsService, usersService)
-	authUseCases := usecases.NewAuthUseCases(
+	usersUseCases := usersusecases.New(usersService, cfg.Security, cfg.Validation)
+	messagesUseCases := messagesusecases.New(messagesService, chatsService, usersService)
+	chatsUseCases := chatsusecases.New(chatsService, usersService)
+	authUseCases := authusecases.New(
 		authService,
 		usersService,
 		cfg.Security,

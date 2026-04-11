@@ -41,7 +41,7 @@ type AuthRepository interface {
 	ChangePassword(ctx context.Context, userID uint64, newPassword string) error
 }
 
-//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/chats_service.go -package=mockrepositories -exclude_interfaces=UsersRepository,AuthRepository,MessagesRepository,EmailsRepository
+//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/chats_repository.go -package=mockrepositories -exclude_interfaces=UsersRepository,AuthRepository,MessagesRepository,EmailsRepository
 type ChatsRepository interface {
 	GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error)
 	GetUserChats(
