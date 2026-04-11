@@ -201,6 +201,38 @@ func New() Config {
 						},
 					},
 				},
+				UnitOfWork: tracing.SpanConfig{
+					Name: "UnitOfWork",
+					Opts: []trace.SpanStartOption{
+						trace.WithAttributes(
+							attribute.String("Environment", loadenv.GetEnv("ENVIRONMENT", "local")),
+						),
+					},
+					Events: tracing.SpanEventsConfig{
+						Start: tracing.SpanEventConfig{
+							Name: "Calling UnitOfWork",
+							Opts: []trace.EventOption{
+								trace.WithAttributes(
+									attribute.String(
+										"Environment",
+										loadenv.GetEnv("ENVIRONMENT", "local"),
+									),
+								),
+							},
+						},
+						End: tracing.SpanEventConfig{
+							Name: "Received response from UnitOfWork",
+							Opts: []trace.EventOption{
+								trace.WithAttributes(
+									attribute.String(
+										"Environment",
+										loadenv.GetEnv("ENVIRONMENT", "local"),
+									),
+								),
+							},
+						},
+					},
+				},
 				Repositories: SpanRepositories{
 					Auth: tracing.SpanConfig{
 						Name: "Auth repository",
@@ -307,6 +339,360 @@ func New() Config {
 							},
 						},
 					},
+					Chats: tracing.SpanConfig{
+						Name: "Chats repository",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Chats Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Chats Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+					Messages: tracing.SpanConfig{
+						Name: "Messages repository",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Messages Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Messages Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+				},
+				Services: SpanServices{
+					Auth: tracing.SpanConfig{
+						Name: "Auth service",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Auth service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Auth service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+					Users: tracing.SpanConfig{
+						Name: "Users repository",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Users service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Users service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+					Chats: tracing.SpanConfig{
+						Name: "Chats repository",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Chats service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Chats service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+					Messages: tracing.SpanConfig{
+						Name: "Messages repository",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Messages service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Messages service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+				},
+				UseCases: SpanUseCases{
+					Auth: tracing.SpanConfig{
+						Name: "Auth useCases",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Auth useCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Auth useCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+					Users: tracing.SpanConfig{
+						Name: "Users repository",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Users useCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Users useCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+					Chats: tracing.SpanConfig{
+						Name: "Chats repository",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Chats useCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Chats useCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+					Messages: tracing.SpanConfig{
+						Name: "Messages repository",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Messages useCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Messages useCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -359,14 +745,33 @@ type DocsConfig struct {
 }
 
 type SpanRepositories struct {
-	Auth   tracing.SpanConfig
-	Users  tracing.SpanConfig
-	Emails tracing.SpanConfig
+	Auth     tracing.SpanConfig
+	Users    tracing.SpanConfig
+	Emails   tracing.SpanConfig
+	Chats    tracing.SpanConfig
+	Messages tracing.SpanConfig
+}
+
+type SpanServices struct {
+	Auth     tracing.SpanConfig
+	Users    tracing.SpanConfig
+	Chats    tracing.SpanConfig
+	Messages tracing.SpanConfig
+}
+
+type SpanUseCases struct {
+	Auth     tracing.SpanConfig
+	Users    tracing.SpanConfig
+	Chats    tracing.SpanConfig
+	Messages tracing.SpanConfig
 }
 
 type SpansConfig struct {
 	Root         tracing.SpanConfig
+	UnitOfWork   tracing.SpanConfig
 	Repositories SpanRepositories
+	Services     SpanServices
+	UseCases     SpanUseCases
 }
 
 type TracingConfig struct {
