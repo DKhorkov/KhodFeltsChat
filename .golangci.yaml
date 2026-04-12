@@ -257,6 +257,11 @@ linters:
           - mnd
           - nosprintfhostport
           - maintidx
+          - dupl
+
+      - path: .trace_decorator\.go
+        linters:
+          - dupl
 
       - path: .repository\.go
         linters:

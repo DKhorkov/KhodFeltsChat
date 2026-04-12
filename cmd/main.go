@@ -72,56 +72,127 @@ func main() {
 		ForgetPassword: forget_password.New(),
 	}
 
-	unitOfWork := uow.New(pg)
-
-	usersService := usersservice.New(
-		unitOfWork,
-		func(tx postgresql.Transaction) interfaces.UsersRepository {
-			return usersrepository.New(tx, logger)
-		},
+	unitOfWork := uow.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.UnitOfWork,
+		uow.New(pg),
 	)
 
-	authService := authservice.New(
-		unitOfWork,
-		func(tx postgresql.Transaction) interfaces.AuthRepository {
-			return authrepository.New(tx)
-		},
-		func(tx postgresql.Transaction) interfaces.UsersRepository {
-			return usersrepository.New(tx, logger)
-		},
-		func() interfaces.EmailsRepository {
-			return emailsrepository.New(cfg.Email.SMTP, contentBuilders)
-		},
+	usersService := usersservice.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.Services.Users,
+		usersservice.New(
+			unitOfWork,
+			func(tx postgresql.Transaction) interfaces.UsersRepository {
+				return usersrepository.NewTraceDecorator(
+					traceProvider,
+					cfg.Tracing.Spans.Repositories.Users,
+					usersrepository.New(tx, logger),
+				)
+			},
+		),
 	)
 
-	chatsService := chatsservice.New(
-		unitOfWork,
-		func(tx postgresql.Transaction) interfaces.ChatsRepository {
-			return chatsrepository.New(tx, logger)
-		},
-		func(tx postgresql.Transaction) interfaces.MessagesRepository {
-			return messagesrepository.New(tx, logger)
-		},
+	authService := authservice.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.Services.Auth,
+		authservice.New(
+			unitOfWork,
+			func(tx postgresql.Transaction) interfaces.AuthRepository {
+				return authrepository.NewTraceDecorator(
+					traceProvider,
+					cfg.Tracing.Spans.Repositories.Auth,
+					authrepository.New(tx),
+				)
+			},
+			func(tx postgresql.Transaction) interfaces.UsersRepository {
+				return usersrepository.NewTraceDecorator(
+					traceProvider,
+					cfg.Tracing.Spans.Repositories.Users,
+					usersrepository.New(tx, logger),
+				)
+			},
+			func() interfaces.EmailsRepository {
+				return emailsrepository.NewTraceDecorator(
+					traceProvider,
+					cfg.Tracing.Spans.Repositories.Emails,
+					emailsrepository.New(cfg.Email.SMTP, contentBuilders),
+				)
+			},
+		),
 	)
 
-	messagesService := messagesservice.New(
-		unitOfWork,
-		func(tx postgresql.Transaction) interfaces.ChatsRepository {
-			return chatsrepository.New(tx, logger)
-		},
-		func(tx postgresql.Transaction) interfaces.MessagesRepository {
-			return messagesrepository.New(tx, logger)
-		},
+	chatsService := chatsservice.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.Services.Chats,
+		chatsservice.New(
+			unitOfWork,
+			func(tx postgresql.Transaction) interfaces.ChatsRepository {
+				return chatsrepository.NewTraceDecorator(
+					traceProvider,
+					cfg.Tracing.Spans.Repositories.Chats,
+					chatsrepository.New(tx, logger),
+				)
+			},
+			func(tx postgresql.Transaction) interfaces.MessagesRepository {
+				return messagesrepository.NewTraceDecorator(
+					traceProvider,
+					cfg.Tracing.Spans.Repositories.Messages,
+					messagesrepository.New(tx, logger),
+				)
+			},
+		),
 	)
 
-	usersUseCases := usersusecases.New(usersService, cfg.Security, cfg.Validation)
-	messagesUseCases := messagesusecases.New(messagesService, chatsService, usersService)
-	chatsUseCases := chatsusecases.New(chatsService, usersService)
-	authUseCases := authusecases.New(
-		authService,
-		usersService,
-		cfg.Security,
-		cfg.Validation,
+	messagesService := messagesservice.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.Services.Messages,
+		messagesservice.New(
+			unitOfWork,
+			func(tx postgresql.Transaction) interfaces.ChatsRepository {
+				return chatsrepository.NewTraceDecorator(
+					traceProvider,
+					cfg.Tracing.Spans.Repositories.Chats,
+					chatsrepository.New(tx, logger),
+				)
+			},
+			func(tx postgresql.Transaction) interfaces.MessagesRepository {
+				return messagesrepository.NewTraceDecorator(
+					traceProvider,
+					cfg.Tracing.Spans.Repositories.Messages,
+					messagesrepository.New(tx, logger),
+				)
+			},
+		),
+	)
+
+	usersUseCases := usersusecases.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.UseCases.Users,
+		usersusecases.New(usersService, cfg.Security, cfg.Validation),
+	)
+
+	messagesUseCases := messagesusecases.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.UseCases.Messages,
+		messagesusecases.New(messagesService, chatsService, usersService),
+	)
+
+	chatsUseCases := chatsusecases.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.UseCases.Chats,
+		chatsusecases.New(chatsService, usersService),
+	)
+
+	authUseCases := authusecases.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.UseCases.Auth,
+		authusecases.New(
+			authService,
+			usersService,
+			cfg.Security,
+			cfg.Validation,
+		),
 	)
 
 	upgrader := &websocket.Upgrader{
