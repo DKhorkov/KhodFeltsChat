@@ -447,7 +447,7 @@ func New() Config {
 						},
 					},
 					Users: tracing.SpanConfig{
-						Name: "Users repository",
+						Name: "Users service",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(
@@ -482,7 +482,7 @@ func New() Config {
 						},
 					},
 					Chats: tracing.SpanConfig{
-						Name: "Chats repository",
+						Name: "Chats service",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(
@@ -517,7 +517,7 @@ func New() Config {
 						},
 					},
 					Messages: tracing.SpanConfig{
-						Name: "Messages repository",
+						Name: "Messages service",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(
@@ -589,7 +589,7 @@ func New() Config {
 						},
 					},
 					Users: tracing.SpanConfig{
-						Name: "Users repository",
+						Name: "Users useCases",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(
@@ -624,7 +624,7 @@ func New() Config {
 						},
 					},
 					Chats: tracing.SpanConfig{
-						Name: "Chats repository",
+						Name: "Chats useCases",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(
@@ -659,7 +659,7 @@ func New() Config {
 						},
 					},
 					Messages: tracing.SpanConfig{
-						Name: "Messages repository",
+						Name: "Messages useCases",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(
