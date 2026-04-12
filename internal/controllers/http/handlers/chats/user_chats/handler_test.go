@@ -15,7 +15,7 @@ import (
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	mockusecases "github.com/DKhorkov/kfc/mocks/usecases"
 	"github.com/DKhorkov/libs/contextlib"
-	middlewares "github.com/DKhorkov/libs/middlewares/http"
+	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 	"github.com/DKhorkov/libs/pointers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,7 +48,7 @@ func TestHandler(t *testing.T) {
 		}
 
 		req := httptest.NewRequest(http.MethodGet, url, http.NoBody)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, userID)
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 
 		return req.WithContext(ctx)
 	}
@@ -301,7 +301,7 @@ func TestHandler(t *testing.T) {
 
 		// Запрос с невалидным limit
 		req := httptest.NewRequest(http.MethodGet, "/chats?limit=invalid&offset=0", http.NoBody)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, userID)
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 		req = req.WithContext(ctx)
 
 		rr := httptest.NewRecorder()
@@ -336,7 +336,7 @@ func TestHandler(t *testing.T) {
 
 		// Запрос с невалидным offset
 		req := httptest.NewRequest(http.MethodGet, "/chats?limit=10&offset=invalid", http.NoBody)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, userID)
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 		req = req.WithContext(ctx)
 
 		rr := httptest.NewRecorder()

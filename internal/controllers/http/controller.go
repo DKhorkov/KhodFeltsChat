@@ -15,7 +15,11 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/docs"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/logging"
-	middlewares "github.com/DKhorkov/libs/middlewares/http"
+	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
+	loggingmiddleware "github.com/DKhorkov/libs/middlewares/http/logging"
+	metricsmiddleware "github.com/DKhorkov/libs/middlewares/http/metrics"
+	requestidmiddleware "github.com/DKhorkov/libs/middlewares/http/request_id"
+	tracingmiddleware "github.com/DKhorkov/libs/middlewares/http/tracing"
 	"github.com/DKhorkov/libs/security"
 	"github.com/DKhorkov/libs/tracing"
 	"github.com/gorilla/mux"
@@ -46,15 +50,15 @@ func New(
 	sensitiveFields []string,
 ) (*Controller, error) {
 	rootMux := mux.NewRouter()
-	rootMux.Use(middlewares.TracingMiddleware(traceProvider, spanConfig))
-	rootMux.Use(middlewares.MetricsMiddleware)
-	rootMux.Use(middlewares.RequestIDMiddleware)
-	rootMux.Use(middlewares.LoggingMiddleware(logger, sensitiveFields...))
+	rootMux.Use(tracingmiddleware.Middleware(traceProvider, spanConfig))
+	rootMux.Use(metricsmiddleware.Middleware)
+	rootMux.Use(requestidmiddleware.Middleware)
+	rootMux.Use(loggingmiddleware.Middleware(logger, sensitiveFields...))
 	rootMux.Use(
-		middlewares.AuthMiddleware(
+		authmiddleware.Middleware(
 			login.AccessTokenCookieName,
 			securityConfig,
-			[]middlewares.IgnoreURL{
+			[]authmiddleware.IgnoreURL{
 				{
 					Path:    regexp.MustCompile(`^` + docs.URL + `$`),
 					Methods: []string{http.MethodGet},

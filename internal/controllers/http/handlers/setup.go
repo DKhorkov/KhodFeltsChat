@@ -28,7 +28,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/ws"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/logging"
-	middlewares "github.com/DKhorkov/libs/middlewares/http"
+	metricsmiddleware "github.com/DKhorkov/libs/middlewares/http/metrics"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -70,7 +70,7 @@ func SetupHandlers(
 	rootMux.MethodNotAllowedHandler = http.HandlerFunc(not_allowed.Handler)
 
 	getMux := rootMux.Methods(http.MethodGet).Subrouter()
-	getMux.Handle(middlewares.MetricsURLPath, promhttp.Handler())
+	getMux.Handle(metricsmiddleware.MetricsURLPath, promhttp.Handler())
 	getMux.Handle(UsersURL, users.Handler(usersUseCases))
 	getMux.Handle(MeURL, me.Handler(usersUseCases))
 	getMux.Handle(

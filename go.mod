@@ -5,10 +5,10 @@ go 1.24.0
 toolchain go1.24.11
 
 require (
-	github.com/DKhorkov/libs v1.14.10
+	github.com/DKhorkov/libs v1.15.3
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/go-openapi/runtime v0.29.2
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/pressly/goose v2.7.0+incompatible

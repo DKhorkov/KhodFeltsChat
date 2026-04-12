@@ -10,7 +10,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth/logout"
 	mockusecases "github.com/DKhorkov/kfc/mocks/usecases"
 	"github.com/DKhorkov/libs/contextlib"
-	middlewares "github.com/DKhorkov/libs/middlewares/http"
+	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -26,7 +26,7 @@ func TestHandler(t *testing.T) {
 		t.Helper()
 
 		req := httptest.NewRequest(http.MethodPost, "/logout", http.NoBody)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, userID)
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 
 		return req.WithContext(ctx)
 	}
@@ -122,7 +122,7 @@ func TestHandler(t *testing.T) {
 
 		// Запрос с userID неверного типа в контексте
 		req := httptest.NewRequest(http.MethodPost, "/logout", http.NoBody)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, "not-a-number")
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, "not-a-number")
 		req = req.WithContext(ctx)
 		rr := httptest.NewRecorder()
 
@@ -273,7 +273,7 @@ func TestHandler(t *testing.T) {
 					Return(nil)
 
 				req := httptest.NewRequest(tc.method, "/logout", http.NoBody)
-				ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, userID)
+				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
 

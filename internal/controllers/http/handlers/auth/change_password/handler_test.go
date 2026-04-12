@@ -14,7 +14,7 @@ import (
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	mockusecases "github.com/DKhorkov/kfc/mocks/usecases"
 	"github.com/DKhorkov/libs/contextlib"
-	middlewares "github.com/DKhorkov/libs/middlewares/http"
+	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -30,7 +30,7 @@ func TestHandler(t *testing.T) {
 		t.Helper()
 
 		req := httptest.NewRequest(http.MethodPost, "/change-password", requestBody)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, userID)
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 
 		return req.WithContext(ctx)
 	}
@@ -119,7 +119,7 @@ func TestHandler(t *testing.T) {
 			"/change-password",
 			bytes.NewReader(requestBody),
 		)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, "not-a-number")
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, "not-a-number")
 		req = req.WithContext(ctx)
 		rr := httptest.NewRecorder()
 

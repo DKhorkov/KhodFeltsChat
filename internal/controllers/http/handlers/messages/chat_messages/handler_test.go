@@ -15,7 +15,7 @@ import (
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	mockusecases "github.com/DKhorkov/kfc/mocks/usecases"
 	"github.com/DKhorkov/libs/contextlib"
-	middlewares "github.com/DKhorkov/libs/middlewares/http"
+	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 	"github.com/DKhorkov/libs/pointers"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -49,7 +49,7 @@ func TestHandler(t *testing.T) {
 		}
 
 		req := httptest.NewRequest(http.MethodGet, url, http.NoBody)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, userID)
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 
 		// Устанавливаем параметры маршрута для mux.Vars
 		vars := map[string]string{
@@ -239,7 +239,7 @@ func TestHandler(t *testing.T) {
 
 		// Запрос с невалидным chat ID
 		req := httptest.NewRequest(http.MethodGet, "/chats/invalid/messages", http.NoBody)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, userID)
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 		vars := map[string]string{
 			common.IDRouteKey: "invalid",
 		}
@@ -267,7 +267,7 @@ func TestHandler(t *testing.T) {
 
 		// Запрос с пустым chat ID
 		req := httptest.NewRequest(http.MethodGet, "/chats//messages", http.NoBody)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, userID)
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 		vars := map[string]string{
 			common.IDRouteKey: "",
 		}
@@ -439,7 +439,7 @@ func TestHandler(t *testing.T) {
 			"/chats/"+strconv.FormatUint(chatID, 10)+"/messages?limit=invalid&offset=0",
 			http.NoBody,
 		)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, userID)
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 		vars := map[string]string{
 			common.IDRouteKey: strconv.FormatUint(chatID, 10),
 		}
@@ -489,7 +489,7 @@ func TestHandler(t *testing.T) {
 			"/chats/"+strconv.FormatUint(chatID, 10)+"/messages?limit=10&offset=invalid",
 			http.NoBody,
 		)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, userID)
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 		vars := map[string]string{
 			common.IDRouteKey: strconv.FormatUint(chatID, 10),
 		}

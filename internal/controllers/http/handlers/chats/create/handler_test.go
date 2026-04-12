@@ -15,7 +15,7 @@ import (
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	mockusecases "github.com/DKhorkov/kfc/mocks/usecases"
 	"github.com/DKhorkov/libs/contextlib"
-	middlewares "github.com/DKhorkov/libs/middlewares/http"
+	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 	"github.com/DKhorkov/libs/pointers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,7 +32,7 @@ func TestHandler(t *testing.T) {
 		t.Helper()
 
 		req := httptest.NewRequest(http.MethodPost, "/chats", bytes.NewBuffer(body))
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, userID)
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 
 		return req.WithContext(ctx)
 	}

@@ -10,7 +10,7 @@ import (
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/contextlib"
-	middlewares "github.com/DKhorkov/libs/middlewares/http"
+	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 )
 
 // swagger:route POST /users/password/change users ChangePassword
@@ -34,7 +34,7 @@ func Handler(u interfaces.AuthUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := contextlib.ValueFromContext[uint64](
 			r.Context(),
-			middlewares.UserIDContextKey,
+			authmiddleware.UserIDContextKey,
 		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)

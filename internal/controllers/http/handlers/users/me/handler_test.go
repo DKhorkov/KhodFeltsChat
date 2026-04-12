@@ -16,7 +16,7 @@ import (
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	mockusecases "github.com/DKhorkov/kfc/mocks/usecases"
 	"github.com/DKhorkov/libs/contextlib"
-	middlewares "github.com/DKhorkov/libs/middlewares/http"
+	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -32,7 +32,7 @@ func TestHandler(t *testing.T) {
 		t.Helper()
 
 		req := httptest.NewRequest(http.MethodGet, "/me", http.NoBody)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, userID)
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 
 		return req.WithContext(ctx)
 	}
@@ -161,7 +161,7 @@ func TestHandler(t *testing.T) {
 
 		// Запрос с userID неверного типа в контексте
 		req := httptest.NewRequest(http.MethodGet, "/me", http.NoBody)
-		ctx := contextlib.WithValue(req.Context(), middlewares.UserIDContextKey, "not-a-number")
+		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, "not-a-number")
 		req = req.WithContext(ctx)
 		rr := httptest.NewRecorder()
 

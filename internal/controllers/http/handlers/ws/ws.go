@@ -13,7 +13,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/contextlib"
 	"github.com/DKhorkov/libs/logging"
-	middlewares "github.com/DKhorkov/libs/middlewares/http"
+	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 	"github.com/gorilla/websocket"
 )
 
@@ -62,7 +62,7 @@ func New(
 func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	userID, err := contextlib.ValueFromContext[uint64](
 		r.Context(),
-		middlewares.UserIDContextKey,
+		authmiddleware.UserIDContextKey,
 	)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
