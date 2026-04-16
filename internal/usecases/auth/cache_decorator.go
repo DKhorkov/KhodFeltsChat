@@ -15,10 +15,10 @@ import (
 
 const (
 	verifyEmailPrefix    = "email_verification"
-	verifyEmailLimit     = 3
+	verifyEmailLimit     = 1
 	verifyEmailTTL       = time.Minute
 	forgetPasswordPrefix = "forget_password"
-	forgetPasswordLimit  = 3
+	forgetPasswordLimit  = 1
 	forgetPasswordTTL    = time.Minute
 
 	initCacheValue = 1
