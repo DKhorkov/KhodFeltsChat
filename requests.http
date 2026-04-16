@@ -4,7 +4,7 @@ POST http://localhost:8080/users
 Content-Type: application/json
 
 {
-  "email": "alexqwerty228@yandex.ru",
+  "email": "alexqwerty35@yandex.ru",
   "username": "testDemos",
   "password": "SomeTestP@ssword228"
 }
