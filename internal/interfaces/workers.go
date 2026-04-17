@@ -8,7 +8,7 @@ import (
 
 type MessageHandler func(message *nats.Msg)
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/users_usecases.go -package=mockusecases -exclude_interfaces=AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases
+//go:generate mockgen -source=workers.go -destination=../../mocks/workers/message_handler_builder.go -package=mockworkers -exclude_interfaces=
 type MessageHandlerBuilder interface {
 	MessageHandler(ctx context.Context) MessageHandler
 }
