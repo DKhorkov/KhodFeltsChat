@@ -158,6 +158,33 @@ func New() Config {
 				),
 			},
 		},
+		NATS: NATSConfig{
+			ClientURL: fmt.Sprintf(
+				"nats://%s:%d",
+				loadenv.GetEnv("NATS_HOST", "0.0.0.0"),
+				loadenv.GetEnvAsInt("NATS_CLIENT_PORT", 4222),
+			),
+			Subjects: NATSSubjects{
+				VerifyEmail:    loadenv.GetEnv("NATS_VERIFY_EMAIL_SUBJECT", "verify-email"),
+				ForgetPassword: loadenv.GetEnv("NATS_FORGET_PASSWORD_SUBJECT", "forget-password"),
+			},
+			Publisher: NATSPublisher{
+				Name: loadenv.GetEnv("NATS_PUBLISHER_NAME", "kfc-publisher"),
+			},
+			MessageChannelBufferSize: loadenv.GetEnvAsInt("NATS_MESSAGE_CHANNEL_BUFFER_SIZE", 1),
+			GoroutinesPoolSize:       loadenv.GetEnvAsInt("NATS_GOROUTINES_POOL_SIZE", 1),
+			Workers: NATSWorkers{
+				VerifyEmail: NATSWorker{
+					Name: loadenv.GetEnv("NATS_VERIFY_EMAIL_WORKER_NAME", "verify-email-worker"),
+				},
+				ForgetPassword: NATSWorker{
+					Name: loadenv.GetEnv(
+						"NATS_FORGET_PASSWORD_WORKER_NAME",
+						"forget-password-worker",
+					),
+				},
+			},
+		},
 		Tracing: TracingConfig{
 			Server: tracing.Config{
 				ServiceName:    loadenv.GetEnv("TRACING_SERVICE_NAME", "kfc"),
@@ -551,6 +578,41 @@ func New() Config {
 							},
 						},
 					},
+					Notifications: tracing.SpanConfig{
+						Name: "Notifications service",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Notifications service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Notifications service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
 				},
 				UseCases: SpanUseCases{
 					Auth: tracing.SpanConfig{
@@ -693,6 +755,113 @@ func New() Config {
 							},
 						},
 					},
+					Notifications: tracing.SpanConfig{
+						Name: "Notifications useCases",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Notifications useCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Notifications useCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+				},
+				Handlers: SpanHandlers{
+					VerifyEmail: tracing.SpanConfig{
+						Name: "VerifyEmail worker handler",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling verify-email worker handler",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from verify-email worker handler",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+					ForgetPassword: tracing.SpanConfig{
+						Name: "ForgetPassword worker handler",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling forget-password worker handler",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from forget-password worker handler",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -753,17 +922,24 @@ type SpanRepositories struct {
 }
 
 type SpanServices struct {
-	Auth     tracing.SpanConfig
-	Users    tracing.SpanConfig
-	Chats    tracing.SpanConfig
-	Messages tracing.SpanConfig
+	Auth          tracing.SpanConfig
+	Users         tracing.SpanConfig
+	Chats         tracing.SpanConfig
+	Messages      tracing.SpanConfig
+	Notifications tracing.SpanConfig
 }
 
 type SpanUseCases struct {
-	Auth     tracing.SpanConfig
-	Users    tracing.SpanConfig
-	Chats    tracing.SpanConfig
-	Messages tracing.SpanConfig
+	Auth          tracing.SpanConfig
+	Users         tracing.SpanConfig
+	Chats         tracing.SpanConfig
+	Messages      tracing.SpanConfig
+	Notifications tracing.SpanConfig
+}
+
+type SpanHandlers struct {
+	VerifyEmail    tracing.SpanConfig
+	ForgetPassword tracing.SpanConfig
 }
 
 type SpansConfig struct {
@@ -772,6 +948,7 @@ type SpansConfig struct {
 	Repositories SpanRepositories
 	Services     SpanServices
 	UseCases     SpanUseCases
+	Handlers     SpanHandlers
 }
 
 type TracingConfig struct {
@@ -786,6 +963,32 @@ type CookiesConfig struct {
 
 type WebsocketConfig struct {
 	HandshakeTimeout time.Duration
+}
+
+type NATSConfig struct {
+	ClientURL                string
+	MessageChannelBufferSize int
+	GoroutinesPoolSize       int
+	Subjects                 NATSSubjects
+	Publisher                NATSPublisher
+	Workers                  NATSWorkers
+}
+
+type NATSSubjects struct {
+	VerifyEmail    string
+	ForgetPassword string
+}
+
+type NATSPublisher struct {
+	Name string
+}
+type NATSWorkers struct {
+	VerifyEmail    NATSWorker
+	ForgetPassword NATSWorker
+}
+
+type NATSWorker struct {
+	Name string
 }
 
 type Config struct {
@@ -803,4 +1006,5 @@ type Config struct {
 	Cookies     CookiesConfig
 	Tracing     TracingConfig
 	Websocket   WebsocketConfig
+	NATS        NATSConfig
 }

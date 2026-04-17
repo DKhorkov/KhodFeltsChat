@@ -7,7 +7,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/domains"
 )
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/users_service.go -package=mockservices -exclude_interfaces=AuthService,ChatsService,MessagesService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/users_service.go -package=mockservices -exclude_interfaces=AuthService,ChatsService,MessagesService,NotificationsService
 type UsersService interface {
 	GetUserByID(ctx context.Context, id uint64) (*domains.User, error)
 	GetUsers(
@@ -20,7 +20,7 @@ type UsersService interface {
 	UpdateUser(ctx context.Context, userProfileData domains.UpdateUserDTO) (*domains.User, error)
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/auth_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/auth_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,NotificationsService
 type AuthService interface {
 	RegisterUser(ctx context.Context, userData domains.RegisterDTO) (*domains.User, error)
 	CreateRefreshToken(
@@ -38,7 +38,7 @@ type AuthService interface {
 	SendVerifyEmailMessage(ctx context.Context, email string) error
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/chats_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,MessagesService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/chats_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,MessagesService,NotificationsService
 type ChatsService interface {
 	GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error)
 	GetUserChats(
@@ -50,7 +50,7 @@ type ChatsService interface {
 	PrivateChatExists(ctx context.Context, members []domains.User) (bool, error)
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/messages_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,ChatsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/messages_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,ChatsService,NotificationsService
 type MessagesService interface {
 	SaveMessage(ctx context.Context, message domains.Message) (*domains.Message, error)
 	GetChatMessages(
@@ -59,4 +59,10 @@ type MessagesService interface {
 		chatID uint64,
 		pagination *domains.Pagination,
 	) ([]domains.Message, error)
+}
+
+//go:generate mockgen -source=services.go -destination=../../mocks/services/notifications_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,AuthService
+type NotificationsService interface {
+	SendForgetPasswordMessage(ctx context.Context, user domains.User) error
+	SendVerifyEmailMessage(ctx context.Context, user domains.User) error
 }

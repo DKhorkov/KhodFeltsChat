@@ -9,8 +9,9 @@ services:
       - "${HTTP_OUTER_PORT}:${HTTP_INNER_PORT}"
     depends_on:
       - postgres
-      - cache
+      - redis
       - jaeger
+      - nats
     volumes:
       - ../../../logs/:/app/logs/
     networks:
@@ -89,9 +90,9 @@ services:
     depends_on:
       - prometheus
 
-  cache:
-    container_name: cache
-    hostname: cache
+  redis:
+    container_name: redis
+    hostname: redis
     image: redis:latest
     env_file:
       - ../../../.env
@@ -116,6 +117,20 @@ services:
     restart: unless-stopped
     tty: true
     stdin_open: true
+    networks:
+      - kfc_network
+
+  nats:
+    image: nats:alpine
+    container_name: nats
+    restart: always
+    command: -c /etc/nats/nats.conf
+    ports:
+      - "${NATS_OUTER_CLIENT_PORT}:${NATS_INNER_CLIENT_PORT}"
+      - "${NATS_OUTER_CLUSTER_PORT}:${NATS_INNER_CLUSTER_PORT}"
+      - "${NATS_OUTER_WEB_PORT}:${NATS_INNER_WEB_PORT}"
+    volumes:
+      - ../../../nats.conf:/etc/nats/nats.conf
     networks:
       - kfc_network
 
