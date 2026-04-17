@@ -15,11 +15,11 @@ import (
 
 const (
 	verifyEmailPrefix    = "email_verification"
-	verifyEmailLimit     = 1
-	verifyEmailTTL       = time.Minute
+	verifyEmailLimit     = 3
+	verifyEmailTTL       = 3 * time.Minute
 	forgetPasswordPrefix = "forget_password"
-	forgetPasswordLimit  = 1
-	forgetPasswordTTL    = time.Minute
+	forgetPasswordLimit  = 3
+	forgetPasswordTTL    = 3 * time.Minute
 
 	initCacheValue = 1
 )
@@ -130,15 +130,17 @@ func (d *CacheDecorator) SendVerifyEmailMessage(ctx context.Context, email strin
 				err,
 			)
 		}
-	} else {
-		if _, err = d.cacheProvider.Incr(ctx, cacheKey); err != nil {
-			logging.LogErrorContext(
-				ctx,
-				d.logger,
-				fmt.Sprintf("Failed to increment cache for %s key", cacheKey),
-				err,
-			)
-		}
+
+		return nil
+	}
+
+	if _, err = d.cacheProvider.Incr(ctx, cacheKey); err != nil {
+		logging.LogErrorContext(
+			ctx,
+			d.logger,
+			fmt.Sprintf("Failed to increment cache for %s key", cacheKey),
+			err,
+		)
 	}
 
 	return nil
@@ -192,15 +194,17 @@ func (d *CacheDecorator) SendForgetPasswordMessage(ctx context.Context, email st
 				err,
 			)
 		}
-	} else {
-		if _, err = d.cacheProvider.Incr(ctx, cacheKey); err != nil {
-			logging.LogErrorContext(
-				ctx,
-				d.logger,
-				fmt.Sprintf("Failed to increment cache for %s key", cacheKey),
-				err,
-			)
-		}
+
+		return nil
+	}
+
+	if _, err = d.cacheProvider.Incr(ctx, cacheKey); err != nil {
+		logging.LogErrorContext(
+			ctx,
+			d.logger,
+			fmt.Sprintf("Failed to increment cache for %s key", cacheKey),
+			err,
+		)
 	}
 
 	return nil

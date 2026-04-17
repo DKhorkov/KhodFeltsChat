@@ -93,7 +93,7 @@ func TestCacheDecorator_SendVerifyEmailMessage(t *testing.T) {
 					Return(nil)
 
 				mockCache.EXPECT().
-					Set(gomock.Any(), "email_verification:user@example.com", 1, time.Minute).
+					Set(gomock.Any(), "email_verification:user@example.com", 1, 3*time.Minute).
 					Return(nil)
 			},
 			expectedError: nil,
@@ -207,7 +207,7 @@ func TestCacheDecorator_SendVerifyEmailMessage(t *testing.T) {
 					Return(nil)
 
 				mockCache.EXPECT().
-					Set(gomock.Any(), "email_verification:user@example.com", 1, time.Minute).
+					Set(gomock.Any(), "email_verification:user@example.com", 1, 3*time.Minute).
 					Return(nil)
 			},
 			expectedError: nil,
@@ -237,7 +237,7 @@ func TestCacheDecorator_SendVerifyEmailMessage(t *testing.T) {
 					Return(nil)
 
 				mockCache.EXPECT().
-					Set(gomock.Any(), "email_verification:user@example.com", 1, time.Minute).
+					Set(gomock.Any(), "email_verification:user@example.com", 1, 3*time.Minute).
 					Return(nil)
 			},
 			expectedError: nil,
@@ -263,7 +263,7 @@ func TestCacheDecorator_SendVerifyEmailMessage(t *testing.T) {
 					Return(nil)
 
 				mockCache.EXPECT().
-					Set(gomock.Any(), "email_verification:user@example.com", 1, time.Minute).
+					Set(gomock.Any(), "email_verification:user@example.com", 1, 3*time.Minute).
 					Return(errors.New("set failed"))
 
 				mockLogger.EXPECT().
@@ -371,7 +371,7 @@ func TestCacheDecorator_SendForgetPasswordMessage(t *testing.T) {
 					Return(nil)
 
 				mockCache.EXPECT().
-					Set(gomock.Any(), "forget_password:user@example.com", 1, time.Minute).
+					Set(gomock.Any(), "forget_password:user@example.com", 1, 3*time.Minute).
 					Return(nil)
 			},
 			expectedError: nil,
@@ -485,7 +485,7 @@ func TestCacheDecorator_SendForgetPasswordMessage(t *testing.T) {
 					Return(nil)
 
 				mockCache.EXPECT().
-					Set(gomock.Any(), "forget_password:user@example.com", 1, time.Minute).
+					Set(gomock.Any(), "forget_password:user@example.com", 1, 3*time.Minute).
 					Return(nil)
 			},
 			expectedError: nil,
@@ -515,7 +515,7 @@ func TestCacheDecorator_SendForgetPasswordMessage(t *testing.T) {
 					Return(nil)
 
 				mockCache.EXPECT().
-					Set(gomock.Any(), "forget_password:user@example.com", 1, time.Minute).
+					Set(gomock.Any(), "forget_password:user@example.com", 1, 3*time.Minute).
 					Return(nil)
 			},
 			expectedError: nil,
@@ -541,7 +541,7 @@ func TestCacheDecorator_SendForgetPasswordMessage(t *testing.T) {
 					Return(nil)
 
 				mockCache.EXPECT().
-					Set(gomock.Any(), "forget_password:user@example.com", 1, time.Minute).
+					Set(gomock.Any(), "forget_password:user@example.com", 1, 3*time.Minute).
 					Return(errors.New("set failed"))
 
 				mockLogger.EXPECT().
