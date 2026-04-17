@@ -263,6 +263,10 @@ linters:
         linters:
           - dupl
 
+      - path: .cache_decorator\.go
+        linters:
+          - dupl
+
       - path: .repository\.go
         linters:
           - exhaustruct

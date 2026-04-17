@@ -23,6 +23,7 @@ import (
 	chatsusecases "github.com/DKhorkov/kfc/internal/usecases/chats"
 	messagesusecases "github.com/DKhorkov/kfc/internal/usecases/messages"
 	usersusecases "github.com/DKhorkov/kfc/internal/usecases/users"
+	"github.com/DKhorkov/libs/cache"
 	"github.com/DKhorkov/libs/db/postgresql"
 	"github.com/DKhorkov/libs/loadenv"
 	"github.com/DKhorkov/libs/logging"
@@ -62,6 +63,21 @@ func main() {
 		err = traceProvider.Shutdown(context.Background())
 		if err != nil {
 			logging.LogError(logger, "Error shutting down tracer", err)
+		}
+	}()
+
+	cacheProvider, err := cache.New(
+		cache.WithHost(cfg.Cache.Host),
+		cache.WithPort(cfg.Cache.Port),
+		cache.WithPassword(cfg.Cache.Password),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err = cacheProvider.Close(); err != nil {
+			logging.LogError(logger, "Error shutting down cache", err)
 		}
 	}()
 
@@ -187,11 +203,15 @@ func main() {
 	authUseCases := authusecases.NewTraceDecorator(
 		traceProvider,
 		cfg.Tracing.Spans.UseCases.Auth,
-		authusecases.New(
-			authService,
-			usersService,
-			cfg.Security,
-			cfg.Validation,
+		authusecases.NewCacheDecorator(
+			cacheProvider,
+			logger,
+			authusecases.New(
+				authService,
+				usersService,
+				cfg.Security,
+				cfg.Validation,
+			),
 		),
 	)
 
