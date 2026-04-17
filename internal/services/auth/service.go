@@ -81,7 +81,7 @@ func (s *Service) RegisterUser(
 				UserID: user.ID,
 			}
 
-			content, err := json.Marshal(verifyEmailDTO)
+			content, err := json.Marshal(verifyEmailDTO) //nolint:govet // неважное затенение
 			if err != nil {
 				return err
 			}

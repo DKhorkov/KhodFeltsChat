@@ -28,7 +28,10 @@ func New(
 
 func (d *Decorator) MessageHandler(ctx context.Context) interfaces.MessageHandler {
 	return func(message *nats.Msg) {
-		ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
+		ctx, span := d.traceProvider.Span( //nolint:govet // неважное затенение
+			ctx,
+			tracing.CallerName(tracing.DefaultSkipLevel),
+		)
 		defer span.End()
 
 		span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)

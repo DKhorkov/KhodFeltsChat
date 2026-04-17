@@ -283,7 +283,7 @@ func main() {
 			logging.LogError(
 				logger,
 				fmt.Sprintf(
-					"Error shutting down \"%s\" worker",
+					"Error shutting down %q worker",
 					cfg.NATS.Workers.VerifyEmail.Name,
 				),
 				err,
@@ -321,7 +321,7 @@ func main() {
 			logging.LogError(
 				logger,
 				fmt.Sprintf(
-					"Error shutting down \"%s\" worker",
+					"Error shutting down %q worker",
 					cfg.NATS.Workers.ForgetPassword.Name,
 				),
 				err,
