@@ -292,6 +292,10 @@ linters:
         linters:
           - iface
 
+      - path: internal/interfaces/repositories.go
+        linters:
+          - iface
+
       - path: internal/controllers/http/handlers*
         linters:
           - musttag # No need in tags in input field for Body

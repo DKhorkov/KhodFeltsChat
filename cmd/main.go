@@ -4,15 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/DKhorkov/libs/cache"
-	"github.com/DKhorkov/libs/db/postgresql"
-	"github.com/DKhorkov/libs/loadenv"
-	"github.com/DKhorkov/libs/logging"
-	customnats "github.com/DKhorkov/libs/nats"
-	"github.com/DKhorkov/libs/tracing"
-	"github.com/gorilla/websocket"
-	"github.com/nats-io/nats.go"
-
 	"github.com/DKhorkov/kfc/internal/app"
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/contentbuilders/forget_password"
@@ -38,6 +29,14 @@ import (
 	forgetpasswordmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/forget_password"
 	messagehandlerbuildertracingdecorator "github.com/DKhorkov/kfc/internal/workers/handlers/builders/tracing_decorator"
 	verifyemailmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/verify_email"
+	"github.com/DKhorkov/libs/cache"
+	"github.com/DKhorkov/libs/db/postgresql"
+	"github.com/DKhorkov/libs/loadenv"
+	"github.com/DKhorkov/libs/logging"
+	customnats "github.com/DKhorkov/libs/nats"
+	"github.com/DKhorkov/libs/tracing"
+	"github.com/gorilla/websocket"
+	"github.com/nats-io/nats.go"
 )
 
 func main() {

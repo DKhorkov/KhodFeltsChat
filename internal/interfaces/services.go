@@ -63,6 +63,5 @@ type MessagesService interface {
 
 //go:generate mockgen -source=services.go -destination=../../mocks/services/notifications_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,AuthService
 type NotificationsService interface {
-	SendForgetPasswordMessage(ctx context.Context, user domains.User) error
-	SendVerifyEmailMessage(ctx context.Context, user domains.User) error
+	EmailsRepository
 }
