@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/DKhorkov/kfc/internal/app"
 	"github.com/DKhorkov/kfc/internal/config"
@@ -17,18 +18,25 @@ import (
 	authservice "github.com/DKhorkov/kfc/internal/services/auth"
 	chatsservice "github.com/DKhorkov/kfc/internal/services/chats"
 	messagesservice "github.com/DKhorkov/kfc/internal/services/messages"
+	notificationsservice "github.com/DKhorkov/kfc/internal/services/notifications"
 	usersservice "github.com/DKhorkov/kfc/internal/services/users"
 	"github.com/DKhorkov/kfc/internal/uow"
 	authusecases "github.com/DKhorkov/kfc/internal/usecases/auth"
 	chatsusecases "github.com/DKhorkov/kfc/internal/usecases/chats"
 	messagesusecases "github.com/DKhorkov/kfc/internal/usecases/messages"
+	notificaionsusecases "github.com/DKhorkov/kfc/internal/usecases/notifications"
 	usersusecases "github.com/DKhorkov/kfc/internal/usecases/users"
+	forgetpasswordmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/forget_password"
+	messagehandlerbuildertracingdecorator "github.com/DKhorkov/kfc/internal/workers/handlers/builders/tracing_decorator"
+	verifyemailmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/verify_email"
 	"github.com/DKhorkov/libs/cache"
 	"github.com/DKhorkov/libs/db/postgresql"
 	"github.com/DKhorkov/libs/loadenv"
 	"github.com/DKhorkov/libs/logging"
+	customnats "github.com/DKhorkov/libs/nats"
 	"github.com/DKhorkov/libs/tracing"
 	"github.com/gorilla/websocket"
+	"github.com/nats-io/nats.go"
 )
 
 func main() {
@@ -81,6 +89,26 @@ func main() {
 		}
 	}()
 
+	natsPublisher, err := customnats.NewPublisher(
+		cfg.NATS.ClientURL,
+		nats.Name(cfg.NATS.Publisher.Name),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err = natsPublisher.Close(); err != nil {
+			logging.LogError(logger, "Failed to close nats publisher", err)
+		}
+	}()
+
+	unitOfWork := uow.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.UnitOfWork,
+		uow.New(pg),
+	)
+
 	contentBuilders := interfaces.ContentBuilders{
 		VerifyEmail: verify_email.New(
 			cfg.Email.VerifyEmailURL,
@@ -88,10 +116,10 @@ func main() {
 		ForgetPassword: forget_password.New(),
 	}
 
-	unitOfWork := uow.NewTraceDecorator(
+	emailsRepository := emailsrepository.NewTraceDecorator(
 		traceProvider,
-		cfg.Tracing.Spans.UnitOfWork,
-		uow.New(pg),
+		cfg.Tracing.Spans.Repositories.Emails,
+		emailsrepository.New(cfg.Email.SMTP, contentBuilders),
 	)
 
 	usersService := usersservice.NewTraceDecorator(
@@ -128,13 +156,8 @@ func main() {
 					usersrepository.New(tx, logger),
 				)
 			},
-			func() interfaces.EmailsRepository {
-				return emailsrepository.NewTraceDecorator(
-					traceProvider,
-					cfg.Tracing.Spans.Repositories.Emails,
-					emailsrepository.New(cfg.Email.SMTP, contentBuilders),
-				)
-			},
+			natsPublisher,
+			cfg.NATS,
 		),
 	)
 
@@ -182,6 +205,12 @@ func main() {
 		),
 	)
 
+	notificationsService := notificationsservice.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.Services.Notifications,
+		notificationsservice.New(emailsRepository),
+	)
+
 	usersUseCases := usersusecases.NewTraceDecorator(
 		traceProvider,
 		cfg.Tracing.Spans.UseCases.Users,
@@ -214,6 +243,91 @@ func main() {
 			),
 		),
 	)
+
+	notificationsUseCases := notificaionsusecases.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.UseCases.Notifications,
+		notificaionsusecases.New(
+			notificationsService,
+			usersService,
+		),
+	)
+
+	verifyEmailWorker, err := customnats.NewConsumer(
+		cfg.NATS.ClientURL,
+		cfg.NATS.Subjects.VerifyEmail,
+		customnats.WithGoroutinesPoolSize(cfg.NATS.GoroutinesPoolSize),
+		customnats.WithMessageChannelBufferSize(cfg.NATS.MessageChannelBufferSize),
+		customnats.WithNatsOptions(nats.Name(cfg.NATS.Workers.VerifyEmail.Name)),
+		customnats.WithMessageHandler(
+			messagehandlerbuildertracingdecorator.New(
+				traceProvider,
+				cfg.Tracing.Spans.Handlers.VerifyEmail,
+				verifyemailmessagehandlerbuilder.New(
+					notificationsUseCases,
+					logger,
+				),
+			).MessageHandler(context.Background()),
+		),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	if err = verifyEmailWorker.Run(); err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err = verifyEmailWorker.Stop(); err != nil {
+			logging.LogError(
+				logger,
+				fmt.Sprintf(
+					"Error shutting down %q worker",
+					cfg.NATS.Workers.VerifyEmail.Name,
+				),
+				err,
+			)
+		}
+	}()
+
+	forgetPasswordWorker, err := customnats.NewConsumer(
+		cfg.NATS.ClientURL,
+		cfg.NATS.Subjects.ForgetPassword,
+		customnats.WithGoroutinesPoolSize(cfg.NATS.GoroutinesPoolSize),
+		customnats.WithMessageChannelBufferSize(cfg.NATS.MessageChannelBufferSize),
+		customnats.WithNatsOptions(nats.Name(cfg.NATS.Workers.ForgetPassword.Name)),
+		customnats.WithMessageHandler(
+			messagehandlerbuildertracingdecorator.New(
+				traceProvider,
+				cfg.Tracing.Spans.Handlers.ForgetPassword,
+				forgetpasswordmessagehandlerbuilder.New(
+					notificationsUseCases,
+					logger,
+				),
+			).MessageHandler(context.Background()),
+		),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	if err = forgetPasswordWorker.Run(); err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err = forgetPasswordWorker.Stop(); err != nil {
+			logging.LogError(
+				logger,
+				fmt.Sprintf(
+					"Error shutting down %q worker",
+					cfg.NATS.Workers.ForgetPassword.Name,
+				),
+				err,
+			)
+		}
+	}()
 
 	upgrader := &websocket.Upgrader{
 		HandshakeTimeout: cfg.Websocket.HandshakeTimeout,

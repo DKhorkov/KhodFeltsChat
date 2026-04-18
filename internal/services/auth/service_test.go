@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -14,18 +15,21 @@ import (
 	mockrepositories "github.com/DKhorkov/kfc/mocks/repositories"
 	mockuow "github.com/DKhorkov/kfc/mocks/uow"
 	pg "github.com/DKhorkov/libs/db/postgresql"
+	mocknats "github.com/DKhorkov/libs/nats/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
+
+var natsConfig = config.NATSConfig{}
 
 func TestService_RegisterUser(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		mockUOW              func(*mockuow.MockUnitOfWork)
-		mockAuthRepository   func(*mockrepositories.MockAuthRepository)
-		mockUsersRepository  func(*mockrepositories.MockUsersRepository)
-		mockEmailsRepository func(*mockrepositories.MockEmailsRepository)
+		mockUOW             func(*mockuow.MockUnitOfWork)
+		mockAuthRepository  func(*mockrepositories.MockAuthRepository)
+		mockUsersRepository func(*mockrepositories.MockUsersRepository)
+		mockNatsPublisher   func(*mocknats.MockPublisher)
 	}
 
 	type args struct {
@@ -81,9 +85,9 @@ func TestService_RegisterUser(t *testing.T) {
 						RegisterUser(gomock.Any(), gomock.AssignableToTypeOf(domains.RegisterDTO{})).
 						Return(uint64(1), nil)
 				},
-				mockEmailsRepository: func(er *mockrepositories.MockEmailsRepository) {
-					er.EXPECT().
-						SendVerifyEmailMessage(gomock.Any(), *newUser).
+				mockNatsPublisher: func(p *mocknats.MockPublisher) {
+					p.EXPECT().
+						Publish(gomock.Any(), gomock.Any()).
 						Return(nil)
 				},
 			},
@@ -274,10 +278,10 @@ func TestService_RegisterUser(t *testing.T) {
 						RegisterUser(gomock.Any(), gomock.Any()).
 						Return(uint64(1), nil)
 				},
-				mockEmailsRepository: func(er *mockrepositories.MockEmailsRepository) {
-					er.EXPECT().
-						SendVerifyEmailMessage(gomock.Any(), *newUser).
-						Return(errors.New("SMTP error"))
+				mockNatsPublisher: func(p *mocknats.MockPublisher) {
+					p.EXPECT().
+						Publish(gomock.Any(), gomock.Any()).
+						Return(errors.New("error"))
 				},
 			},
 			args: args{
@@ -290,7 +294,7 @@ func TestService_RegisterUser(t *testing.T) {
 			},
 			want:    nil,
 			wantErr: true,
-			err:     errors.New("SMTP error"),
+			err:     errors.New("error"),
 		},
 	}
 
@@ -304,7 +308,7 @@ func TestService_RegisterUser(t *testing.T) {
 			mockUOW := mockuow.NewMockUnitOfWork(ctrl)
 			mockAuthRepo := mockrepositories.NewMockAuthRepository(ctrl)
 			mockUsersRepo := mockrepositories.NewMockUsersRepository(ctrl)
-			mockEmailsRepo := mockrepositories.NewMockEmailsRepository(ctrl)
+			mockNatsPublisher := mocknats.NewMockPublisher(ctrl)
 
 			if tt.fields.mockUOW != nil {
 				tt.fields.mockUOW(mockUOW)
@@ -318,8 +322,8 @@ func TestService_RegisterUser(t *testing.T) {
 				tt.fields.mockUsersRepository(mockUsersRepo)
 			}
 
-			if tt.fields.mockEmailsRepository != nil {
-				tt.fields.mockEmailsRepository(mockEmailsRepo)
+			if tt.fields.mockNatsPublisher != nil {
+				tt.fields.mockNatsPublisher(mockNatsPublisher)
 			}
 
 			// Создаем factory функции
@@ -331,15 +335,12 @@ func TestService_RegisterUser(t *testing.T) {
 				return mockUsersRepo
 			}
 
-			newEmailsRepoFunc := func() interfaces.EmailsRepository {
-				return mockEmailsRepo
-			}
-
 			service := auth.New(
 				mockUOW,
 				newAuthRepoFunc,
 				newUsersRepoFunc,
-				newEmailsRepoFunc,
+				mockNatsPublisher,
+				natsConfig,
 			)
 
 			// Act
@@ -513,6 +514,7 @@ func TestService_CreateRefreshToken(t *testing.T) {
 				newAuthRepoFunc,
 				nil,
 				nil,
+				natsConfig,
 			)
 
 			// Act
@@ -670,6 +672,7 @@ func TestService_GetRefreshTokenByUserID(t *testing.T) {
 				newAuthRepoFunc,
 				nil,
 				nil,
+				natsConfig,
 			)
 
 			// Act
@@ -788,6 +791,7 @@ func TestService_ExpireRefreshToken(t *testing.T) {
 				newAuthRepoFunc,
 				nil,
 				nil,
+				natsConfig,
 			)
 
 			// Act
@@ -905,6 +909,7 @@ func TestService_VerifyEmail(t *testing.T) {
 				newAuthRepoFunc,
 				nil,
 				nil,
+				natsConfig,
 			)
 
 			// Act
@@ -1133,6 +1138,7 @@ func TestService_ForgetPassword(t *testing.T) {
 				newAuthRepoFunc,
 				nil,
 				nil,
+				natsConfig,
 			)
 
 			// Act
@@ -1253,6 +1259,7 @@ func TestService_ChangePassword(t *testing.T) {
 				newAuthRepoFunc,
 				nil,
 				nil,
+				natsConfig,
 			)
 
 			// Act
@@ -1276,9 +1283,9 @@ func TestService_SendForgetPasswordMessage(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		mockUOW              func(*mockuow.MockUnitOfWork)
-		mockUsersRepository  func(*mockrepositories.MockUsersRepository)
-		mockEmailsRepository func(*mockrepositories.MockEmailsRepository)
+		mockUOW             func(*mockuow.MockUnitOfWork)
+		mockUsersRepository func(*mockrepositories.MockUsersRepository)
+		mockNatsPublisher   func(*mocknats.MockPublisher)
 	}
 
 	type args struct {
@@ -1315,9 +1322,9 @@ func TestService_SendForgetPasswordMessage(t *testing.T) {
 						GetUserByEmail(gomock.Any(), "test@example.com").
 						Return(user, nil)
 				},
-				mockEmailsRepository: func(er *mockrepositories.MockEmailsRepository) {
-					er.EXPECT().
-						SendForgetPasswordMessage(gomock.Any(), *user).
+				mockNatsPublisher: func(p *mocknats.MockPublisher) {
+					p.EXPECT().
+						Publish(gomock.Any(), gomock.Any()).
 						Return(nil)
 				},
 			},
@@ -1369,10 +1376,10 @@ func TestService_SendForgetPasswordMessage(t *testing.T) {
 						GetUserByEmail(gomock.Any(), "test@example.com").
 						Return(user, nil)
 				},
-				mockEmailsRepository: func(er *mockrepositories.MockEmailsRepository) {
-					er.EXPECT().
-						SendForgetPasswordMessage(gomock.Any(), *user).
-						Return(errors.New("SMTP error"))
+				mockNatsPublisher: func(p *mocknats.MockPublisher) {
+					p.EXPECT().
+						Publish(gomock.Any(), gomock.Any()).
+						Return(errors.New("error"))
 				},
 			},
 			args: args{
@@ -1380,7 +1387,7 @@ func TestService_SendForgetPasswordMessage(t *testing.T) {
 				email: "test@example.com",
 			},
 			wantErr: true,
-			err:     errors.New("SMTP error"),
+			err:     errors.New("error"),
 		},
 	}
 
@@ -1393,7 +1400,11 @@ func TestService_SendForgetPasswordMessage(t *testing.T) {
 
 			mockUOW := mockuow.NewMockUnitOfWork(ctrl)
 			mockUsersRepo := mockrepositories.NewMockUsersRepository(ctrl)
-			mockEmailsRepo := mockrepositories.NewMockEmailsRepository(ctrl)
+			mockNatsPublisher := mocknats.NewMockPublisher(ctrl)
+
+			if tt.fields.mockNatsPublisher != nil {
+				tt.fields.mockNatsPublisher(mockNatsPublisher)
+			}
 
 			if tt.fields.mockUOW != nil {
 				tt.fields.mockUOW(mockUOW)
@@ -1403,23 +1414,16 @@ func TestService_SendForgetPasswordMessage(t *testing.T) {
 				tt.fields.mockUsersRepository(mockUsersRepo)
 			}
 
-			if tt.fields.mockEmailsRepository != nil {
-				tt.fields.mockEmailsRepository(mockEmailsRepo)
-			}
-
 			newUsersRepoFunc := func(_ pg.Transaction) interfaces.UsersRepository {
 				return mockUsersRepo
-			}
-
-			newEmailsRepoFunc := func() interfaces.EmailsRepository {
-				return mockEmailsRepo
 			}
 
 			service := auth.New(
 				mockUOW,
 				nil,
 				newUsersRepoFunc,
-				newEmailsRepoFunc,
+				mockNatsPublisher,
+				natsConfig,
 			)
 
 			// Act
@@ -1447,9 +1451,9 @@ func TestService_SendVerifyEmailMessage(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		mockUOW              func(*mockuow.MockUnitOfWork)
-		mockUsersRepository  func(*mockrepositories.MockUsersRepository)
-		mockEmailsRepository func(*mockrepositories.MockEmailsRepository)
+		mockUOW             func(*mockuow.MockUnitOfWork)
+		mockUsersRepository func(*mockrepositories.MockUsersRepository)
+		mockNatsPublisher   func(*mocknats.MockPublisher)
 	}
 
 	type args struct {
@@ -1486,9 +1490,9 @@ func TestService_SendVerifyEmailMessage(t *testing.T) {
 						GetUserByEmail(gomock.Any(), "test@example.com").
 						Return(user, nil)
 				},
-				mockEmailsRepository: func(er *mockrepositories.MockEmailsRepository) {
-					er.EXPECT().
-						SendVerifyEmailMessage(gomock.Any(), *user).
+				mockNatsPublisher: func(p *mocknats.MockPublisher) {
+					p.EXPECT().
+						Publish(gomock.Any(), gomock.Any()).
 						Return(nil)
 				},
 			},
@@ -1540,10 +1544,10 @@ func TestService_SendVerifyEmailMessage(t *testing.T) {
 						GetUserByEmail(gomock.Any(), "test@example.com").
 						Return(user, nil)
 				},
-				mockEmailsRepository: func(er *mockrepositories.MockEmailsRepository) {
-					er.EXPECT().
-						SendVerifyEmailMessage(gomock.Any(), *user).
-						Return(errors.New("SMTP error"))
+				mockNatsPublisher: func(p *mocknats.MockPublisher) {
+					p.EXPECT().
+						Publish(gomock.Any(), gomock.Any()).
+						Return(errors.New("error"))
 				},
 			},
 			args: args{
@@ -1551,7 +1555,7 @@ func TestService_SendVerifyEmailMessage(t *testing.T) {
 				email: "test@example.com",
 			},
 			wantErr: true,
-			err:     errors.New("SMTP error"),
+			err:     errors.New("error"),
 		},
 	}
 
@@ -1564,7 +1568,11 @@ func TestService_SendVerifyEmailMessage(t *testing.T) {
 
 			mockUOW := mockuow.NewMockUnitOfWork(ctrl)
 			mockUsersRepo := mockrepositories.NewMockUsersRepository(ctrl)
-			mockEmailsRepo := mockrepositories.NewMockEmailsRepository(ctrl)
+			mockNatsPublisher := mocknats.NewMockPublisher(ctrl)
+
+			if tt.fields.mockNatsPublisher != nil {
+				tt.fields.mockNatsPublisher(mockNatsPublisher)
+			}
 
 			if tt.fields.mockUOW != nil {
 				tt.fields.mockUOW(mockUOW)
@@ -1574,23 +1582,16 @@ func TestService_SendVerifyEmailMessage(t *testing.T) {
 				tt.fields.mockUsersRepository(mockUsersRepo)
 			}
 
-			if tt.fields.mockEmailsRepository != nil {
-				tt.fields.mockEmailsRepository(mockEmailsRepo)
-			}
-
 			newUsersRepoFunc := func(_ pg.Transaction) interfaces.UsersRepository {
 				return mockUsersRepo
-			}
-
-			newEmailsRepoFunc := func() interfaces.EmailsRepository {
-				return mockEmailsRepo
 			}
 
 			service := auth.New(
 				mockUOW,
 				nil,
 				newUsersRepoFunc,
-				newEmailsRepoFunc,
+				mockNatsPublisher,
+				natsConfig,
 			)
 
 			// Act

@@ -3,34 +3,40 @@ package auth
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	pg "github.com/DKhorkov/libs/db/postgresql"
+	customnats "github.com/DKhorkov/libs/nats"
 )
 
 type Service struct {
-	uow                     interfaces.UnitOfWork
-	newAuthRepositoryFunc   func(tx pg.Transaction) interfaces.AuthRepository
-	newUsersRepositoryFunc  func(tx pg.Transaction) interfaces.UsersRepository
-	newEmailsRepositoryFunc func() interfaces.EmailsRepository
+	uow                    interfaces.UnitOfWork
+	newAuthRepositoryFunc  func(tx pg.Transaction) interfaces.AuthRepository
+	newUsersRepositoryFunc func(tx pg.Transaction) interfaces.UsersRepository
+	natsPublisher          customnats.Publisher
+	natsConfig             config.NATSConfig
 }
 
 func New(
 	uow interfaces.UnitOfWork,
 	newAuthRepositoryFunc func(tx pg.Transaction) interfaces.AuthRepository,
 	newUsersRepositoryFunc func(tx pg.Transaction) interfaces.UsersRepository,
-	newEmailsRepositoryFunc func() interfaces.EmailsRepository,
+	natsPublisher customnats.Publisher,
+	natsConfig config.NATSConfig,
 ) *Service {
 	return &Service{
-		uow:                     uow,
-		newAuthRepositoryFunc:   newAuthRepositoryFunc,
-		newUsersRepositoryFunc:  newUsersRepositoryFunc,
-		newEmailsRepositoryFunc: newEmailsRepositoryFunc,
+		uow:                    uow,
+		newAuthRepositoryFunc:  newAuthRepositoryFunc,
+		newUsersRepositoryFunc: newUsersRepositoryFunc,
+		natsPublisher:          natsPublisher,
+		natsConfig:             natsConfig,
 	}
 }
 
@@ -71,10 +77,19 @@ func (s *Service) RegisterUser(
 				return err
 			}
 
-			emailsRepository := s.newEmailsRepositoryFunc()
+			verifyEmailDTO := &domains.VerifyEmailNotificationDTO{
+				UserID: user.ID,
+			}
 
-			err = emailsRepository.SendVerifyEmailMessage(ctx, *user)
+			content, err := json.Marshal(verifyEmailDTO) //nolint:govet // неважное затенение
 			if err != nil {
+				return err
+			}
+
+			if err = s.natsPublisher.Publish(
+				s.natsConfig.Subjects.VerifyEmail,
+				content,
+			); err != nil {
 				return err
 			}
 
@@ -230,9 +245,23 @@ func (s *Service) SendForgetPasswordMessage(ctx context.Context, email string) e
 				return fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 			}
 
-			emailsRepository := s.newEmailsRepositoryFunc()
+			forgetPasswordDTO := &domains.ForgetPasswordNotificationDTO{
+				UserID: user.ID,
+			}
 
-			return emailsRepository.SendForgetPasswordMessage(ctx, *user)
+			content, err := json.Marshal(forgetPasswordDTO)
+			if err != nil {
+				return err
+			}
+
+			if err = s.natsPublisher.Publish(
+				s.natsConfig.Subjects.ForgetPassword,
+				content,
+			); err != nil {
+				return err
+			}
+
+			return nil
 		},
 	)
 }
@@ -248,9 +277,23 @@ func (s *Service) SendVerifyEmailMessage(ctx context.Context, email string) erro
 				return fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 			}
 
-			emailsRepository := s.newEmailsRepositoryFunc()
+			verifyEmailDTO := &domains.VerifyEmailNotificationDTO{
+				UserID: user.ID,
+			}
 
-			return emailsRepository.SendVerifyEmailMessage(ctx, *user)
+			content, err := json.Marshal(verifyEmailDTO)
+			if err != nil {
+				return err
+			}
+
+			if err = s.natsPublisher.Publish(
+				s.natsConfig.Subjects.VerifyEmail,
+				content,
+			); err != nil {
+				return err
+			}
+
+			return nil
 		},
 	)
 }

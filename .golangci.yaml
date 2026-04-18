@@ -241,6 +241,8 @@ linters:
           - gocyclo
           - cyclop
           - nestif
+          - gochecknoglobals
+          - errchkjson
 
       - path: internal/contentbuilders/forget_password/builder.go
         text: "^unused-receiver: method receiver 'b'*"
@@ -289,6 +291,10 @@ linters:
           - iface
 
       - path: internal/interfaces/services.go
+        linters:
+          - iface
+
+      - path: internal/interfaces/repositories.go
         linters:
           - iface
 
@@ -347,6 +353,8 @@ linters:
       - path: cmd/main.go
         linters:
           - exhaustruct
+          - funlen
+          - maintidx
 
       - path: internal/domains/chat.go
         linters:
@@ -356,6 +364,10 @@ linters:
         line: "17"
         linters:
           - exhaustruct
+
+      - path: internal/services/auth/service.go
+        linters:
+          - dupl
 
       - path: internal/services/users/service.go
         linters:
