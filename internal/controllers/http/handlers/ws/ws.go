@@ -176,6 +176,8 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 
 		messageToSend := messages.MapMessage(*savedMessage)
 
+		messageToSend.IsRead = false // Соощбение не прочитано дял всех получателей, так как является новым
+
 		for _, member := range chatMembers {
 			// Не отправляем обратно отправителю:
 			if member.ID == user.ID {
