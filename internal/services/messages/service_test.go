@@ -94,7 +94,11 @@ func TestService_SaveMessage(t *testing.T) {
 					cr.EXPECT().
 						ChangeChatIsReadStatus(gomock.Any(), uint64(3), uint64(100), false).
 						Return(nil)
-					// Для user1 (отправитель) не должно быть вызова
+
+					// Для user1 (отправитель) чат прочитан
+					cr.EXPECT().
+						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(100), true).
+						Return(nil)
 				},
 			},
 			args: args{
@@ -130,7 +134,10 @@ func TestService_SaveMessage(t *testing.T) {
 					cr.EXPECT().
 						GetChatMembers(gomock.Any(), uint64(100)).
 						Return(singleMember, nil)
-					// Нет вызовов ChangeChatIsReadStatus, так как отправитель - единственный участник
+
+					cr.EXPECT().
+						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(100), true).
+						Return(nil)
 				},
 			},
 			args: args{
@@ -262,7 +269,7 @@ func TestService_SaveMessage(t *testing.T) {
 						Return(chatMembers, nil)
 
 					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(2), uint64(100), false).
+						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(100), true).
 						Return(errors.New("status update error"))
 				},
 			},
@@ -342,7 +349,10 @@ func TestService_SaveMessage(t *testing.T) {
 						GetChatMembers(gomock.Any(), uint64(200)).
 						Return(groupMembers, nil)
 
-					// Для всех кроме отправителя (user1) меняем статус
+					cr.EXPECT().
+						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(200), true).
+						Return(nil)
+
 					cr.EXPECT().
 						ChangeChatIsReadStatus(gomock.Any(), uint64(2), uint64(200), false).
 						Return(nil)

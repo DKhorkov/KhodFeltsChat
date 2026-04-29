@@ -60,16 +60,14 @@ func (s *Service) SaveMessage(
 			}
 
 			for _, member := range members {
-				// Не меняем статус просмотра для того, кто отправил сообщение:
-				if member.ID == message.Sender.ID {
-					continue
-				}
+				// Если пользователь отправитель - то чат для него явно отмечаем прочитанным
+				isRead := member.ID == message.Sender.ID
 
 				if err = chatsRepository.ChangeChatIsReadStatus(
 					ctx,
 					member.ID,
 					message.ChatID,
-					false, // Чат не просмотрен, поскольку было получено новое сообщение
+					isRead,
 				); err != nil {
 					return err
 				}
