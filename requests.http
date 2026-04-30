@@ -20,7 +20,7 @@ POST http://localhost:8080/sessions
 Content-Type: application/json
 
 {
-  "email": "alexqwerty35@yandex.ru",
+  "login": "alexqwerty35@yandex.ru",
   "password": "SomeTestP@ssword228"
 }
 
@@ -119,7 +119,9 @@ Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjgxMzg3Nzk
 {
   "type": "private",
   "members": [
-    {"id":  12}
+    {
+      "id": 12
+    }
   ]
 }
 

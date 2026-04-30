@@ -384,18 +384,18 @@ paths:
                   required: true
                   schema:
                     properties:
-                        email:
-                            description: Email of the user.
+                        login:
+                            description: Email or Username of the user.
                             example: alexqwerty@yandex.ru
                             type: string
-                            x-go-name: Email
+                            x-go-name: Login
                         password:
                             description: Password of the user.
                             example: SomePa$$wordWithDifferentRegisterAndNubmersAndSpecialCharacters228
                             type: string
                             x-go-name: Password
                     required:
-                        - email
+                        - login
                         - password
                     type: object
             responses:

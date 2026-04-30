@@ -65,14 +65,24 @@ func (u *UseCases) LoginUser(
 	ctx context.Context,
 	dto domains.LoginDTO,
 ) (*domains.TokensDTO, error) {
-	if !validation.ValidateValueByRule(dto.Email, u.validationConfig.EmailRegExp) {
-		return nil, fmt.Errorf("%w: invalid email address", customerrors.ErrValidationFailed)
+	if dto.Login == "" {
+		return nil, fmt.Errorf("%w: login is required", customerrors.ErrValidationFailed)
 	}
 
-	// Check if user with provided email exists and password is valid:
-	user, err := u.usersService.GetUserByEmail(ctx, dto.Email)
-	if err != nil {
-		return nil, err
+	if dto.Password == "" {
+		return nil, fmt.Errorf("%w: password is required", customerrors.ErrValidationFailed)
+	}
+
+	user, _ := u.usersService.GetUserByEmail(ctx, dto.Login)
+
+	// Fallback логина по имени пользователя
+	if user == nil {
+		user, _ = u.usersService.GetUserByUsername(ctx, dto.Login)
+	}
+
+	// Если пользователь все еще не найден - значит такого пользователя не существует
+	if user == nil {
+		return nil, customerrors.ErrUserNotFound
 	}
 
 	if !user.EmailConfirmed {
@@ -83,10 +93,9 @@ func (u *UseCases) LoginUser(
 		return nil, customerrors.ErrWrongPassword
 	}
 
-	var dbRefreshToken *domains.RefreshToken
-	if dbRefreshToken, err = u.authService.GetRefreshTokenByUserID(ctx, user.ID); err == nil {
-		err = u.authService.ExpireRefreshToken(ctx, dbRefreshToken.ID)
-		if err != nil {
+	dbRefreshToken, err := u.authService.GetRefreshTokenByUserID(ctx, user.ID)
+	if err == nil {
+		if err = u.authService.ExpireRefreshToken(ctx, dbRefreshToken.ID); err != nil {
 			return nil, err
 		}
 	}

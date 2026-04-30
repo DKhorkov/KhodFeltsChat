@@ -116,8 +116,14 @@ type LoginInput struct {
 	// nullable: false
 	// in: body
 	Body struct {
-		EmailInput
 		PasswordInput
+
+		// Email or Username of the user.
+		// required: true
+		// nullable: false
+		// example: alexqwerty@yandex.ru
+		// in: body
+		Login string `json:"login"`
 	}
 }
 

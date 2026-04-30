@@ -224,7 +224,7 @@ func TestTraceDecorator_LoginUser(t *testing.T) {
 		{
 			name: "successful login with tracing",
 			dto: domains.LoginDTO{
-				Email:    "user@example.com",
+				Login:    "user@example.com",
 				Password: "Password123!",
 			},
 			setupMocks: func(
@@ -240,7 +240,7 @@ func TestTraceDecorator_LoginUser(t *testing.T) {
 
 				mockBase.EXPECT().
 					LoginUser(gomock.Any(), domains.LoginDTO{
-						Email:    "user@example.com",
+						Login:    "user@example.com",
 						Password: "Password123!",
 					}).
 					Return(&domains.TokensDTO{
@@ -257,7 +257,7 @@ func TestTraceDecorator_LoginUser(t *testing.T) {
 		{
 			name: "login with invalid credentials",
 			dto: domains.LoginDTO{
-				Email:    "wrong@example.com",
+				Login:    "wrong@example.com",
 				Password: "wrong",
 			},
 			setupMocks: func(
@@ -279,7 +279,7 @@ func TestTraceDecorator_LoginUser(t *testing.T) {
 		{
 			name: "user not found",
 			dto: domains.LoginDTO{
-				Email:    "nonexistent@example.com",
+				Login:    "nonexistent@example.com",
 				Password: "Password123!",
 			},
 			setupMocks: func(
