@@ -12,7 +12,7 @@ type RefreshToken struct {
 }
 
 type LoginDTO struct {
-	Email    string `json:"email"`
+	Login    string `json:"login"`
 	Password string `json:"password"`
 }
 

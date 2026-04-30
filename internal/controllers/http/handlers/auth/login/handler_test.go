@@ -58,7 +58,7 @@ func TestHandler(t *testing.T) {
 	// Вспомогательная функция для создания LoginDTO
 	createLoginDTO := func() domains.LoginDTO {
 		return domains.LoginDTO{
-			Email:    "test@example.com",
+			Login:    "test@example.com",
 			Password: "SecurePassword123!",
 		}
 	}
@@ -175,7 +175,7 @@ func TestHandler(t *testing.T) {
 		handler := login.Handler(mockUseCase, cookiesConfig)
 
 		// Невалидный JSON
-		invalidJSON := `{"email": "test@example.com", "password": invalid}`
+		invalidJSON := `{"login": "test@example.com", "password": invalid}`
 		req := createRequest(t, bytes.NewReader([]byte(invalidJSON)))
 		rr := httptest.NewRecorder()
 
@@ -205,12 +205,12 @@ func TestHandler(t *testing.T) {
 			json string
 		}{
 			{
-				name: "missing email",
+				name: "missing login",
 				json: `{"password": "password123"}`,
 			},
 			{
 				name: "missing password",
-				json: `{"email": "test@example.com"}`,
+				json: `{"login": "test@example.com"}`,
 			},
 			{
 				name: "empty object",
@@ -259,7 +259,7 @@ func TestHandler(t *testing.T) {
 		handler := login.Handler(mockUseCase, cookiesConfig)
 
 		dto := domains.LoginDTO{
-			Email:    "invalid-email", // Невалидный email
+			Login:    "invalid-email", // Невалидный логин
 			Password: "123",           // Слишком короткий пароль
 		}
 
@@ -560,7 +560,7 @@ func TestHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("login with different email formats", func(t *testing.T) {
+	t.Run("login with different login formats", func(t *testing.T) {
 		t.Parallel()
 
 		// Arrange
@@ -569,49 +569,20 @@ func TestHandler(t *testing.T) {
 		handler := login.Handler(mockUseCase, cookiesConfig)
 
 		testCases := []struct {
-			name        string
-			email       string
-			expectError bool
+			name  string
+			login string
 		}{
 			{
-				name:        "simple email",
-				email:       "user@example.com",
-				expectError: false,
+				name:  "simple email",
+				login: "user@example.com",
 			},
 			{
-				name:        "email with plus",
-				email:       "user+tag@example.com",
-				expectError: false,
+				name:  "email with plus",
+				login: "user+tag@example.com",
 			},
 			{
-				name:        "email with dot",
-				email:       "user.name@example.com",
-				expectError: false,
-			},
-			{
-				name:        "email with subdomain",
-				email:       "user@sub.example.com",
-				expectError: false,
-			},
-			{
-				name:        "email with domain zone",
-				email:       "user@example.co.uk",
-				expectError: false,
-			},
-			{
-				name:        "invalid email - missing @",
-				email:       "userexample.com",
-				expectError: true,
-			},
-			{
-				name:        "invalid email - missing domain",
-				email:       "user@",
-				expectError: true,
-			},
-			{
-				name:        "invalid email - spaces",
-				email:       "user @example.com",
-				expectError: true,
+				name:  "username",
+				login: "testuser",
 			},
 		}
 
@@ -620,42 +591,27 @@ func TestHandler(t *testing.T) {
 				t.Parallel()
 
 				dto := domains.LoginDTO{
-					Email:    tc.email,
+					Login:    tc.login,
 					Password: "SecurePassword123!",
 				}
 
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
 
-				if tc.expectError {
-					mockUseCase.EXPECT().
-						LoginUser(gomock.Any(), dto).
-						Return(&domains.TokensDTO{}, customerrors.ErrValidationFailed)
+				expectedTokens := createTestTokens()
 
-					req := createRequest(t, bytes.NewReader(requestBody))
-					rr := httptest.NewRecorder()
+				mockUseCase.EXPECT().
+					LoginUser(gomock.Any(), dto).
+					Return(&expectedTokens, nil)
 
-					// Act
-					handler.ServeHTTP(rr, req)
+				req := createRequest(t, bytes.NewReader(requestBody))
+				rr := httptest.NewRecorder()
 
-					// Assert
-					assert.Equal(t, http.StatusBadRequest, rr.Code)
-				} else {
-					expectedTokens := createTestTokens()
+				// Act
+				handler.ServeHTTP(rr, req)
 
-					mockUseCase.EXPECT().
-						LoginUser(gomock.Any(), dto).
-						Return(&expectedTokens, nil)
-
-					req := createRequest(t, bytes.NewReader(requestBody))
-					rr := httptest.NewRecorder()
-
-					// Act
-					handler.ServeHTTP(rr, req)
-
-					// Assert
-					assert.Equal(t, http.StatusNoContent, rr.Code)
-				}
+				// Assert
+				assert.Equal(t, http.StatusNoContent, rr.Code)
 			})
 		}
 	})
@@ -674,7 +630,7 @@ func TestHandler(t *testing.T) {
 		requestsData := make([]domains.LoginDTO, numRequests)
 		for i := range numRequests {
 			requestsData[i] = domains.LoginDTO{
-				Email:    "user" + strconv.Itoa(i) + "@example.com",
+				Login:    "user" + strconv.Itoa(i) + "@example.com",
 				Password: "Password123!" + strconv.Itoa(i),
 			}
 		}
@@ -746,7 +702,7 @@ func TestHandler(t *testing.T) {
 
 		// JSON с дополнительными полями, которых нет в DTO
 		jsonWithExtraFields := `{
-			"email": "test@example.com",
+			"login": "test@example.com",
 			"password": "SecurePassword123!",
 			"extraField": "should be ignored",
 			"anotherExtra": 123,
@@ -757,7 +713,7 @@ func TestHandler(t *testing.T) {
 
 		// Ожидаем, что только определенные поля будут в DTO
 		expectedDTO := domains.LoginDTO{
-			Email:    "test@example.com",
+			Login:    "test@example.com",
 			Password: "SecurePassword123!",
 		}
 
@@ -785,7 +741,7 @@ func TestHandler(t *testing.T) {
 
 		// JSON с null значениями
 		jsonWithNull := `{
-			"email": null,
+			"login": null,
 			"password": "SecurePassword123!"
 		}`
 
@@ -794,7 +750,7 @@ func TestHandler(t *testing.T) {
 
 		err := json.Unmarshal([]byte(jsonWithNull), &dto)
 		require.NoError(t, err)
-		assert.Equal(t, "", dto.Email)
+		assert.Equal(t, "", dto.Login)
 
 		mockUseCase.EXPECT().
 			LoginUser(gomock.Any(), dto).
@@ -820,7 +776,7 @@ func TestHandler(t *testing.T) {
 		handler := login.Handler(mockUseCase, cookiesConfig)
 
 		dto := domains.LoginDTO{
-			Email:    "", // Пустой email
+			Login:    "", // Пустой логин
 			Password: "", // Пустой пароль
 		}
 
@@ -906,7 +862,7 @@ func TestHandler(t *testing.T) {
 
 		// Многократные попытки входа с неверным паролем
 		dto := domains.LoginDTO{
-			Email:    "test@example.com",
+			Login:    "test@example.com",
 			Password: "WrongPassword123!",
 		}
 
@@ -937,7 +893,7 @@ func TestHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("login with case-sensitive email", func(t *testing.T) {
+	t.Run("login with case-sensitive login", func(t *testing.T) {
 		t.Parallel()
 
 		// Arrange
@@ -947,19 +903,19 @@ func TestHandler(t *testing.T) {
 
 		testCases := []struct {
 			name  string
-			email string
+			login string
 		}{
 			{
 				name:  "lowercase email",
-				email: "user@example.com",
+				login: "user@example.com",
 			},
 			{
 				name:  "uppercase email",
-				email: "USER@EXAMPLE.COM",
+				login: "USER@EXAMPLE.COM",
 			},
 			{
 				name:  "mixed case email",
-				email: "UsEr@ExAmPlE.CoM",
+				login: "UsEr@ExAmPlE.CoM",
 			},
 		}
 
@@ -968,7 +924,7 @@ func TestHandler(t *testing.T) {
 				t.Parallel()
 
 				dto := domains.LoginDTO{
-					Email:    tc.email,
+					Login:    tc.login,
 					Password: "SecurePassword123!",
 				}
 
@@ -1004,7 +960,7 @@ func TestHandler(t *testing.T) {
 
 		// Email с специальными символами до @ (обычно допустимы)
 		dto := domains.LoginDTO{
-			Email:    "user.name+tag@example.com",
+			Login:    "user.name+tag@example.com",
 			Password: "SecurePassword123!",
 		}
 

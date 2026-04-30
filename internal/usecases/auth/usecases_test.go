@@ -250,7 +250,7 @@ func TestUseCases_LoginUser(t *testing.T) {
 		err       error
 	}{
 		{
-			name: "successfully login user without existing refresh token",
+			name: "successfully login by email without existing refresh token",
 			fields: fields{
 				mockUsersService: func(us *mockservices.MockUsersService) {
 					us.EXPECT().
@@ -258,12 +258,10 @@ func TestUseCases_LoginUser(t *testing.T) {
 						Return(user, nil)
 				},
 				mockAuthService: func(as *mockservices.MockAuthService) {
-					// First call - no existing refresh token
 					as.EXPECT().
 						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
 						Return(nil, errors.New("not found"))
 
-					// Create new refresh token
 					as.EXPECT().
 						CreateRefreshToken(
 							gomock.Any(),
@@ -277,7 +275,7 @@ func TestUseCases_LoginUser(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				dto: domains.LoginDTO{
-					Email:    "sometest@gmail.com",
+					Login:    "sometest@gmail.com",
 					Password: pass,
 				},
 			},
@@ -285,7 +283,7 @@ func TestUseCases_LoginUser(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "successfully login user with existing refresh token",
+			name: "successfully login by email with existing refresh token",
 			fields: fields{
 				mockUsersService: func(us *mockservices.MockUsersService) {
 					us.EXPECT().
@@ -293,17 +291,14 @@ func TestUseCases_LoginUser(t *testing.T) {
 						Return(user, nil)
 				},
 				mockAuthService: func(as *mockservices.MockAuthService) {
-					// First call - existing refresh token found
 					as.EXPECT().
 						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
 						Return(refreshToken, nil)
 
-					// Expire old token
 					as.EXPECT().
 						ExpireRefreshToken(gomock.Any(), refreshToken.ID).
 						Return(nil)
 
-					// Create new refresh token
 					as.EXPECT().
 						CreateRefreshToken(
 							gomock.Any(),
@@ -317,7 +312,7 @@ func TestUseCases_LoginUser(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				dto: domains.LoginDTO{
-					Email:    "sometest@gmail.com",
+					Login:    "sometest@gmail.com",
 					Password: pass,
 				},
 			},
@@ -325,11 +320,47 @@ func TestUseCases_LoginUser(t *testing.T) {
 			wantErr:   false,
 		},
 		{
-			name: "invalid email format",
+			name: "successfully login by username",
+			fields: fields{
+				mockUsersService: func(us *mockservices.MockUsersService) {
+					us.EXPECT().
+						GetUserByEmail(gomock.Any(), "testuser").
+						Return(nil, errors.New("not found"))
+					us.EXPECT().
+						GetUserByUsername(gomock.Any(), "testuser").
+						Return(user, nil)
+				},
+				mockAuthService: func(as *mockservices.MockAuthService) {
+					as.EXPECT().
+						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
+						Return(nil, errors.New("not found"))
+
+					as.EXPECT().
+						CreateRefreshToken(
+							gomock.Any(),
+							uint64(123),
+							gomock.Any(),
+							gomock.Any(),
+						).
+						Return(&domains.RefreshToken{}, nil)
+				},
+			},
 			args: args{
 				ctx: context.Background(),
 				dto: domains.LoginDTO{
-					Email:    "invalid-email",
+					Login:    "testuser",
+					Password: pass,
+				},
+			},
+			wantToken: true,
+			wantErr:   false,
+		},
+		{
+			name: "empty login",
+			args: args{
+				ctx: context.Background(),
+				dto: domains.LoginDTO{
+					Login:    "",
 					Password: pass,
 				},
 			},
@@ -338,24 +369,40 @@ func TestUseCases_LoginUser(t *testing.T) {
 			err:       customerrors.ErrValidationFailed,
 		},
 		{
-			name: "user not found",
+			name: "empty password",
+			args: args{
+				ctx: context.Background(),
+				dto: domains.LoginDTO{
+					Login:    "sometest@gmail.com",
+					Password: "",
+				},
+			},
+			wantToken: false,
+			wantErr:   true,
+			err:       customerrors.ErrValidationFailed,
+		},
+		{
+			name: "user not found by email and username",
 			fields: fields{
 				mockUsersService: func(us *mockservices.MockUsersService) {
 					us.EXPECT().
-						GetUserByEmail(gomock.Any(), "nonexistent@gmail.com").
-						Return(nil, errors.New("user not found"))
+						GetUserByEmail(gomock.Any(), "nonexistent").
+						Return(nil, errors.New("not found"))
+					us.EXPECT().
+						GetUserByUsername(gomock.Any(), "nonexistent").
+						Return(nil, errors.New("not found"))
 				},
 			},
 			args: args{
 				ctx: context.Background(),
 				dto: domains.LoginDTO{
-					Email:    "nonexistent@gmail.com",
+					Login:    "nonexistent",
 					Password: pass,
 				},
 			},
 			wantToken: false,
 			wantErr:   true,
-			err:       errors.New("user not found"),
+			err:       customerrors.ErrUserNotFound,
 		},
 		{
 			name: "email not confirmed",
@@ -371,7 +418,7 @@ func TestUseCases_LoginUser(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				dto: domains.LoginDTO{
-					Email:    "sometest@gmail.com",
+					Login:    "sometest@gmail.com",
 					Password: pass,
 				},
 			},
@@ -391,7 +438,7 @@ func TestUseCases_LoginUser(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				dto: domains.LoginDTO{
-					Email:    "sometest@gmail.com",
+					Login:    "sometest@gmail.com",
 					Password: "wrongpassword",
 				},
 			},
@@ -419,7 +466,7 @@ func TestUseCases_LoginUser(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				dto: domains.LoginDTO{
-					Email:    "sometest@gmail.com",
+					Login:    "sometest@gmail.com",
 					Password: pass,
 				},
 			},
@@ -457,9 +504,7 @@ func TestUseCases_LoginUser(t *testing.T) {
 				},
 			}
 
-			validationConfig := config.ValidationConfig{
-				EmailRegExp: "^[a-z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,4}$",
-			}
+			validationConfig := config.ValidationConfig{}
 
 			uc := auth.New(
 				mockAuthService,
@@ -478,7 +523,8 @@ func TestUseCases_LoginUser(t *testing.T) {
 				if tt.err != nil {
 					if errors.Is(tt.err, customerrors.ErrValidationFailed) ||
 						errors.Is(tt.err, customerrors.ErrEmailNotConfirmed) ||
-						errors.Is(tt.err, customerrors.ErrWrongPassword) {
+						errors.Is(tt.err, customerrors.ErrWrongPassword) ||
+						errors.Is(tt.err, customerrors.ErrUserNotFound) {
 						assert.ErrorIs(t, err, tt.err)
 					} else {
 						assert.Contains(t, err.Error(), tt.err.Error())
