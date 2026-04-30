@@ -192,9 +192,12 @@ func (repo *Repository) UpdateUser(
 	builder := sq.
 		Update(usersTableName).
 		Where(sq.Eq{idColumnName: userData.ID}).
-		Set(usernameColumnName, userData.Username).
 		Set(updatedAtColumnName, time.Now()).
 		PlaceholderFormat(sq.Dollar) // pq postgres driver works only with $ placeholders
+
+	if userData.Username != nil {
+		builder = builder.Set(usernameColumnName, userData.Username)
+	}
 
 	stmt, params, err := builder.ToSql()
 	if err != nil {

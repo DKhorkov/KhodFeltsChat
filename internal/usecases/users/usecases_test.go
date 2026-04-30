@@ -348,7 +348,7 @@ func TestUseCases_UpdateUser(t *testing.T) {
 					us.EXPECT().
 						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
 							ID:       1,
-							Username: "newusername",
+							Username: pointers.New("newusername"),
 						}).
 						Return(updatedUser, nil)
 				},
@@ -358,7 +358,7 @@ func TestUseCases_UpdateUser(t *testing.T) {
 				ctx: context.Background(),
 				userData: domains.UpdateUserDTO{
 					ID:       1,
-					Username: "newusername",
+					Username: pointers.New("newusername"),
 				},
 			},
 			want:    updatedUser,
@@ -378,7 +378,7 @@ func TestUseCases_UpdateUser(t *testing.T) {
 				ctx: context.Background(),
 				userData: domains.UpdateUserDTO{
 					ID:       999,
-					Username: "newusername",
+					Username: pointers.New("newusername"),
 				},
 			},
 			want:    nil,
@@ -402,7 +402,7 @@ func TestUseCases_UpdateUser(t *testing.T) {
 				ctx: context.Background(),
 				userData: domains.UpdateUserDTO{
 					ID:       1,
-					Username: "newusername",
+					Username: pointers.New("newusername"),
 				},
 			},
 			want:    nil,
@@ -413,17 +413,24 @@ func TestUseCases_UpdateUser(t *testing.T) {
 			name: "empty username",
 			fields: fields{
 				validationRules: []string{"^[a-zA-Z0-9_]{3,20}$"},
+				mockUsersService: func(us *mockservices.MockUsersService) {
+					us.EXPECT().
+						GetUserByID(gomock.Any(), uint64(1)).
+						Return(existingUser, nil)
+					us.EXPECT().
+						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
+							ID: 1,
+						}).
+						Return(updatedUser, nil)
+				},
 			},
 			args: args{
 				ctx: context.Background(),
 				userData: domains.UpdateUserDTO{
-					ID:       1,
-					Username: "",
+					ID: 1,
 				},
 			},
-			want:    nil,
-			wantErr: true,
-			err:     customerrors.ErrValidationFailed,
+			want: updatedUser,
 		},
 		{
 			name: "username too long",
@@ -434,7 +441,7 @@ func TestUseCases_UpdateUser(t *testing.T) {
 				ctx: context.Background(),
 				userData: domains.UpdateUserDTO{
 					ID:       1,
-					Username: "thisusernameistoolongforvalidation",
+					Username: pointers.New("thisusernameistoolongforvalidation"),
 				},
 			},
 			want:    nil,
@@ -451,7 +458,7 @@ func TestUseCases_UpdateUser(t *testing.T) {
 					us.EXPECT().
 						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
 							ID:       1,
-							Username: "oldusername", // То же самое имя
+							Username: pointers.New("oldusername"), // То же самое имя
 						}).
 						Return(existingUser, nil)
 				},
@@ -461,7 +468,7 @@ func TestUseCases_UpdateUser(t *testing.T) {
 				ctx: context.Background(),
 				userData: domains.UpdateUserDTO{
 					ID:       1,
-					Username: "oldusername",
+					Username: pointers.New("oldusername"),
 				},
 			},
 			want:    existingUser,

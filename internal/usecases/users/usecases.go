@@ -46,7 +46,8 @@ func (u *UseCases) UpdateUser(
 	ctx context.Context,
 	userData domains.UpdateUserDTO,
 ) (*domains.User, error) {
-	if !validation.ValidateValueByRules(userData.Username, u.validationConfig.UsernameRegExps) {
+	if userData.Username != nil &&
+		!validation.ValidateValueByRules(*userData.Username, u.validationConfig.UsernameRegExps) {
 		return nil, fmt.Errorf("%w: invalid username", customerrors.ErrValidationFailed)
 	}
 

@@ -51,10 +51,10 @@ Cookie: refreshToken=ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmxlSEF
 
 PUT http://localhost:8080/users/me
 Content-Type: application/json
-Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjcyMDk1NDgsInZhbHVlIjo4fQ.CAFCH8zxXcyk0irbf5XOa0oVDF1Osf25rUCgBnFZRKY
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzc1Mzk2NzIsInZhbHVlIjozfQ.q_liXR45TjXMdx5AQlugIgn0YPab0FpmIfDT_BM3HJE
 
 {
-  "username": "testDemos22823sfsfsf"
+  "username": "d3m0s"
 }
 
 ###

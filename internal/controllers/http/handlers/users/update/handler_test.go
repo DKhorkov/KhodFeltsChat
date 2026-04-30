@@ -18,6 +18,7 @@ import (
 	mockusecases "github.com/DKhorkov/kfc/mocks/usecases"
 	"github.com/DKhorkov/libs/contextlib"
 	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
+	"github.com/DKhorkov/libs/pointers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -56,7 +57,7 @@ func TestHandler(t *testing.T) {
 	// Вспомогательная функция для создания DTO
 	createUpdateDTO := func() domains.UpdateUserDTO {
 		return domains.UpdateUserDTO{
-			Username: "newusername",
+			Username: pointers.New("newusername"),
 		}
 	}
 
@@ -127,7 +128,7 @@ func TestHandler(t *testing.T) {
 
 		// Обновляем только username
 		dto := domains.UpdateUserDTO{
-			Username: "onlyusernameupdated",
+			Username: pointers.New("onlyusernameupdated"),
 		}
 
 		requestBody, err := json.Marshal(dto)
@@ -229,7 +230,7 @@ func TestHandler(t *testing.T) {
 
 		// DTO с невалидными данными
 		dto := domains.UpdateUserDTO{
-			Username: "ab", // Слишком короткий username
+			Username: pointers.New("ab"), // Слишком короткий username
 		}
 
 		requestBody, err := json.Marshal(dto)
@@ -421,7 +422,7 @@ func TestHandler(t *testing.T) {
 		// Ожидаем, что только определенные поля будут в DTO
 		expectedDTO := domains.UpdateUserDTO{
 			ID:       userID,
-			Username: "newuser",
+			Username: pointers.New("newuser"),
 		}
 
 		mockUseCase.EXPECT().
@@ -485,7 +486,7 @@ func TestHandler(t *testing.T) {
 		requestsData := make([]domains.UpdateUserDTO, numRequests)
 		for i := range numRequests {
 			requestsData[i] = domains.UpdateUserDTO{
-				Username: "user" + strconv.Itoa(i),
+				Username: pointers.New("user" + strconv.Itoa(i)),
 			}
 		}
 
@@ -496,7 +497,7 @@ func TestHandler(t *testing.T) {
 
 			expectedUser := &domains.User{
 				ID:             userID,
-				Username:       expectedDTO.Username,
+				Username:       *expectedDTO.Username,
 				EmailConfirmed: true,
 				Password:       "hashed_password",
 				CreatedAt:      time.Now().Add(-24 * time.Hour),
@@ -542,7 +543,7 @@ func TestHandler(t *testing.T) {
 		// DTO с другим ID (должен быть перезаписан)
 		dto := domains.UpdateUserDTO{
 			ID:       999, // Другой ID в DTO
-			Username: "newusername",
+			Username: pointers.New("newusername"),
 		}
 
 		requestBody, err := json.Marshal(dto)
