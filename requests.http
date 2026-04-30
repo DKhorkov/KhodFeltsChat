@@ -20,7 +20,7 @@ POST http://localhost:8080/sessions
 Content-Type: application/json
 
 {
-  "login": "alexqwerty35@yandex.ru",
+  "login": "testDemos",
   "password": "SomeTestP@ssword228"
 }
 

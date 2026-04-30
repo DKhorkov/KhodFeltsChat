@@ -395,8 +395,8 @@ paths:
                             type: string
                             x-go-name: Password
                     required:
-                        - login
                         - password
+                        - login
                     type: object
             responses:
                 "204":
