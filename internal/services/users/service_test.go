@@ -850,7 +850,7 @@ func TestService_UpdateUser(t *testing.T) {
 					ur.EXPECT().
 						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
 							ID:       1,
-							Username: "newusername",
+							Username: pointers.New("newusername"),
 						}).
 						Return(nil)
 
@@ -863,7 +863,7 @@ func TestService_UpdateUser(t *testing.T) {
 				ctx: context.Background(),
 				userData: domains.UpdateUserDTO{
 					ID:       1,
-					Username: "newusername",
+					Username: pointers.New("newusername"),
 				},
 			},
 			want:    updatedUser,
@@ -891,7 +891,7 @@ func TestService_UpdateUser(t *testing.T) {
 				ctx: context.Background(),
 				userData: domains.UpdateUserDTO{
 					ID:       1,
-					Username: "newusername",
+					Username: pointers.New("newusername"),
 				},
 			},
 			want:    nil,
@@ -923,7 +923,7 @@ func TestService_UpdateUser(t *testing.T) {
 				ctx: context.Background(),
 				userData: domains.UpdateUserDTO{
 					ID:       1,
-					Username: "newusername",
+					Username: pointers.New("newusername"),
 				},
 			},
 			want:    nil,
@@ -945,7 +945,7 @@ func TestService_UpdateUser(t *testing.T) {
 					ur.EXPECT().
 						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
 							ID:       1,
-							Username: "oldusername",
+							Username: pointers.New("oldusername"),
 						}).
 						Return(nil)
 
@@ -958,7 +958,7 @@ func TestService_UpdateUser(t *testing.T) {
 				ctx: context.Background(),
 				userData: domains.UpdateUserDTO{
 					ID:       1,
-					Username: "oldusername",
+					Username: pointers.New("oldusername"),
 				},
 			},
 			want:    existingUser,
@@ -980,7 +980,7 @@ func TestService_UpdateUser(t *testing.T) {
 					ur.EXPECT().
 						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
 							ID:       999,
-							Username: "newusername",
+							Username: pointers.New("newusername"),
 						}).
 						Return(sql.ErrNoRows)
 				},
@@ -989,7 +989,7 @@ func TestService_UpdateUser(t *testing.T) {
 				ctx: context.Background(),
 				userData: domains.UpdateUserDTO{
 					ID:       999,
-					Username: "newusername",
+					Username: pointers.New("newusername"),
 				},
 			},
 			want:    nil,
@@ -1011,8 +1011,7 @@ func TestService_UpdateUser(t *testing.T) {
 				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
 					ur.EXPECT().
 						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
-							ID:       1,
-							Username: "",
+							ID: 1,
 						}).
 						Return(nil)
 
@@ -1024,11 +1023,10 @@ func TestService_UpdateUser(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				userData: domains.UpdateUserDTO{
-					ID:       1,
-					Username: "",
+					ID: 1,
 				},
 			},
-			want:    &domains.User{ID: 1, Username: ""},
+			want:    &domains.User{ID: 1},
 			wantErr: false,
 		},
 	}

@@ -645,7 +645,7 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 			name: "successful update user with tracing",
 			userData: domains.UpdateUserDTO{
 				ID:       1,
-				Username: "updated_user",
+				Username: pointers.New("updated_user"),
 			},
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
@@ -661,7 +661,7 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 				mockBase.EXPECT().
 					UpdateUser(gomock.Any(), domains.UpdateUserDTO{
 						ID:       1,
-						Username: "updated_user",
+						Username: pointers.New("updated_user"),
 					}).
 					Return(&domains.User{
 						ID:        1,
@@ -684,7 +684,7 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 			name: "update user with only username",
 			userData: domains.UpdateUserDTO{
 				ID:       1,
-				Username: "new_username",
+				Username: pointers.New("new_username"),
 			},
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
@@ -698,7 +698,7 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 				mockBase.EXPECT().
 					UpdateUser(gomock.Any(), domains.UpdateUserDTO{
 						ID:       1,
-						Username: "new_username",
+						Username: pointers.New("new_username"),
 					}).
 					Return(&domains.User{
 						ID:        1,
@@ -721,7 +721,7 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 			name: "user not found",
 			userData: domains.UpdateUserDTO{
 				ID:       999,
-				Username: "nonexistent",
+				Username: pointers.New("nonexistent"),
 			},
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,

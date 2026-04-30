@@ -642,7 +642,7 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 			name: "successful update user with tracing",
 			userData: domains.UpdateUserDTO{
 				ID:       1,
-				Username: "updated_user",
+				Username: pointers.New("updated_user"),
 			},
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
@@ -658,7 +658,7 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 				mockBase.EXPECT().
 					UpdateUser(gomock.Any(), domains.UpdateUserDTO{
 						ID:       1,
-						Username: "updated_user",
+						Username: pointers.New("updated_user"),
 					}).
 					Return(nil)
 			},
@@ -668,7 +668,7 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 			name: "user not found",
 			userData: domains.UpdateUserDTO{
 				ID:       999,
-				Username: "nonexistent",
+				Username: pointers.New("nonexistent"),
 			},
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
@@ -689,7 +689,7 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 			name: "duplicate username error",
 			userData: domains.UpdateUserDTO{
 				ID:       1,
-				Username: "existing_username",
+				Username: pointers.New("existing_username"),
 			},
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
@@ -710,7 +710,7 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 			name: "database error",
 			userData: domains.UpdateUserDTO{
 				ID:       1,
-				Username: "test",
+				Username: pointers.New("test"),
 			},
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
