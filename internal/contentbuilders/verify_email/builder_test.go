@@ -1,10 +1,15 @@
 package verify_email_test
 
 import (
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 
+	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/kfc/internal/contentbuilders/verify_email"
 	"github.com/DKhorkov/kfc/internal/domains"
+	"github.com/DKhorkov/libs/security"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,9 +44,8 @@ func TestContentBuilder_Body(t *testing.T) {
 	builder := verify_email.New("http://example.com/verify-email")
 
 	testCases := []struct {
-		name     string
-		user     domains.User
-		expected string
+		name string
+		user domains.User
 	}{
 		{
 			name: "basic user",
@@ -49,11 +53,6 @@ func TestContentBuilder_Body(t *testing.T) {
 				ID:       1,
 				Username: "Alice",
 			},
-			expected: `<p>Добрый день, Alice!</p>
-<p>Пожалуйста, перейдите по <a href="http://example.com/verify-email/MQ">ссылке</a>, чтобы подтвердить адрес электронной почты!</p>
-<p>С уважением,<br>
-команда Handmade Toys Marketplace.</p>
-`,
 		},
 		{
 			name: "user with special characters",
@@ -61,11 +60,6 @@ func TestContentBuilder_Body(t *testing.T) {
 				ID:       123,
 				Username: "Bob <Test>",
 			},
-			expected: `<p>Добрый день, Bob <Test>!</p>
-<p>Пожалуйста, перейдите по <a href="http://example.com/verify-email/MTIz">ссылке</a>, чтобы подтвердить адрес электронной почты!</p>
-<p>С уважением,<br>
-команда Handmade Toys Marketplace.</p>
-`,
 		},
 		{
 			name: "user with large ID",
@@ -73,20 +67,34 @@ func TestContentBuilder_Body(t *testing.T) {
 				ID:       987654321,
 				Username: "Charlie",
 			},
-			expected: `<p>Добрый день, Charlie!</p>
-<p>Пожалуйста, перейдите по <a href="http://example.com/verify-email/OTg3NjU0MzIx">ссылке</a>, чтобы подтвердить адрес электронной почты!</p>
-<p>С уважением,<br>
-команда Handmade Toys Marketplace.</p>
-`,
 		},
 	}
+
+	linkRegexp := regexp.MustCompile(`http://example\.com/verify-email/([A-Za-z0-9_-]+)`)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			result := builder.Body(tc.user)
-			require.Equal(t, tc.expected, result)
+
+			require.Contains(t, result, tc.user.Username)
+
+			matches := linkRegexp.FindStringSubmatch(result)
+			require.Len(t, matches, 2, "should contain encoded token in link")
+
+			decoded, err := security.RawDecode(matches[1])
+			require.NoError(t, err)
+
+			_, rawUserID, found := strings.Cut(string(decoded), common.SaltSeparator)
+			require.True(t, found, "decoded token should contain salt separator")
+			require.Equal(t, strconv.FormatUint(tc.user.ID, 10), rawUserID)
+
+			// Token should be different on each call (random salt).
+			result2 := builder.Body(tc.user)
+			matches2 := linkRegexp.FindStringSubmatch(result2)
+			require.Len(t, matches2, 2)
+			require.NotEqual(t, matches[1], matches2[1])
 		})
 	}
 }

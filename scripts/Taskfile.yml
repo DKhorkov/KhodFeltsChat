@@ -165,7 +165,7 @@ tasks:
       - task: create_postgres_folders
       - sudo chmod -R 777 postgres_data
       - sudo chmod -R 777 postgres_backups
-      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+      - go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
       - export PATH=$PATH:$(go env GOPATH)/bin
       - golangci-lint run -v --fix
 

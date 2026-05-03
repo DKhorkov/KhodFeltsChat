@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/kfc/internal/domains"
 	"github.com/DKhorkov/libs/security"
+	"github.com/google/uuid"
 )
 
 type ContentBuilder struct{}
@@ -30,6 +32,8 @@ func (b *ContentBuilder) Body(user domains.User) string {
 	return fmt.Sprintf(
 		template,
 		user.Username,
-		security.RawEncode([]byte(strconv.FormatUint(user.ID, 10))),
+		security.RawEncode(
+			[]byte(uuid.New().String()+common.SaltSeparator+strconv.FormatUint(user.ID, 10)),
+		),
 	)
 }

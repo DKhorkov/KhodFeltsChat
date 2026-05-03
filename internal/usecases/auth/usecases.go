@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
+	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
@@ -249,12 +251,17 @@ func (u *UseCases) LogoutUser(ctx context.Context, userID uint64) error {
 }
 
 func (u *UseCases) VerifyEmail(ctx context.Context, verifyEmailToken string) error {
-	bytesUserID, err := security.RawDecode(verifyEmailToken)
+	decodedToken, err := security.RawDecode(verifyEmailToken)
 	if err != nil {
 		return customerrors.ErrInvalidJWT
 	}
 
-	intUserID, err := strconv.ParseUint(string(bytesUserID), 10, 64)
+	_, rawUserID, found := strings.Cut(string(decodedToken), common.SaltSeparator)
+	if !found {
+		return customerrors.ErrInvalidJWT
+	}
+
+	intUserID, err := strconv.ParseUint(rawUserID, 10, 64)
 	if err != nil {
 		return err
 	}
@@ -279,12 +286,17 @@ func (u *UseCases) ForgetPassword(
 		return fmt.Errorf("%w: invalid password", customerrors.ErrValidationFailed)
 	}
 
-	bytesUserID, err := security.RawDecode(forgetPasswordToken)
+	decodedToken, err := security.RawDecode(forgetPasswordToken)
 	if err != nil {
 		return customerrors.ErrInvalidJWT
 	}
 
-	intUserID, err := strconv.ParseUint(string(bytesUserID), 10, 64)
+	_, rawUserID, found := strings.Cut(string(decodedToken), common.SaltSeparator)
+	if !found {
+		return customerrors.ErrInvalidJWT
+	}
+
+	intUserID, err := strconv.ParseUint(rawUserID, 10, 64)
 	if err != nil {
 		return err
 	}
