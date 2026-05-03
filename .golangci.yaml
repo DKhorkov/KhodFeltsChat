@@ -243,6 +243,7 @@ linters:
           - nestif
           - gochecknoglobals
           - errchkjson
+          - goconst
 
       - path: internal/contentbuilders/forget_password/builder.go
         text: "^unused-receiver: method receiver 'b'*"
