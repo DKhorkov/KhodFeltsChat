@@ -1,6 +1,8 @@
 package forget_password_test
 
 import (
+	"context"
+	"errors"
 	"regexp"
 	"strconv"
 	"strings"
@@ -9,14 +11,19 @@ import (
 	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/kfc/internal/contentbuilders/forget_password"
 	"github.com/DKhorkov/kfc/internal/domains"
+	cachemocks "github.com/DKhorkov/libs/cache/mocks"
 	"github.com/DKhorkov/libs/security"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func TestContentBuilder_Subject(t *testing.T) {
 	t.Parallel()
 
-	builder := forget_password.New()
+	ctrl := gomock.NewController(t)
+	mockCache := cachemocks.NewMockProvider(ctrl)
+
+	builder := forget_password.New(mockCache)
 
 	testCases := []struct {
 		name     string
@@ -40,8 +47,6 @@ func TestContentBuilder_Subject(t *testing.T) {
 
 func TestContentBuilder_Body(t *testing.T) {
 	t.Parallel()
-
-	builder := forget_password.New()
 
 	testCases := []struct {
 		name string
@@ -76,8 +81,18 @@ func TestContentBuilder_Body(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := builder.Body(tc.user)
+			ctrl := gomock.NewController(t)
+			mockCache := cachemocks.NewMockProvider(ctrl)
 
+			mockCache.EXPECT().
+				Set(gomock.Any(), gomock.Any(), gomock.Any(), common.TokenTTL).
+				Return(nil).
+				Times(2)
+
+			builder := forget_password.New(mockCache)
+
+			result, err := builder.Body(context.Background(), tc.user)
+			require.NoError(t, err)
 			require.Contains(t, result, tc.user.Username)
 
 			matches := tokenRegexp.FindStringSubmatch(result)
@@ -91,10 +106,28 @@ func TestContentBuilder_Body(t *testing.T) {
 			require.Equal(t, strconv.FormatUint(tc.user.ID, 10), rawUserID)
 
 			// Token should be different on each call (random salt).
-			result2 := builder.Body(tc.user)
+			result2, err := builder.Body(context.Background(), tc.user)
+			require.NoError(t, err)
+
 			matches2 := tokenRegexp.FindStringSubmatch(result2)
 			require.Len(t, matches2, 2)
 			require.NotEqual(t, matches[1], matches2[1])
 		})
 	}
+}
+
+func TestContentBuilder_Body_CacheError(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	mockCache := cachemocks.NewMockProvider(ctrl)
+
+	mockCache.EXPECT().
+		Set(gomock.Any(), gomock.Any(), gomock.Any(), common.TokenTTL).
+		Return(errors.New("connection refused"))
+
+	builder := forget_password.New(mockCache)
+
+	_, err := builder.Body(context.Background(), domains.User{ID: 1, Username: "Alice"})
+	require.Error(t, err)
 }

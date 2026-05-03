@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/kfc/internal/domains"
 	internalerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -15,7 +16,9 @@ import (
 	mockcache "github.com/DKhorkov/libs/cache/mocks"
 	"github.com/DKhorkov/libs/logging"
 	"github.com/DKhorkov/libs/logging/mocks"
+	"github.com/DKhorkov/libs/security"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
 
@@ -680,30 +683,6 @@ func TestCacheDecorator_PassthroughMethods(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "VerifyEmail",
-			setupMocks: func(mockBase *mockusecases.MockAuthUseCases) {
-				mockBase.EXPECT().
-					VerifyEmail(gomock.Any(), "token").
-					Return(nil)
-			},
-			testFunc: func(d *auth.CacheDecorator, ctx context.Context) error {
-				return d.VerifyEmail(ctx, "token")
-			},
-			expectedError: nil,
-		},
-		{
-			name: "ForgetPassword",
-			setupMocks: func(mockBase *mockusecases.MockAuthUseCases) {
-				mockBase.EXPECT().
-					ForgetPassword(gomock.Any(), "token", "newpass").
-					Return(nil)
-			},
-			testFunc: func(d *auth.CacheDecorator, ctx context.Context) error {
-				return d.ForgetPassword(ctx, "token", "newpass")
-			},
-			expectedError: nil,
-		},
-		{
 			name: "ChangePassword",
 			setupMocks: func(mockBase *mockusecases.MockAuthUseCases) {
 				mockBase.EXPECT().
@@ -740,6 +719,172 @@ func TestCacheDecorator_PassthroughMethods(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestCacheDecorator_VerifyEmail(t *testing.T) {
+	t.Parallel()
+
+	validToken := security.RawEncode([]byte("salt" + common.SaltSeparator + "7"))
+
+	tests := []struct {
+		name        string
+		token       string
+		setupMocks  func(*mockcache.MockProvider, *mockusecases.MockAuthUseCases)
+		expectedErr error
+	}{
+		{
+			name:  "valid token",
+			token: validToken,
+			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
+				mc.EXPECT().
+					GetDel(gomock.Any(), common.VerifyEmailTokenPrefix+":7").
+					Return(validToken, nil)
+				mb.EXPECT().VerifyEmail(gomock.Any(), validToken).Return(nil)
+			},
+			expectedErr: nil,
+		},
+		{
+			name:  "expired token",
+			token: validToken,
+			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
+				mc.EXPECT().GetDel(gomock.Any(), common.VerifyEmailTokenPrefix+":7").
+					Return("", errors.New("key not found"))
+			},
+			expectedErr: internalerrors.ErrTokenExpired,
+		},
+		{
+			name:  "token mismatch",
+			token: validToken,
+			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
+				mc.EXPECT().GetDel(gomock.Any(), common.VerifyEmailTokenPrefix+":7").
+					Return("other-token", nil)
+			},
+			expectedErr: internalerrors.ErrTokenExpired,
+		},
+		{
+			name:  "invalid token format",
+			token: "invalid-base64!@#",
+			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
+			},
+			expectedErr: internalerrors.ErrInvalidJWT,
+		},
+		{
+			name:  "token without salt separator",
+			token: security.RawEncode([]byte("noseparator")),
+			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
+			},
+			expectedErr: internalerrors.ErrInvalidJWT,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			mockCache := mockcache.NewMockProvider(ctrl)
+			mockLogger := mocks.NewMockLogger(ctrl)
+			mockBase := mockusecases.NewMockAuthUseCases(ctrl)
+
+			tt.setupMocks(mockCache, mockBase)
+
+			decorator := auth.NewCacheDecorator(mockCache, mockLogger, mockBase)
+
+			err := decorator.VerifyEmail(context.Background(), tt.token)
+
+			if tt.expectedErr != nil {
+				require.ErrorIs(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestCacheDecorator_ForgetPassword(t *testing.T) {
+	t.Parallel()
+
+	validToken := security.RawEncode([]byte("salt" + common.SaltSeparator + "7"))
+
+	tests := []struct {
+		name        string
+		token       string
+		newPassword string
+		setupMocks  func(*mockcache.MockProvider, *mockusecases.MockAuthUseCases)
+		expectedErr error
+	}{
+		{
+			name:        "valid token",
+			token:       validToken,
+			newPassword: "NewP@ssword123",
+			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
+				mc.EXPECT().
+					GetDel(gomock.Any(), common.ForgetPasswordTokenPrefix+":7").
+					Return(validToken, nil)
+				mb.EXPECT().ForgetPassword(gomock.Any(), validToken, "NewP@ssword123").Return(nil)
+			},
+			expectedErr: nil,
+		},
+		{
+			name:        "expired token",
+			token:       validToken,
+			newPassword: "NewP@ssword123",
+			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
+				mc.EXPECT().GetDel(gomock.Any(), common.ForgetPasswordTokenPrefix+":7").
+					Return("", errors.New("key not found"))
+			},
+			expectedErr: internalerrors.ErrTokenExpired,
+		},
+		{
+			name:        "token mismatch",
+			token:       validToken,
+			newPassword: "NewP@ssword123",
+			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
+				mc.EXPECT().GetDel(gomock.Any(), common.ForgetPasswordTokenPrefix+":7").
+					Return("other-token", nil)
+			},
+			expectedErr: internalerrors.ErrTokenExpired,
+		},
+		{
+			name:        "invalid token format",
+			token:       "invalid-base64!@#",
+			newPassword: "NewP@ssword123",
+			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
+			},
+			expectedErr: internalerrors.ErrInvalidJWT,
+		},
+		{
+			name:        "token without salt separator",
+			token:       security.RawEncode([]byte("noseparator")),
+			newPassword: "NewP@ssword123",
+			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
+			},
+			expectedErr: internalerrors.ErrInvalidJWT,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			mockCache := mockcache.NewMockProvider(ctrl)
+			mockLogger := mocks.NewMockLogger(ctrl)
+			mockBase := mockusecases.NewMockAuthUseCases(ctrl)
+
+			tt.setupMocks(mockCache, mockBase)
+
+			decorator := auth.NewCacheDecorator(mockCache, mockLogger, mockBase)
+
+			err := decorator.ForgetPassword(context.Background(), tt.token, tt.newPassword)
+
+			if tt.expectedErr != nil {
+				require.ErrorIs(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}
