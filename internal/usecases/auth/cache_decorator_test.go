@@ -740,17 +740,31 @@ func TestCacheDecorator_VerifyEmail(t *testing.T) {
 			token: validToken,
 			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
 				mc.EXPECT().
-					GetDel(gomock.Any(), common.VerifyEmailTokenPrefix+":7").
+					Get(gomock.Any(), common.VerifyEmailTokenPrefix+":7").
 					Return(validToken, nil)
 				mb.EXPECT().VerifyEmail(gomock.Any(), validToken).Return(nil)
+				mc.EXPECT().
+					Del(gomock.Any(), common.VerifyEmailTokenPrefix+":7").
+					Return(nil)
 			},
 			expectedErr: nil,
+		},
+		{
+			name:  "base error - token not deleted",
+			token: validToken,
+			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
+				mc.EXPECT().
+					Get(gomock.Any(), common.VerifyEmailTokenPrefix+":7").
+					Return(validToken, nil)
+				mb.EXPECT().VerifyEmail(gomock.Any(), validToken).Return(errors.New("base error"))
+			},
+			expectedErr: errors.New("base error"),
 		},
 		{
 			name:  "expired token",
 			token: validToken,
 			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
-				mc.EXPECT().GetDel(gomock.Any(), common.VerifyEmailTokenPrefix+":7").
+				mc.EXPECT().Get(gomock.Any(), common.VerifyEmailTokenPrefix+":7").
 					Return("", errors.New("key not found"))
 			},
 			expectedErr: internalerrors.ErrTokenExpired,
@@ -759,7 +773,7 @@ func TestCacheDecorator_VerifyEmail(t *testing.T) {
 			name:  "token mismatch",
 			token: validToken,
 			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
-				mc.EXPECT().GetDel(gomock.Any(), common.VerifyEmailTokenPrefix+":7").
+				mc.EXPECT().Get(gomock.Any(), common.VerifyEmailTokenPrefix+":7").
 					Return("other-token", nil)
 			},
 			expectedErr: internalerrors.ErrTokenExpired,
@@ -796,7 +810,8 @@ func TestCacheDecorator_VerifyEmail(t *testing.T) {
 			err := decorator.VerifyEmail(context.Background(), tt.token)
 
 			if tt.expectedErr != nil {
-				require.ErrorIs(t, err, tt.expectedErr)
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.expectedErr.Error())
 			} else {
 				require.NoError(t, err)
 			}
@@ -822,18 +837,35 @@ func TestCacheDecorator_ForgetPassword(t *testing.T) {
 			newPassword: "NewP@ssword123",
 			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
 				mc.EXPECT().
-					GetDel(gomock.Any(), common.ForgetPasswordTokenPrefix+":7").
+					Get(gomock.Any(), common.ForgetPasswordTokenPrefix+":7").
 					Return(validToken, nil)
 				mb.EXPECT().ForgetPassword(gomock.Any(), validToken, "NewP@ssword123").Return(nil)
+				mc.EXPECT().
+					Del(gomock.Any(), common.ForgetPasswordTokenPrefix+":7").
+					Return(nil)
 			},
 			expectedErr: nil,
+		},
+		{
+			name:        "base error - token not deleted",
+			token:       validToken,
+			newPassword: "NewP@ssword123",
+			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
+				mc.EXPECT().
+					Get(gomock.Any(), common.ForgetPasswordTokenPrefix+":7").
+					Return(validToken, nil)
+				mb.EXPECT().
+					ForgetPassword(gomock.Any(), validToken, "NewP@ssword123").
+					Return(errors.New("base error"))
+			},
+			expectedErr: errors.New("base error"),
 		},
 		{
 			name:        "expired token",
 			token:       validToken,
 			newPassword: "NewP@ssword123",
 			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
-				mc.EXPECT().GetDel(gomock.Any(), common.ForgetPasswordTokenPrefix+":7").
+				mc.EXPECT().Get(gomock.Any(), common.ForgetPasswordTokenPrefix+":7").
 					Return("", errors.New("key not found"))
 			},
 			expectedErr: internalerrors.ErrTokenExpired,
@@ -843,7 +875,7 @@ func TestCacheDecorator_ForgetPassword(t *testing.T) {
 			token:       validToken,
 			newPassword: "NewP@ssword123",
 			setupMocks: func(mc *mockcache.MockProvider, mb *mockusecases.MockAuthUseCases) {
-				mc.EXPECT().GetDel(gomock.Any(), common.ForgetPasswordTokenPrefix+":7").
+				mc.EXPECT().Get(gomock.Any(), common.ForgetPasswordTokenPrefix+":7").
 					Return("other-token", nil)
 			},
 			expectedErr: internalerrors.ErrTokenExpired,
@@ -882,7 +914,8 @@ func TestCacheDecorator_ForgetPassword(t *testing.T) {
 			err := decorator.ForgetPassword(context.Background(), tt.token, tt.newPassword)
 
 			if tt.expectedErr != nil {
-				require.ErrorIs(t, err, tt.expectedErr)
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.expectedErr.Error())
 			} else {
 				require.NoError(t, err)
 			}

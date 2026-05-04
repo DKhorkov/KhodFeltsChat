@@ -59,26 +59,36 @@ func (d *CacheDecorator) LogoutUser(ctx context.Context, userID uint64) error {
 }
 
 func (d *CacheDecorator) VerifyEmail(ctx context.Context, verifyEmailToken string) error {
-	if err := d.validateToken(ctx, common.VerifyEmailTokenPrefix, verifyEmailToken); err != nil {
+	cacheKey, err := d.validateToken(ctx, common.VerifyEmailTokenPrefix, verifyEmailToken)
+	if err != nil {
 		return err
 	}
 
-	return d.base.VerifyEmail(ctx, verifyEmailToken)
+	if err = d.base.VerifyEmail(ctx, verifyEmailToken); err != nil {
+		return err
+	}
+
+	return d.cacheProvider.Del(ctx, cacheKey)
 }
 
 func (d *CacheDecorator) ForgetPassword(
 	ctx context.Context,
 	forgetPasswordToken, newPassword string,
 ) error {
-	if err := d.validateToken(
+	cacheKey, err := d.validateToken(
 		ctx,
 		common.ForgetPasswordTokenPrefix,
 		forgetPasswordToken,
-	); err != nil {
+	)
+	if err != nil {
 		return err
 	}
 
-	return d.base.ForgetPassword(ctx, forgetPasswordToken, newPassword)
+	if err = d.base.ForgetPassword(ctx, forgetPasswordToken, newPassword); err != nil {
+		return err
+	}
+
+	return d.cacheProvider.Del(ctx, cacheKey)
 }
 
 func (d *CacheDecorator) ChangePassword(ctx context.Context, dto domains.ChangePasswordDTO) error {
@@ -223,27 +233,27 @@ func (d *CacheDecorator) SendForgetPasswordMessage(ctx context.Context, email st
 	return nil
 }
 
-func (d *CacheDecorator) validateToken(ctx context.Context, prefix, token string) error {
+func (d *CacheDecorator) validateToken(ctx context.Context, prefix, token string) (string, error) {
 	decodedToken, err := security.RawDecode(token)
 	if err != nil {
-		return fmt.Errorf("%w: invalid %s", errors.ErrInvalidJWT, prefix)
+		return "", fmt.Errorf("%w: invalid %s", errors.ErrInvalidJWT, prefix)
 	}
 
 	_, rawUserID, found := strings.Cut(string(decodedToken), common.SaltSeparator)
 	if !found {
-		return fmt.Errorf("%w: invalid %s", errors.ErrInvalidJWT, prefix)
+		return "", fmt.Errorf("%w: invalid %s", errors.ErrInvalidJWT, prefix)
 	}
 
 	cacheKey := fmt.Sprintf("%s:%s", prefix, rawUserID)
 
-	storedToken, err := d.cacheProvider.GetDel(ctx, cacheKey)
+	storedToken, err := d.cacheProvider.Get(ctx, cacheKey)
 	if err != nil {
-		return errors.ErrTokenExpired
+		return "", errors.ErrTokenExpired
 	}
 
 	if storedToken != token {
-		return errors.ErrTokenExpired
+		return "", errors.ErrTokenExpired
 	}
 
-	return nil
+	return cacheKey, nil
 }
