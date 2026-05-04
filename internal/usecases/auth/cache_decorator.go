@@ -4,24 +4,15 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
+	"strings"
 
+	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/kfc/internal/domains"
 	"github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/cache"
 	"github.com/DKhorkov/libs/logging"
-)
-
-const (
-	verifyEmailPrefix    = "email_verification"
-	verifyEmailLimit     = 3
-	verifyEmailTTL       = 3 * time.Minute
-	forgetPasswordPrefix = "forget_password"
-	forgetPasswordLimit  = 3
-	forgetPasswordTTL    = 3 * time.Minute
-
-	initCacheValue = 1
+	"github.com/DKhorkov/libs/security"
 )
 
 type CacheDecorator struct {
@@ -68,14 +59,36 @@ func (d *CacheDecorator) LogoutUser(ctx context.Context, userID uint64) error {
 }
 
 func (d *CacheDecorator) VerifyEmail(ctx context.Context, verifyEmailToken string) error {
-	return d.base.VerifyEmail(ctx, verifyEmailToken)
+	cacheKey, err := d.validateToken(ctx, common.VerifyEmailTokenPrefix, verifyEmailToken)
+	if err != nil {
+		return err
+	}
+
+	if err = d.base.VerifyEmail(ctx, verifyEmailToken); err != nil {
+		return err
+	}
+
+	return d.cacheProvider.Del(ctx, cacheKey)
 }
 
 func (d *CacheDecorator) ForgetPassword(
 	ctx context.Context,
 	forgetPasswordToken, newPassword string,
 ) error {
-	return d.base.ForgetPassword(ctx, forgetPasswordToken, newPassword)
+	cacheKey, err := d.validateToken(
+		ctx,
+		common.ForgetPasswordTokenPrefix,
+		forgetPasswordToken,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err = d.base.ForgetPassword(ctx, forgetPasswordToken, newPassword); err != nil {
+		return err
+	}
+
+	return d.cacheProvider.Del(ctx, cacheKey)
 }
 
 func (d *CacheDecorator) ChangePassword(ctx context.Context, dto domains.ChangePasswordDTO) error {
@@ -87,7 +100,7 @@ func (d *CacheDecorator) SendVerifyEmailMessage(ctx context.Context, email strin
 		return d.base.SendVerifyEmailMessage(ctx, email)
 	}
 
-	cacheKey := fmt.Sprintf("%s:%s", verifyEmailPrefix, email)
+	cacheKey := fmt.Sprintf("%s:%s", common.VerifyEmailRateLimitPrefix, email)
 
 	strCounter, err := d.cacheProvider.Get(ctx, cacheKey)
 	if err != nil {
@@ -109,11 +122,11 @@ func (d *CacheDecorator) SendVerifyEmailMessage(ctx context.Context, email strin
 		)
 	}
 
-	if counter >= verifyEmailLimit {
+	if counter >= common.VerifyEmailRateLimitCount {
 		return fmt.Errorf(
 			"%w: Too many tries to send message. Limit per minute is %d",
 			errors.ErrLimitExceeded,
-			verifyEmailLimit,
+			common.VerifyEmailRateLimitCount,
 		)
 	}
 
@@ -122,7 +135,12 @@ func (d *CacheDecorator) SendVerifyEmailMessage(ctx context.Context, email strin
 	}
 
 	if counter == 0 {
-		if err = d.cacheProvider.Set(ctx, cacheKey, initCacheValue, verifyEmailTTL); err != nil {
+		if err = d.cacheProvider.Set(
+			ctx,
+			cacheKey,
+			common.InitCacheValue,
+			common.VerifyEmailRateLimitTTL,
+		); err != nil {
 			logging.LogErrorContext(
 				ctx,
 				d.logger,
@@ -151,7 +169,7 @@ func (d *CacheDecorator) SendForgetPasswordMessage(ctx context.Context, email st
 		return d.base.SendForgetPasswordMessage(ctx, email)
 	}
 
-	cacheKey := fmt.Sprintf("%s:%s", forgetPasswordPrefix, email)
+	cacheKey := fmt.Sprintf("%s:%s", common.ForgetPasswordRateLimitPrefix, email)
 
 	strCounter, err := d.cacheProvider.Get(ctx, cacheKey)
 	if err != nil {
@@ -173,11 +191,11 @@ func (d *CacheDecorator) SendForgetPasswordMessage(ctx context.Context, email st
 		)
 	}
 
-	if counter >= forgetPasswordLimit {
+	if counter >= common.ForgetPasswordRateLimitCount {
 		return fmt.Errorf(
 			"%w: Too many tries to send message. Limit per minute is %d",
 			errors.ErrLimitExceeded,
-			forgetPasswordLimit,
+			common.ForgetPasswordRateLimitCount,
 		)
 	}
 
@@ -186,7 +204,12 @@ func (d *CacheDecorator) SendForgetPasswordMessage(ctx context.Context, email st
 	}
 
 	if counter == 0 {
-		if err = d.cacheProvider.Set(ctx, cacheKey, initCacheValue, forgetPasswordTTL); err != nil {
+		if err = d.cacheProvider.Set(
+			ctx,
+			cacheKey,
+			common.InitCacheValue,
+			common.ForgetPasswordRateLimitTTL,
+		); err != nil {
 			logging.LogErrorContext(
 				ctx,
 				d.logger,
@@ -208,4 +231,29 @@ func (d *CacheDecorator) SendForgetPasswordMessage(ctx context.Context, email st
 	}
 
 	return nil
+}
+
+func (d *CacheDecorator) validateToken(ctx context.Context, prefix, token string) (string, error) {
+	decodedToken, err := security.RawDecode(token)
+	if err != nil {
+		return "", fmt.Errorf("%w: invalid %s", errors.ErrInvalidJWT, prefix)
+	}
+
+	_, rawUserID, found := strings.Cut(string(decodedToken), common.SaltSeparator)
+	if !found {
+		return "", fmt.Errorf("%w: invalid %s", errors.ErrInvalidJWT, prefix)
+	}
+
+	cacheKey := fmt.Sprintf("%s:%s", prefix, rawUserID)
+
+	storedToken, err := d.cacheProvider.Get(ctx, cacheKey)
+	if err != nil {
+		return "", errors.ErrTokenExpired
+	}
+
+	if storedToken != token {
+		return "", errors.ErrTokenExpired
+	}
+
+	return cacheKey, nil
 }

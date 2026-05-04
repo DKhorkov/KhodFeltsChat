@@ -10,6 +10,7 @@
 package mockcontentbuilders
 
 import (
+	context "context"
 	reflect "reflect"
 
 	domains "github.com/DKhorkov/kfc/internal/domains"
@@ -41,17 +42,18 @@ func (m *MockForgetPasswordContentBuilder) EXPECT() *MockForgetPasswordContentBu
 }
 
 // Body mocks base method.
-func (m *MockForgetPasswordContentBuilder) Body(user domains.User) string {
+func (m *MockForgetPasswordContentBuilder) Body(ctx context.Context, user domains.User) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Body", user)
+	ret := m.ctrl.Call(m, "Body", ctx, user)
 	ret0, _ := ret[0].(string)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Body indicates an expected call of Body.
-func (mr *MockForgetPasswordContentBuilderMockRecorder) Body(user any) *gomock.Call {
+func (mr *MockForgetPasswordContentBuilderMockRecorder) Body(ctx, user any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Body", reflect.TypeOf((*MockForgetPasswordContentBuilder)(nil).Body), user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Body", reflect.TypeOf((*MockForgetPasswordContentBuilder)(nil).Body), ctx, user)
 }
 
 // Subject mocks base method.

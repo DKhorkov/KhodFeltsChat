@@ -112,8 +112,11 @@ func main() {
 	contentBuilders := interfaces.ContentBuilders{
 		VerifyEmail: verify_email.New(
 			cfg.Email.VerifyEmailURL,
+			cacheProvider,
 		),
-		ForgetPassword: forget_password.New(),
+		ForgetPassword: forget_password.New(
+			cacheProvider,
+		),
 	}
 
 	emailsRepository := emailsrepository.NewTraceDecorator(

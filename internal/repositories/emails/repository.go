@@ -25,10 +25,15 @@ func New(
 }
 
 func (repo *Repository) SendVerifyEmailMessage(ctx context.Context, user domains.User) error {
+	body, err := repo.contentBuilders.VerifyEmail.Body(ctx, user)
+	if err != nil {
+		return err
+	}
+
 	return repo.send(
 		ctx,
 		repo.contentBuilders.VerifyEmail.Subject(),
-		repo.contentBuilders.VerifyEmail.Body(user),
+		body,
 		[]string{user.Email},
 	)
 }
@@ -37,10 +42,15 @@ func (repo *Repository) SendForgetPasswordMessage(
 	ctx context.Context,
 	user domains.User,
 ) error {
+	body, err := repo.contentBuilders.ForgetPassword.Body(ctx, user)
+	if err != nil {
+		return err
+	}
+
 	return repo.send(
 		ctx,
 		repo.contentBuilders.ForgetPassword.Subject(),
-		repo.contentBuilders.ForgetPassword.Body(user),
+		body,
 		[]string{user.Email},
 	)
 }

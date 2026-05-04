@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
@@ -952,6 +953,8 @@ func TestUseCases_VerifyEmail(t *testing.T) {
 		EmailConfirmed: true,
 	}
 
+	validVerifyToken := security.RawEncode([]byte("salt" + common.SaltSeparator + "7"))
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -975,7 +978,7 @@ func TestUseCases_VerifyEmail(t *testing.T) {
 			},
 			args: args{
 				ctx:              context.Background(),
-				verifyEmailToken: "Nw",
+				verifyEmailToken: validVerifyToken,
 			},
 			wantErr: false,
 		},
@@ -988,6 +991,15 @@ func TestUseCases_VerifyEmail(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "token without salt separator",
+			args: args{
+				ctx:              context.Background(),
+				verifyEmailToken: security.RawEncode([]byte("7")),
+			},
+			wantErr: true,
+			err:     customerrors.ErrInvalidJWT,
+		},
+		{
 			name: "user not found",
 			fields: fields{
 				mockUsersService: func(us *mockservices.MockUsersService) {
@@ -998,7 +1010,7 @@ func TestUseCases_VerifyEmail(t *testing.T) {
 			},
 			args: args{
 				ctx:              context.Background(),
-				verifyEmailToken: "Nw",
+				verifyEmailToken: validVerifyToken,
 			},
 			wantErr: true,
 			err:     errors.New("user not found"),
@@ -1014,7 +1026,7 @@ func TestUseCases_VerifyEmail(t *testing.T) {
 			},
 			args: args{
 				ctx:              context.Background(),
-				verifyEmailToken: "Nw",
+				verifyEmailToken: validVerifyToken,
 			},
 			wantErr: true,
 			err:     customerrors.ErrEmailAlreadyConfirmed,
@@ -1035,7 +1047,7 @@ func TestUseCases_VerifyEmail(t *testing.T) {
 			},
 			args: args{
 				ctx:              context.Background(),
-				verifyEmailToken: "Nw",
+				verifyEmailToken: validVerifyToken,
 			},
 			wantErr: true,
 			err:     errors.New("database error"),
@@ -1118,6 +1130,8 @@ func TestUseCases_ForgetPassword(t *testing.T) {
 		Password: hashedPassword,
 	}
 
+	validForgetToken := security.RawEncode([]byte("salt" + common.SaltSeparator + "7"))
+
 	tests := []struct {
 		name    string
 		fields  fields
@@ -1141,7 +1155,7 @@ func TestUseCases_ForgetPassword(t *testing.T) {
 			},
 			args: args{
 				ctx:                 context.Background(),
-				forgetPasswordToken: "Nw",
+				forgetPasswordToken: validForgetToken,
 				newPassword:         newPass,
 			},
 			wantErr: false,
@@ -1156,10 +1170,20 @@ func TestUseCases_ForgetPassword(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "token without salt separator",
+			args: args{
+				ctx:                 context.Background(),
+				forgetPasswordToken: security.RawEncode([]byte("7")),
+				newPassword:         newPass,
+			},
+			wantErr: true,
+			err:     customerrors.ErrInvalidJWT,
+		},
+		{
 			name: "invalid password format",
 			args: args{
 				ctx:                 context.Background(),
-				forgetPasswordToken: "Nw",
+				forgetPasswordToken: validForgetToken,
 				newPassword:         "weak",
 			},
 			wantErr: true,
@@ -1176,7 +1200,7 @@ func TestUseCases_ForgetPassword(t *testing.T) {
 			},
 			args: args{
 				ctx:                 context.Background(),
-				forgetPasswordToken: "Nw",
+				forgetPasswordToken: validForgetToken,
 				newPassword:         newPass,
 			},
 			wantErr: true,
@@ -1193,7 +1217,7 @@ func TestUseCases_ForgetPassword(t *testing.T) {
 			},
 			args: args{
 				ctx:                 context.Background(),
-				forgetPasswordToken: "Nw",
+				forgetPasswordToken: validForgetToken,
 				newPassword:         pass,
 			},
 			wantErr: true,
@@ -1215,7 +1239,7 @@ func TestUseCases_ForgetPassword(t *testing.T) {
 			},
 			args: args{
 				ctx:                 context.Background(),
-				forgetPasswordToken: "Nw",
+				forgetPasswordToken: validForgetToken,
 				newPassword:         newPass,
 			},
 			wantErr: true,

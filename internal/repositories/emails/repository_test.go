@@ -11,7 +11,9 @@ import (
 	"github.com/DKhorkov/kfc/internal/contentbuilders/verify_email"
 	"github.com/DKhorkov/kfc/internal/domains"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	mockcache "github.com/DKhorkov/libs/cache/mocks"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func TestRepository_SendVerifyEmailMessage(t *testing.T) {
@@ -35,11 +37,13 @@ func TestRepository_SendVerifyEmailMessage(t *testing.T) {
 		},
 	}
 
+	ctrl := gomock.NewController(t)
+	mc := mockcache.NewMockProvider(ctrl)
+	mc.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
 	contentBuilders := interfaces.ContentBuilders{
-		VerifyEmail: verify_email.New(
-			"test",
-		),
-		ForgetPassword: forget_password.New(),
+		VerifyEmail:    verify_email.New("test", mc),
+		ForgetPassword: forget_password.New(mc),
 	}
 
 	repo := New(
@@ -82,11 +86,13 @@ func TestRepository_SendForgetPasswordMessage(t *testing.T) {
 		},
 	}
 
+	ctrl := gomock.NewController(t)
+	mc := mockcache.NewMockProvider(ctrl)
+	mc.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
 	contentBuilders := interfaces.ContentBuilders{
-		VerifyEmail: verify_email.New(
-			"test",
-		),
-		ForgetPassword: forget_password.New(),
+		VerifyEmail:    verify_email.New("test", mc),
+		ForgetPassword: forget_password.New(mc),
 	}
 
 	repo := New(
@@ -133,11 +139,13 @@ func TestRepository_Send(t *testing.T) {
 		},
 	}
 
+	ctrl := gomock.NewController(t)
+	mc := mockcache.NewMockProvider(ctrl)
+	mc.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
 	contentBuilders := interfaces.ContentBuilders{
-		VerifyEmail: verify_email.New(
-			"test",
-		),
-		ForgetPassword: forget_password.New(),
+		VerifyEmail:    verify_email.New("test", mc),
+		ForgetPassword: forget_password.New(mc),
 	}
 
 	repo := New(
