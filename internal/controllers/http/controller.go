@@ -11,7 +11,8 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth/login"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/auth/login"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/docs"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/logging"
@@ -70,43 +71,59 @@ func New(
 					Methods: []string{http.MethodGet},
 				},
 				{
-					Path:    regexp.MustCompile(`^` + handlers.SessionsURL + `$`),
+					Path:    regexp.MustCompile(`^` + handlers.APIPrefix + api.SessionsURL + `$`),
 					Methods: []string{http.MethodPost, http.MethodPut},
 				},
 				// Разделяем регистрацию и получение пользователей из-за query параметров на получение
 				{
 					Path: regexp.MustCompile(
-						`^` + handlers.UsersURL + `(?:\?[^ ]*)?$`,
+						`^` + handlers.APIPrefix + api.UsersURL + `(?:\?[^ ]*)?$`,
 					),
 					Methods: []string{http.MethodGet},
 				},
 				{
-					Path:    regexp.MustCompile(`^` + handlers.UsersURL + `$`),
+					Path:    regexp.MustCompile(`^` + handlers.APIPrefix + api.UsersURL + `$`),
 					Methods: []string{http.MethodPost},
 				},
 				{
 					Path: regexp.MustCompile(
-						`^` + strings.ReplaceAll(handlers.GetUserByIDURL, "{%s}", "") + `(\d+)$`,
+						`^` + handlers.APIPrefix + strings.ReplaceAll(
+							api.GetUserByIDURL,
+							"{%s}",
+							"",
+						) + `(\d+)$`,
 					),
 					Methods: []string{http.MethodGet},
 				},
 				{
 					Path: regexp.MustCompile(
-						`^` + strings.ReplaceAll(handlers.ForgetPasswordURL, "{%s}", "") + `(.+)$`,
+						`^` + handlers.APIPrefix + strings.ReplaceAll(
+							api.ForgetPasswordURL,
+							"{%s}",
+							"",
+						) + `(.+)$`,
 					),
 					Methods: []string{http.MethodPost},
 				},
 				{
-					Path:    regexp.MustCompile(`^` + handlers.SendForgetPasswordURL + `$`),
-					Methods: []string{http.MethodPost},
-				},
-				{
-					Path:    regexp.MustCompile(`^` + handlers.SendVerifyEmailMessageURL + `$`),
+					Path: regexp.MustCompile(
+						`^` + handlers.APIPrefix + api.SendForgetPasswordURL + `$`,
+					),
 					Methods: []string{http.MethodPost},
 				},
 				{
 					Path: regexp.MustCompile(
-						`^` + strings.ReplaceAll(handlers.VerifyEmailURL, "{%s}", "") + `(.+)$`,
+						`^` + handlers.APIPrefix + api.SendVerifyEmailMessageURL + `$`,
+					),
+					Methods: []string{http.MethodPost},
+				},
+				{
+					Path: regexp.MustCompile(
+						`^` + handlers.APIPrefix + strings.ReplaceAll(
+							api.VerifyEmailURL,
+							"{%s}",
+							"",
+						) + `(.+)$`,
 					),
 					Methods: []string{http.MethodGet},
 				},

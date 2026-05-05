@@ -312,12 +312,12 @@ linters:
         linters:
           - testpackage
 
-      - path: internal/controllers/http/handlers/auth/logout/handler.go
+      - path: internal/controllers/http/handlers/api/auth/logout/handler.go
         line: "50,51"
         linters:
           - exhaustruct
 
-      - path: internal/controllers/http/handlers/auth/logout/handler.go
+      - path: internal/controllers/http/handlers/api/auth/logout/handler.go
         line: "50,51"
         linters:
           - exhaustruct
@@ -327,13 +327,13 @@ linters:
         linters:
           - exhaustruct
 
-      - path: internal/controllers/http/handlers/ws/ws.go
+      - path: internal/controllers/http/handlers/api/ws/ws.go
         line: "87"
         linters:
           - exhaustruct
           - contextcheck
 
-      - path: internal/controllers/http/handlers/chats/create/handler.go
+      - path: internal/controllers/http/handlers/api/chats/create/handler.go
         line: "44"
         linters:
           - exhaustruct
@@ -343,7 +343,7 @@ linters:
         linters:
           - gosec
 
-      - path: internal/controllers/http/handlers/auth/send_*/handler.go
+      - path: internal/controllers/http/handlers/api/auth/send_*/handler.go
         linters:
           - dupl
 
