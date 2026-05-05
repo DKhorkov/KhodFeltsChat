@@ -5,27 +5,10 @@ import (
 	"net/http"
 
 	"github.com/DKhorkov/kfc/internal/config"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth/change_password"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth/forget_password"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth/login"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth/logout"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth/refresh_tokens"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth/register"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth/send_forget_password_message"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth/send_verify_email_message"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/auth/verify_email"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/chats/create"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/chats/user_chats"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api"
 	default_handler "github.com/DKhorkov/kfc/internal/controllers/http/handlers/default"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/docs"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/messages/chat_messages"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/not_allowed"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/users/me"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/users/update"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/users/user_by_id"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/users/users"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/ws"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/logging"
 	metricsmiddleware "github.com/DKhorkov/libs/middlewares/http/metrics"
@@ -35,24 +18,8 @@ import (
 )
 
 const (
+	APIPrefix  = "/api"
 	SwaggerURL = "/%s"
-
-	SessionsURL = "/sessions"
-
-	UsersURL                  = "/users"
-	MeURL                     = UsersURL + "/me"
-	GetUserByIDURL            = UsersURL + "/{%s}"
-	PasswordURL               = UsersURL + "/password"
-	ChangePasswordURL         = PasswordURL + "/change"
-	SendForgetPasswordURL     = PasswordURL + "/forget"
-	ForgetPasswordURL         = SendForgetPasswordURL + "/{%s}"
-	SendVerifyEmailMessageURL = UsersURL + "/email/verify"
-	VerifyEmailURL            = SendVerifyEmailMessageURL + "/{%s}"
-
-	WebsocketURL = "/ws"
-
-	ChatsURL           = "/chats"
-	GetChatMessagesURL = ChatsURL + "/{%s}/messages"
 )
 
 func SetupHandlers(
@@ -69,73 +36,32 @@ func SetupHandlers(
 	rootMux.NotFoundHandler = http.HandlerFunc(default_handler.Handler)
 	rootMux.MethodNotAllowedHandler = http.HandlerFunc(not_allowed.Handler)
 
-	getMux := rootMux.Methods(http.MethodGet).Subrouter()
-	getMux.Handle(metricsmiddleware.MetricsURLPath, promhttp.Handler())
-	getMux.Handle(UsersURL, users.Handler(usersUseCases))
-	getMux.Handle(MeURL, me.Handler(usersUseCases))
-	getMux.Handle(
-		fmt.Sprintf(GetUserByIDURL, common.IDRouteKey),
-		user_by_id.Handler(usersUseCases),
+	// Metrics:
+	rootMux.Methods(http.MethodGet).Subrouter().Handle(
+		metricsmiddleware.MetricsURLPath,
+		promhttp.Handler(),
 	)
 
-	websocketHandler := ws.New(
-		upgrader,
-		usersUseCases,
-		chatsUseCases,
-		messagesUseCases,
-		logger,
-	)
-
-	getMux.Handle(WebsocketURL, http.HandlerFunc(websocketHandler.Handle))
-	getMux.Handle(ChatsURL, user_chats.Handler(chatsUseCases))
-	getMux.Handle(
-		fmt.Sprintf(GetChatMessagesURL, common.IDRouteKey),
-		chat_messages.Handler(messagesUseCases),
-	)
-	getMux.Handle(
-		fmt.Sprintf(VerifyEmailURL, verify_email.TokenRouteKey),
-		verify_email.Handler(authUseCases),
-	)
-
+	// Docs (Swagger):
 	swaggerURL := fmt.Sprintf(SwaggerURL, docsConfig.Filepath)
 	opts := middleware.RedocOpts{
 		SpecURL: swaggerURL,
-	} // Устанавливаем название юрла файла для обслуживания сваггера
-	sh := middleware.Redoc(
-		opts,
-		nil,
-	) // Мидлварь для обаботки файла при переходе по юрлу документации
-	getMux.Handle(
-		docs.URL,
-		sh,
-	) // Устанавливаем юрл для получения документации
-	getMux.Handle(
-		swaggerURL,
-		http.FileServer(http.Dir(docsConfig.Dir)),
-	) // Связываем установленный юрл с отдачей файла
+	}
+	sh := middleware.Redoc(opts, nil)
+	getMux := rootMux.Methods(http.MethodGet).Subrouter()
+	getMux.Handle(docs.URL, sh)
+	getMux.Handle(swaggerURL, http.FileServer(http.Dir(docsConfig.Dir)))
 
-	postMux := rootMux.Methods(http.MethodPost).Subrouter()
-	postMux.Handle(UsersURL, register.Handler(authUseCases))
-	postMux.Handle(SessionsURL, login.Handler(authUseCases, cookiesConfig))
-	postMux.Handle(ChangePasswordURL, change_password.Handler(authUseCases))
-	postMux.Handle(
-		SendVerifyEmailMessageURL,
-		send_verify_email_message.Handler(authUseCases),
+	// API subrouter:
+	apiMux := rootMux.PathPrefix(APIPrefix).Subrouter()
+	api.SetupHandlers(
+		apiMux,
+		cookiesConfig,
+		usersUseCases,
+		authUseCases,
+		chatsUseCases,
+		messagesUseCases,
+		logger,
+		upgrader,
 	)
-	postMux.Handle(
-		fmt.Sprintf(ForgetPasswordURL, forget_password.TokenRouteKey),
-		forget_password.Handler(authUseCases),
-	)
-	postMux.Handle(
-		SendForgetPasswordURL,
-		send_forget_password_message.Handler(authUseCases),
-	)
-	postMux.Handle(ChatsURL, create.Handler(chatsUseCases))
-
-	putMux := rootMux.Methods(http.MethodPut).Subrouter()
-	putMux.Handle(MeURL, update.Handler(usersUseCases))
-	putMux.Handle(SessionsURL, refresh_tokens.Handler(authUseCases, cookiesConfig))
-
-	deleteMux := rootMux.Methods(http.MethodDelete).Subrouter()
-	deleteMux.Handle(SessionsURL, logout.Handler(authUseCases))
 }

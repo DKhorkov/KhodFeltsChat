@@ -17,12 +17,12 @@ middleware, регистрирует обработчики и управляе�
 
 Следующие маршруты доступны без JWT-токена:
 - `/docs`, `/swagger` — документация.
-- `POST /sessions` — вход (логин).
-- `POST /users` — регистрация.
-- `GET /users` и `GET /users/{id}` — публичные данные пользователей.
-- `GET /users/email/verify/{token}` — подтверждение email.
-- `POST /users/password/forget/{token}`, `POST /users/email/verify`,
-  `POST /users/password/forget` — сброс/восстановление пароля.
+- `POST /api/sessions` — вход (логин).
+- `POST /api/users` — регистрация.
+- `GET /api/users` и `GET /api/users/{id}` — публичные данные пользователей.
+- `GET /api/users/email/verify/{token}` — подтверждение email.
+- `POST /api/users/password/forget/{token}`, `POST /api/users/email/verify`,
+  `POST /api/users/password/forget` — сброс/восстановление пароля.
 
 ## Graceful Shutdown
 

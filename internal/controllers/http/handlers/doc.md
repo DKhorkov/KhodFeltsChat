@@ -2,60 +2,32 @@
 
 ## Назначение
 
-HTTP-обработчики, сгруппированные по предметным областям. Каждый обработчик
-читает запрос, вызывает usecase и записывает JSON-ответ.
+Оркестратор HTTP-маршрутизации. Регистрирует общие обработчики (404, 405, docs,
+metrics) и делегирует API-маршруты в подпакет `api/` через subrouter с префиксом
+`/api`.
 
-## Auth (`/auth`)
+## Структура
 
-| Обработчик          | Метод  | Путь                              |
-|---------------------|--------|-----------------------------------|
-| register            | POST   | /users                            |
-| login               | POST   | /sessions                         |
-| logout              | DELETE | /sessions                         |
-| refresh             | PUT    | /sessions                         |
-| verify_email        | GET    | /users/email/verify/{token}       |
-| forget_password     | POST   | /users/password/forget/{token}    |
-| change_password     | POST   | /users/password/change            |
-| send_verify_email   | POST   | /users/email/verify               |
-| send_forget_password| POST   | /users/password/forget            |
+```
+handlers/
+├── setup.go        — оркестратор: subrouter /api, docs, metrics, default, not_allowed
+├── common/         — shared утилиты (pagination, route keys, headers)
+├── default/        — 404 handler (пере��аправляет на /docs)
+├── not_allowed/    — 405 handler
+├── docs/           — Swagger UI (статические файлы)
+└── api/            — API-обработчики (см. api/doc.md)
+```
 
-## Users (`/users`)
+## Shared-пакеты
 
-| Обработчик  | Метод | Путь         |
-|-------------|-------|--------------|
-| me          | GET   | /users/me    |
-| update      | PUT   | /users/me    |
-| user_by_id  | GET   | /users/{id}  |
-| users       | GET   | /users       |
-
-## Chats (`/chats`)
-
-| Обработчик  | Метод | Путь    |
-|-------------|-------|---------|
-| create      | POST  | /chats  |
-| user_chats  | GET   | /chats  |
-
-## Messages
-
-| Обработчик    | Метод | Путь                   |
-|---------------|-------|------------------------|
-| chat_messages | GET   | /chats/{id}/messages   |
-
-## WebSocket (`/ws`)
-
-- Хранит активные соединения в `sync.Map` (userID → conn).
-- Аутентифицирует пользователя, обновляет соединение до WebSocket.
-- Читает входящие JSON-сообщения в цикле.
-- Рассылает сообщения всем онлайн-участникам чата.
-
-## Прочие
-
-- **Default** — перенаправляет на `/docs`.
-- **Docs** — отдаёт Swagger UI (статические файлы).
+- **common** — константы роутинга (`IDRouteKey`), пагинация, хелперы заголовков.
+- **default** — перенаправляет на `/docs`.
+- **not_allowed** — возвращает 405.
+- **docs** — отдаёт Swagger UI.
 
 ## Зависимости
 
-- `internal/usecases/*` — бизнес-логика.
-- `internal/controllers/http/schemas` — структуры запросов/ответов.
-- `internal/controllers/http/mappers` — конвертация домен → схема.
-- `gorilla/websocket`.
+- `internal/controllers/http/handlers/api` — регистрация API-обработчиков.
+- `gorilla/mux` — маршрутизация.
+- `go-openapi/runtime/middleware` — Swagger UI.
+- `prometheus/client_golang` — метрики.

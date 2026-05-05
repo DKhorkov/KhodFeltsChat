@@ -234,7 +234,7 @@ paths:
             summary: Default Handler for everything that is not a match.
             tags:
                 - DefaultHandler
-    /chats:
+    /api/chats:
         get:
             description: Provides list of chats for current user with pagination.
             operationId: GetUserChats
@@ -317,7 +317,7 @@ paths:
             summary: CreateChat
             tags:
                 - chats
-    /chats/{id}/messages:
+    /api/chats/{id}/messages:
         get:
             description: Provides list of messages, which were sent to the chat with specified id, with pagination.
             operationId: GetChatMessages
@@ -357,7 +357,7 @@ paths:
             summary: GetChatMessages
             tags:
                 - chats
-    /sessions:
+    /api/sessions:
         delete:
             description: Logout User and deletes access and refresh tokens.
             operationId: Logout
@@ -435,7 +435,7 @@ paths:
             summary: RefreshTokens
             tags:
                 - sessions
-    /users:
+    /api/users:
         get:
             description: Provides list of Users.
             operationId: GetUsers
@@ -515,7 +515,7 @@ paths:
             summary: RegisterUser
             tags:
                 - users
-    /users/{id}:
+    /api/users/{id}:
         get:
             description: Provides User with specified ID.
             operationId: GetUserByID
@@ -541,7 +541,7 @@ paths:
             summary: GetUserByID
             tags:
                 - users
-    /users/email/verify:
+    /api/users/email/verify:
         post:
             description: Sends message with information how to verify email.
             operationId: SendVerifyEmailMessage
@@ -566,7 +566,7 @@ paths:
             summary: SendVerifyEmailMessage
             tags:
                 - users
-    /users/email/verify/{verifyEmailToken}:
+    /api/users/email/verify/{verifyEmailToken}:
         get:
             description: Verifies email for user with provided verifyEmailToken.
             operationId: VerifyEmail
@@ -592,7 +592,7 @@ paths:
             summary: VerifyEmail
             tags:
                 - users
-    /users/me:
+    /api/users/me:
         get:
             description: Provides current authorized User.
             operationId: GetCurrentUser
@@ -652,7 +652,7 @@ paths:
             summary: UpdateCurrentUser
             tags:
                 - users
-    /users/password/change:
+    /api/users/password/change:
         post:
             description: Changes old password to new password of current user.
             operationId: ChangePassword
@@ -694,7 +694,7 @@ paths:
             summary: ChangePassword
             tags:
                 - users
-    /users/password/forget:
+    /api/users/password/forget:
         post:
             description: Sends message with information how to forget old password.
             operationId: SendForgetPasswordMessage
@@ -719,7 +719,7 @@ paths:
             summary: SendForgetPasswordMessage
             tags:
                 - users
-    /users/password/forget/{forgetPasswordToken}:
+    /api/users/password/forget/{forgetPasswordToken}:
         post:
             description: Changes forgotten password to new password for user with provided forgetPasswordToken.
             operationId: ForgetPassword
@@ -751,7 +751,7 @@ paths:
             summary: ForgetPassword
             tags:
                 - users
-    /ws:
+    /api/ws:
         get:
             description: Creates websocket connection for current user.
             operationId: CreateWebsocket
