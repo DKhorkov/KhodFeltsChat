@@ -11,7 +11,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
-// swagger:route POST /users/email/verify users SendVerifyEmailMessage
+// swagger:route POST /api/users/email/verify users SendVerifyEmailMessage
 //
 // SendVerifyEmailMessage
 //

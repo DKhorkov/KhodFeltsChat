@@ -18,7 +18,7 @@ const (
 	RefreshTokenCookieName = "refreshToken"
 )
 
-// swagger:route POST /sessions sessions Login
+// swagger:route POST /api/sessions sessions Login
 //
 // Login
 //

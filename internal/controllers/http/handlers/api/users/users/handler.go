@@ -15,7 +15,7 @@ const (
 	usernameQueryKey = "username"
 )
 
-// swagger:route GET /users users GetUsers
+// swagger:route GET /api/users users GetUsers
 //
 // GetUsers
 //

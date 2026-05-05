@@ -13,7 +13,7 @@ import (
 	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 )
 
-// swagger:route POST /users/password/change users ChangePassword
+// swagger:route POST /api/users/password/change users ChangePassword
 //
 // ChangePassword
 //

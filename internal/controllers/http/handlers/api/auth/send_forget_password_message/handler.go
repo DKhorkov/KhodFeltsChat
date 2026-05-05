@@ -11,7 +11,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
-// swagger:route POST /users/password/forget users SendForgetPasswordMessage
+// swagger:route POST /api/users/password/forget users SendForgetPasswordMessage
 //
 // SendForgetPasswordMessage
 //

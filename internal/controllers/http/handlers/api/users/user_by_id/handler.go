@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// swagger:route GET /users/{id} users GetUserByID
+// swagger:route GET /api/users/{id} users GetUserByID
 //
 // GetUserByID
 //

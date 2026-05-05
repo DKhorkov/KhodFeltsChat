@@ -15,7 +15,7 @@ import (
 	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 )
 
-// swagger:route POST /chats chats CreateChat
+// swagger:route POST /api/chats chats CreateChat
 //
 // CreateChat
 //

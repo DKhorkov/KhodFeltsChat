@@ -11,7 +11,7 @@ import (
 	"github.com/DKhorkov/libs/cookies"
 )
 
-// swagger:route PUT /sessions sessions RefreshTokens
+// swagger:route PUT /api/sessions sessions RefreshTokens
 //
 // RefreshTokens
 //

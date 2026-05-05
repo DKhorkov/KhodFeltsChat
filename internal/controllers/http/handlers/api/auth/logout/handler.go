@@ -10,7 +10,7 @@ import (
 	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 )
 
-// swagger:route DELETE /sessions sessions Logout
+// swagger:route DELETE /api/sessions sessions Logout
 //
 // Logout
 //

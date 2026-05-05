@@ -43,7 +43,7 @@ func New(
 	}
 }
 
-// swagger:route GET /ws websockets CreateWebsocket
+// swagger:route GET /api/ws websockets CreateWebsocket
 //
 // CreateWebsocket
 //

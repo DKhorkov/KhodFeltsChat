@@ -13,7 +13,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/interfaces"
 )
 
-// swagger:route POST /users users RegisterUser
+// swagger:route POST /api/users users RegisterUser
 //
 // RegisterUser
 //

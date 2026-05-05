@@ -16,7 +16,7 @@ const (
 	TokenRouteKey = "forgetPasswordToken"
 )
 
-// swagger:route POST /users/password/forget/{forgetPasswordToken} users ForgetPassword
+// swagger:route POST /api/users/password/forget/{forgetPasswordToken} users ForgetPassword
 //
 // ForgetPassword
 //

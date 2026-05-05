@@ -13,7 +13,7 @@ import (
 	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 )
 
-// swagger:route GET /users/me users GetCurrentUser
+// swagger:route GET /api/users/me users GetCurrentUser
 //
 // GetCurrentUser
 //
