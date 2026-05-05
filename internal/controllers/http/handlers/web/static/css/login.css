@@ -116,24 +116,3 @@
 .login-form__link--danger {
     color: var(--danger);
 }
-
-.login-form__error {
-    padding: var(--space-md);
-    background: var(--bg-danger);
-    border: 1px solid var(--border-danger);
-    border-radius: var(--radius-md);
-    color: var(--danger);
-    font-size: var(--font-sm);
-    text-align: center;
-    animation: fadeIn var(--transition-fast);
-}
-
-.login-form__info {
-    padding: var(--space-md);
-    background: var(--bg-info);
-    border-radius: var(--radius-md);
-    color: var(--info-text);
-    font-size: var(--font-sm);
-    text-align: center;
-    animation: fadeIn var(--transition-fast);
-}

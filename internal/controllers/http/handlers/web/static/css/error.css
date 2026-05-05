@@ -1,0 +1,61 @@
+.error-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+}
+
+.error-card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3xl);
+    width: 440px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+}
+
+.error-card__icon {
+    font-size: 48px;
+    margin-bottom: var(--space-md);
+}
+
+.error-card__title {
+    font-size: var(--font-xl);
+    font-weight: 600;
+    color: var(--danger);
+    margin-bottom: var(--space-sm);
+}
+
+.error-card__code {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: var(--space-md);
+}
+
+.error-card__message {
+    font-size: var(--font-md);
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: var(--space-2xl);
+    word-break: break-word;
+}
+
+.error-card__btn {
+    display: inline-block;
+    padding: var(--space-md) var(--space-3xl);
+    background: var(--accent);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-md);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background var(--transition-base);
+}
+
+.error-card__btn:hover {
+    background: var(--accent-hover);
+}

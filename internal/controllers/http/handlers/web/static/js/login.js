@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabs = document.querySelectorAll('.login-card__tab');
     const tabLogin = document.getElementById('tab-login');
     const tabRegister = document.getElementById('tab-register');
-    const messageEl = document.getElementById('message');
 
     // Переключение табов
     tabs.forEach(tab => {
@@ -17,33 +16,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 tabLogin.style.display = 'none';
                 tabRegister.style.display = '';
             }
-            clearMessage();
         });
     });
-
-    function showError(text) {
-        messageEl.innerHTML = '<div class="login-form__error">' + text + '</div>';
-    }
-
-    function showInfo(text) {
-        messageEl.innerHTML = '<div class="login-form__info">' + text + '</div>';
-    }
-
-    function clearMessage() {
-        messageEl.innerHTML = '';
-    }
 
     // Логин
     document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        clearMessage();
 
         const form = e.target;
         const login = form.login.value.trim();
         const password = form.password.value;
 
-        if (!login || !password) {
-            showInfo('Пожалуйста, заполните все поля');
+        if (!validateLogin(login)) {
+            showError(
+                'Некорректный email или логин. ' +
+                'Логин должен быть не менее 5 символов в длину и содержать только латинские буквы и цифры'
+            );
+            return;
+        }
+
+        if (!validatePassword(password)) {
+            showError(
+                'Пароль должен быть на латинице, не менее 8 символов в длину и содержать ' +
+                'как минимум одну букву в верхнем и нижнем регистре, цифру и спецсимвол'
+            );
             return;
         }
 
@@ -57,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!resp.ok) {
                 const text = await resp.text();
-                showError(text || 'Ошибка входа');
+                showError(mapError(text));
                 return;
             }
 
@@ -70,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Регистрация
     document.getElementById('register-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        clearMessage();
 
         const form = e.target;
         const email = form.email.value.trim();
@@ -78,8 +73,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = form.password.value;
         const confirmPassword = form.confirmPassword.value;
 
-        if (!email || !username || !password || !confirmPassword) {
-            showInfo('Пожалуйста, заполните все поля');
+        if (!validateEmail(email)) {
+            showError('Некорректный адрес электронной почты');
+            return;
+        }
+
+        if (!validateUsername(username)) {
+            showError(
+                'Логин должен быть не менее 5 символов в длину и содержать только латинские буквы и цифры'
+            );
+            return;
+        }
+
+        if (!validatePassword(password)) {
+            showError(
+                'Пароль должен быть на латинице, не менее 8 символов в длину и содержать ' +
+                'как минимум одну букву в верхнем и нижнем регистре, цифру и спецсимвол'
+            );
             return;
         }
 
@@ -98,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!resp.ok) {
                 const text = await resp.text();
-                showError(text || 'Ошибка регистрации');
+                showError(mapError(text));
                 return;
             }
 
@@ -114,11 +124,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Повторная отправка письма для подтверждения почты
     document.getElementById('btn-verify-email').addEventListener('click', async () => {
-        clearMessage();
         const login = document.querySelector('#login-form input[name="login"]').value.trim();
 
-        if (!login) {
-            showInfo('Введите email в поле авторизации');
+        if (!validateEmail(login)) {
+            showError('Некорректный адрес электронной почты');
             return;
         }
 
@@ -132,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!resp.ok) {
                 const text = await resp.text();
-                showError(text || 'Ошибка отправки');
+                showError(mapError(text));
                 return;
             }
 
@@ -144,11 +153,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Сброс пароля
     document.getElementById('btn-forget-password').addEventListener('click', async () => {
-        clearMessage();
         const login = document.querySelector('#login-form input[name="login"]').value.trim();
 
-        if (!login) {
-            showInfo('Введите email в поле авторизации');
+        if (!validateEmail(login)) {
+            showError('Некорректный адрес электронной почты');
             return;
         }
 
@@ -162,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!resp.ok) {
                 const text = await resp.text();
-                showError(text || 'Ошибка отправки');
+                showError(mapError(text));
                 return;
             }
 
