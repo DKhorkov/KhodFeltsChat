@@ -127,6 +127,10 @@ func New(
 					),
 					Methods: []string{http.MethodGet},
 				},
+				{
+					Path:    regexp.MustCompile(`^` + handlers.WebPrefix),
+					Methods: []string{http.MethodGet},
+				},
 			}...,
 		),
 	)
