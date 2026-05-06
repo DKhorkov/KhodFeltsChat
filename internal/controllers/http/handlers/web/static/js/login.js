@@ -1,4 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('message') === 'password-reset') {
+        showInfo('Пароль был успешно сброшен. Теперь вы можете авторизоваться.');
+        history.replaceState(null, '', window.location.pathname);
+    }
+
     const tabs = document.querySelectorAll('.login-card__tab');
     const tabLogin = document.getElementById('tab-login');
     const tabRegister = document.getElementById('tab-register');

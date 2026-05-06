@@ -39,11 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            showInfo('Пароль был успешно сброшен. Теперь вы можете авторизоваться.');
-
-            setTimeout(() => {
-                window.location.href = '/web/login';
-            }, 2000);
+            window.location.href = '/web/login?message=password-reset';
         } catch (err) {
             showError('Ошибка сети: ' + err.message);
         }
