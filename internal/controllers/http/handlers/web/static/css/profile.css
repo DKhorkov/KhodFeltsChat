@@ -1,0 +1,212 @@
+.profile-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: calc(100vh - 49px);
+    padding: var(--space-3xl);
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+}
+
+.profile-card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3xl);
+    width: 480px;
+    box-shadow: var(--shadow-lg);
+}
+
+/* ═══════════════════════════════════════
+   Шапка профиля
+   ═══════════════════════════════════════ */
+.profile-card__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+}
+
+.profile-card__avatar {
+    width: 56px;
+    height: 56px;
+    background: var(--accent);
+    color: var(--text-on-accent);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: var(--font-xl);
+    flex-shrink: 0;
+}
+
+.profile-card__title h2 {
+    font-size: var(--font-xl);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.profile-card__email {
+    font-size: var(--font-sm);
+    color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════
+   Детали
+   ═══════════════════════════════════════ */
+.profile-card__details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-lg);
+    background: var(--bg-panel);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-lg);
+}
+
+.profile-card__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.profile-card__label {
+    font-size: var(--font-md);
+    color: var(--text-secondary);
+}
+
+.profile-card__value {
+    font-size: var(--font-md);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.profile-card__value--success {
+    color: #38a169;
+}
+
+.profile-card__value--warning {
+    color: var(--danger);
+}
+
+/* ═══════════════════════════════════════
+   Секции (раскрывающиеся)
+   ═══════════════════════════════════════ */
+.profile-card__section {
+    padding: var(--space-lg);
+    background: var(--bg-panel);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-lg);
+}
+
+.profile-card__toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: var(--space-sm) 0;
+}
+
+.profile-card__toggle:hover .profile-card__chevron {
+    color: var(--accent);
+}
+
+.profile-card__chevron {
+    font-size: var(--font-xl);
+    color: var(--text-primary);
+    transition: transform 0.2s ease, color 0.2s ease;
+    display: inline-block;
+    font-weight: bold;
+}
+
+.profile-card__chevron--open {
+    transform: rotate(90deg);
+}
+
+/* ═══════════════════════════════════════
+   Формы
+   ═══════════════════════════════════════ */
+.profile-card__form {
+    margin-top: var(--space-lg);
+}
+
+.profile-card__form-group {
+    margin-bottom: var(--space-xl);
+}
+
+.profile-card__form-group label {
+    display: block;
+    margin-bottom: var(--space-sm);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.profile-card__form-group input {
+    width: 100%;
+    padding: var(--space-md);
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-md);
+    font-size: var(--font-md);
+    font-family: inherit;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    transition: border-color var(--transition-base);
+}
+
+.profile-card__form-group input::placeholder {
+    color: var(--text-placeholder);
+}
+
+.profile-card__form-group input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.profile-card__form-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.profile-card__form-actions button {
+    padding: var(--space-md) var(--space-xl);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: var(--font-md);
+    font-weight: 500;
+    transition: all var(--transition-base);
+}
+
+/* ═══════════════════════════════════════
+   Кнопки
+   ═══════════════════════════════════════ */
+.profile-card__actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn--primary {
+    background: var(--accent);
+    color: var(--text-on-accent);
+}
+
+.btn--primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+}
+
+.btn--danger {
+    padding: var(--space-md) var(--space-xl);
+    background: var(--danger);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: var(--font-md);
+    font-weight: 500;
+    transition: all var(--transition-base);
+}
+
+.btn--danger:hover {
+    opacity: 0.9;
+}

@@ -1,46 +1,31 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const authContainer = document.getElementById('navbar-auth');
-    const user = await getCurrentUser();
-    if (!user) return;
+    if (!authContainer) return;
 
-    authContainer.innerHTML = '';
-
-    const profile = document.createElement('a');
-    profile.href = '/web/chat';
-    profile.className = 'navbar__profile';
-
-    const avatar = document.createElement('div');
-    avatar.className = 'navbar__profile-avatar';
-    avatar.textContent = user.username.charAt(0).toUpperCase();
-
-    const name = document.createElement('span');
-    name.className = 'navbar__profile-name';
-    name.textContent = user.username;
-
-    profile.appendChild(avatar);
-    profile.appendChild(name);
-    authContainer.appendChild(profile);
-});
-
-async function getCurrentUser() {
     try {
-        let resp = await fetch('/api/users/me', { credentials: 'same-origin' });
+        const resp = await fetchWithAuth('/api/users/me');
+        if (!resp.ok) return;
 
-        if (resp.status === 401) {
-            const refreshResp = await fetch('/api/sessions', {
-                method: 'PUT',
-                credentials: 'same-origin',
-            });
+        const user = await resp.json();
 
-            if (!refreshResp.ok) return null;
+        authContainer.innerHTML = '';
 
-            resp = await fetch('/api/users/me', { credentials: 'same-origin' });
-        }
+        const profile = document.createElement('a');
+        profile.href = '/web/profile';
+        profile.className = 'navbar__profile';
 
-        if (!resp.ok) return null;
+        const avatar = document.createElement('div');
+        avatar.className = 'navbar__profile-avatar';
+        avatar.textContent = user.username.charAt(0).toUpperCase();
 
-        return await resp.json();
+        const name = document.createElement('span');
+        name.className = 'navbar__profile-name';
+        name.textContent = user.username;
+
+        profile.appendChild(avatar);
+        profile.appendChild(name);
+        authContainer.appendChild(profile);
     } catch {
-        return null;
+        // Не авторизован — оставляем кнопку "Войти"
     }
-}
+});
