@@ -10,7 +10,7 @@ const ERROR_DEFAULT = 'Что-то пошло не так...';
 
 const errorMapping = [
     // Auth
-    { key: 'new password equal to old password', message: 'Старый пароль не может быть использован в качестве нового пароля' },
+    { key: 'new password can not be equal to old password', message: 'Старый пароль не может быть использован в качестве нового пароля' },
     { key: 'access token does not belong to refresh token', message: 'Ошибка авторизации' },
     { key: 'invalid jwt token: invalid forget_password_token', message: 'Некорректный код для сброса пароля' },
     { key: 'email already confirmed', message: 'Эта почта уже подтверждена' },
@@ -19,7 +19,7 @@ const errorMapping = [
     { key: 'passwords does not match', message: 'Пароли не совпадают' },
     { key: 'user already exists', message: 'Пользователь с такой почтой или логином уже существует' },
     { key: 'invalid jwt token', message: 'Ошибка авторизации' },
-    { key: 'validation failed', message: 'Ошибка авторизации' },
+    { key: 'validation failed', message: 'Ошибка валидации данных' },
     { key: 'invalid password', message: 'Пароль должен быть на латинице, не менее 8 символов в длину и содержать как минимум одну букву в верхнем и нижнем регистре, цифру и спецсимвол' },
     { key: 'invalid login', message: 'Некорректный email или логин. Логин должен быть не менее 5 символов в длину и содержать только латинские буквы и цифры' },
     { key: 'invalid username', message: 'Логин должен быть не менее 5 символов в длину и содержать только латинские буквы и цифры' },
