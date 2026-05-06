@@ -91,6 +91,12 @@ function setupEditProfile(user) {
 
             const updatedUser = await resp.json();
             renderProfile(updatedUser);
+
+            const navAvatar = document.querySelector('.navbar__profile-avatar');
+            const navName = document.querySelector('.navbar__profile-name');
+            if (navAvatar) navAvatar.textContent = updatedUser.username.charAt(0).toUpperCase();
+            if (navName) navName.textContent = updatedUser.username;
+
             e.target.username.value = '';
             showInfo('Профиль успешно обновлён');
         } catch (err) {
