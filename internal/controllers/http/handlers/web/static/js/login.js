@@ -1,7 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('message') === 'password-reset') {
+    const message = params.get('message');
+    if (message === 'password-reset') {
         showInfo('Пароль был успешно сброшен. Теперь вы можете авторизоваться.');
+        history.replaceState(null, '', window.location.pathname);
+    } else if (message === 'email-verified') {
+        showInfo('Почта успешно подтверждена. Теперь вы можете войти.');
         history.replaceState(null, '', window.location.pathname);
     }
 
