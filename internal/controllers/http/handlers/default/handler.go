@@ -9,7 +9,10 @@ import (
 )
 
 var homeTemplate = template.Must(
-	template.ParseFiles("internal/controllers/http/handlers/web/templates/home.html"),
+	template.ParseFiles(
+		"internal/controllers/http/handlers/web/templates/home.html",
+		"internal/controllers/http/handlers/web/templates/navbar.html",
+	),
 )
 
 // swagger:route GET / web HomePage

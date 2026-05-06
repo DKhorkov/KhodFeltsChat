@@ -9,7 +9,10 @@ import (
 )
 
 var forgetPasswordTemplate = template.Must(
-	template.ParseFiles("internal/controllers/http/handlers/web/templates/forget_password.html"),
+	template.ParseFiles(
+		"internal/controllers/http/handlers/web/templates/forget_password.html",
+		"internal/controllers/http/handlers/web/templates/navbar.html",
+	),
 )
 
 type templateData struct {

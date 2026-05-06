@@ -5,16 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KFC Chat — Ошибка</title>
     <link rel="stylesheet" href="/web/static/css/global.css">
+    <link rel="stylesheet" href="/web/static/css/navbar.css">
     <link rel="stylesheet" href="/web/static/css/error.css">
+    <script src="/web/static/js/navbar.js" defer></script>
 </head>
 <body>
+    {{template "navbar"}}
+
     <div class="error-container">
         <div class="error-card">
             <div class="error-card__icon">❌</div>
             <div class="error-card__title">Ошибка</div>
             <div class="error-card__code">{{.Code}}</div>
             <div class="error-card__message">{{.Message}}</div>
-            <a href="/web/login" class="error-card__btn">На страницу входа</a>
+            <a href="/" class="error-card__btn">На главную</a>
         </div>
     </div>
 </body>

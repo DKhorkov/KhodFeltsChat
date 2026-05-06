@@ -1,0 +1,92 @@
+/* ═══════════════════════════════════════
+   Навбар
+   ═══════════════════════════════════════ */
+.navbar {
+    display: flex;
+    align-items: center;
+    padding: var(--space-md) var(--space-3xl);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.navbar__brand {
+    font-size: var(--font-xl);
+    font-weight: 700;
+    color: var(--accent);
+    text-decoration: none;
+    margin-right: auto;
+    transition: opacity var(--transition-base);
+}
+
+.navbar__brand:hover {
+    opacity: 0.8;
+}
+
+.navbar__auth {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.navbar__btn {
+    padding: var(--space-sm) var(--space-xl);
+    border-radius: var(--radius-md);
+    font-size: var(--font-md);
+    font-weight: 500;
+    text-decoration: none;
+    transition: all var(--transition-base);
+}
+
+.navbar__btn--login {
+    background: var(--accent);
+    color: var(--text-on-accent);
+}
+
+.navbar__btn--login:hover {
+    background: var(--accent-hover);
+}
+
+/* ═══════════════════════════════════════
+   Профиль в навбаре (авторизованный)
+   ═══════════════════════════════════════ */
+.navbar__profile {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-md) var(--space-xs) var(--space-xs);
+    border: 1px solid var(--border);
+    background: var(--bg-hover);
+    border-radius: 20px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--transition-base);
+}
+
+.navbar__profile:hover {
+    background: var(--bg-active);
+    box-shadow: var(--shadow-sm);
+}
+
+.navbar__profile-avatar {
+    width: 28px;
+    height: 28px;
+    background: var(--accent);
+    color: var(--text-on-accent);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: var(--font-xs);
+    flex-shrink: 0;
+}
+
+.navbar__profile-name {
+    font-size: var(--font-sm);
+    font-weight: 500;
+    color: var(--text-primary);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

@@ -9,7 +9,10 @@ import (
 )
 
 var loginTemplate = template.Must(
-	template.ParseFiles("internal/controllers/http/handlers/web/templates/login.html"),
+	template.ParseFiles(
+		"internal/controllers/http/handlers/web/templates/login.html",
+		"internal/controllers/http/handlers/web/templates/navbar.html",
+	),
 )
 
 // swagger:route GET /web/login web LoginPage

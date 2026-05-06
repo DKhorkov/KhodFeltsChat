@@ -8,7 +8,10 @@ import (
 )
 
 var errorTemplate = template.Must(
-	template.ParseFiles("internal/controllers/http/handlers/web/templates/error.html"),
+	template.ParseFiles(
+		"internal/controllers/http/handlers/web/templates/error.html",
+		"internal/controllers/http/handlers/web/templates/navbar.html",
+	),
 )
 
 type errorData struct {
