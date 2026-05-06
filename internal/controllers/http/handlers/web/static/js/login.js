@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (message === 'email-verified') {
         showInfo('Почта успешно подтверждена. Теперь вы можете войти.');
         history.replaceState(null, '', window.location.pathname);
+    } else if (message === 'verify-error') {
+        showError(params.get('error') || 'Не удалось подтвердить почту.');
+        history.replaceState(null, '', window.location.pathname);
     }
 
     const tabs = document.querySelectorAll('.login-card__tab');

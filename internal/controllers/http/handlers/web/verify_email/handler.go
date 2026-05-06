@@ -13,10 +13,7 @@ const (
 )
 
 var verifyEmailTemplate = template.Must(
-	template.ParseFiles(
-		"internal/controllers/http/handlers/web/templates/verify_email.html",
-		"internal/controllers/http/handlers/web/templates/navbar.html",
-	),
+	template.ParseFiles("internal/controllers/http/handlers/web/templates/verify_email.html"),
 )
 
 // swagger:route GET /web/verify-email/{token} web VerifyEmailPage
