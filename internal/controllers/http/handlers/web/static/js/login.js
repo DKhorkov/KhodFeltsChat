@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            showInfo('Письмо с кодом для сброса пароля отправлено на ' + login);
+            window.location.href = '/web/forget-password?email=' + encodeURIComponent(login);
         } catch (err) {
             showError('Ошибка сети: ' + err.message);
         }
