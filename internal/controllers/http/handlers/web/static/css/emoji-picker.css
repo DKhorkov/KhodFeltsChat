@@ -96,8 +96,13 @@
    ═══════════════════════════════════════ */
 @media (max-width: 600px) {
     .emoji-picker {
-        width: calc(100vw - var(--space-xl) * 2);
-        right: calc(-1 * var(--space-sm));
+        position: fixed;
+        right: var(--space-md);
+        left: var(--space-md);
+        bottom: 80px;
+        width: auto;
+        margin-bottom: 0;
+        z-index: 900;
     }
 
     .emoji-picker__grid {
