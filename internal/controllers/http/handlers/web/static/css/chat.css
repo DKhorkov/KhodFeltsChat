@@ -512,10 +512,22 @@
     transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
 }
 
-.user-item--clickable .user-item__avatar:hover {
+.user-item--clickable .user-item__avatar:hover,
+.user-item--selectable .user-item__avatar:hover {
     transform: scale(1.12);
     border-color: var(--accent-hover);
     box-shadow: 0 0 0 2px var(--accent);
+}
+
+.group-chat-modal__members-list .user-item__avatar {
+    border: 2px solid transparent;
+    transition: none;
+}
+
+.group-chat-modal__members-list .user-item__avatar:hover {
+    transform: none;
+    border-color: transparent;
+    box-shadow: none;
 }
 
 .user-item__info {
