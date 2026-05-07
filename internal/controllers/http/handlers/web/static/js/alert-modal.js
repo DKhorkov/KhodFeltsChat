@@ -44,15 +44,16 @@ function showAlert(message, type) {
     // Закрытие по кнопке OK
     modal.querySelector('.alert-modal__btn').addEventListener('click', closeModal);
 
-    // Закрытие по Escape
+    // Закрытие по Escape (перехватываем на фазе capture, чтобы сработать раньше всех)
     const onKeydown = (e) => {
         if (e.key === 'Escape') {
+            e.stopImmediatePropagation();
             closeModal();
-            document.removeEventListener('keydown', onKeydown);
+            document.removeEventListener('keydown', onKeydown, true);
         }
     };
 
-    document.addEventListener('keydown', onKeydown);
+    document.addEventListener('keydown', onKeydown, true);
 
     // Фокус на кнопку OK для доступности
     modal.querySelector('.alert-modal__btn').focus();
