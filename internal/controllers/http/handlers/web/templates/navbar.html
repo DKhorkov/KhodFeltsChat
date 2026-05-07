@@ -5,4 +5,73 @@
         <a href="/web/login" class="navbar__btn navbar__btn--login">Войти</a>
     </div>
 </nav>
+
+<!-- Модалка профиля текущего пользователя -->
+<div class="modal-overlay" id="modal-my-profile" style="display: none;">
+    <div class="modal-content profile-modal" id="modal-my-profile-content">
+        <button class="modal-content__close" id="btn-close-my-profile">&times;</button>
+        <div class="profile-modal__header">
+            <div class="profile-modal__avatar" id="my-profile-avatar"></div>
+            <div class="profile-modal__title">
+                <h2 id="my-profile-username"></h2>
+                <span class="profile-modal__email" id="my-profile-email"></span>
+            </div>
+        </div>
+
+        <div class="profile-modal__details">
+            <div class="profile-modal__row">
+                <span class="profile-modal__label">Email подтверждён</span>
+                <span class="profile-modal__value" id="my-profile-email-confirmed"></span>
+            </div>
+            <div class="profile-modal__row">
+                <span class="profile-modal__label">Дата регистрации</span>
+                <span class="profile-modal__value" id="my-profile-created-at"></span>
+            </div>
+        </div>
+
+        <div class="profile-modal__section">
+            <div class="profile-modal__toggle" id="my-profile-toggle-edit">
+                <span class="profile-modal__label">Редактировать профиль</span>
+                <span class="profile-modal__chevron">&#9654;</span>
+            </div>
+            <form id="my-profile-edit-form" class="profile-modal__form" style="display: none;">
+                <div class="modal-content__form-group">
+                    <label>Логин</label>
+                    <input type="text" name="username" placeholder="Введите новый логин">
+                </div>
+                <div class="modal-content__actions">
+                    <button type="submit" class="btn--primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="profile-modal__section">
+            <div class="profile-modal__toggle" id="my-profile-toggle-password">
+                <span class="profile-modal__label">Сменить пароль</span>
+                <span class="profile-modal__chevron">&#9654;</span>
+            </div>
+            <form id="my-profile-password-form" class="profile-modal__form" style="display: none;">
+                <div class="modal-content__form-group">
+                    <label>Старый пароль</label>
+                    <input type="password" name="oldPassword" placeholder="Введите старый пароль">
+                </div>
+                <div class="modal-content__form-group">
+                    <label>Новый пароль</label>
+                    <input type="password" name="newPassword" placeholder="Введите новый пароль">
+                </div>
+                <div class="modal-content__form-group">
+                    <label>Подтверждение пароля</label>
+                    <input type="password" name="confirmPassword" placeholder="Подтвердите новый пароль">
+                </div>
+                <div class="modal-content__actions">
+                    <button type="submit" class="btn--primary">Сменить пароль</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="modal-content__actions">
+            <button class="btn--danger" id="btn-my-profile-logout">Выйти из аккаунта</button>
+        </div>
+    </div>
+</div>
 {{end}}

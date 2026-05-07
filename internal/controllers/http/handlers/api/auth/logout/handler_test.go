@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/auth/login"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/auth/logout"
 	mockusecases "github.com/DKhorkov/kfc/mocks/usecases"
@@ -36,7 +37,7 @@ func TestHandler(t *testing.T) {
 
 		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := logout.Handler(mockUseCase)
+		handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 		userID := uint64(123)
 
@@ -94,7 +95,7 @@ func TestHandler(t *testing.T) {
 
 		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := logout.Handler(mockUseCase)
+		handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 		// Запрос БЕЗ userID в контексте
 		req := httptest.NewRequest(http.MethodPost, "/logout", http.NoBody)
@@ -118,7 +119,7 @@ func TestHandler(t *testing.T) {
 
 		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := logout.Handler(mockUseCase)
+		handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 		// Запрос с userID неверного типа в контексте
 		req := httptest.NewRequest(http.MethodPost, "/logout", http.NoBody)
@@ -144,7 +145,7 @@ func TestHandler(t *testing.T) {
 
 		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := logout.Handler(mockUseCase)
+		handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 		userID := uint64(123)
 
@@ -173,7 +174,7 @@ func TestHandler(t *testing.T) {
 
 		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := logout.Handler(mockUseCase)
+		handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 		userID := uint64(0) // Нулевой ID
 
@@ -205,7 +206,7 @@ func TestHandler(t *testing.T) {
 
 		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := logout.Handler(mockUseCase)
+		handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 		userID := uint64(123)
 
@@ -264,7 +265,7 @@ func TestHandler(t *testing.T) {
 
 				// Arrange
 				mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-				handler := logout.Handler(mockUseCase)
+				handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 				userID := uint64(123)
 
@@ -297,7 +298,7 @@ func TestHandler(t *testing.T) {
 
 		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := logout.Handler(mockUseCase)
+		handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 		const numRequests = 10
 
@@ -345,7 +346,7 @@ func TestHandler(t *testing.T) {
 
 		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := logout.Handler(mockUseCase)
+		handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 		userID := uint64(123)
 
@@ -379,7 +380,7 @@ func TestHandler(t *testing.T) {
 
 		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := logout.Handler(mockUseCase)
+		handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 		userID := uint64(123)
 
@@ -407,7 +408,7 @@ func TestHandler(t *testing.T) {
 
 		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := logout.Handler(mockUseCase)
+		handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 		userID := uint64(18446744073709551615) // Максимальный uint64
 
@@ -430,7 +431,7 @@ func TestHandler(t *testing.T) {
 
 		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := logout.Handler(mockUseCase)
+		handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 		userID := uint64(999) // Несуществующий пользователь
 
@@ -459,7 +460,7 @@ func TestHandler(t *testing.T) {
 
 		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := logout.Handler(mockUseCase)
+		handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 		userID := uint64(123)
 
@@ -502,7 +503,7 @@ func TestHandler(t *testing.T) {
 
 		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := logout.Handler(mockUseCase)
+		handler := logout.Handler(mockUseCase, config.CookiesConfig{})
 
 		userID := uint64(123)
 

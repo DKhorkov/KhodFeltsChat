@@ -8,10 +8,13 @@
     <link rel="stylesheet" href="/web/static/css/navbar.css">
     <link rel="stylesheet" href="/web/static/css/alert-modal.css">
     <link rel="stylesheet" href="/web/static/css/chat.css">
+    <link rel="stylesheet" href="/web/static/css/emoji-picker.css">
     <script src="/web/static/js/auth.js" defer></script>
-    <script src="/web/static/js/navbar.js" defer></script>
     <script src="/web/static/js/alert-modal.js" defer></script>
+    <script src="/web/static/js/validation.js" defer></script>
     <script src="/web/static/js/errors-mapper.js" defer></script>
+    <script src="/web/static/js/navbar.js" defer></script>
+    <script src="/web/static/js/emoji-picker.js" defer></script>
     <script src="/web/static/js/chat.js" defer></script>
 </head>
 <body>
@@ -42,6 +45,12 @@
                         placeholder="Введите сообщение..."
                         rows="3"
                     ></textarea>
+                    <div class="conversation__emoji-wrapper">
+                        <button type="button" class="conversation__emoji-toggle" id="btn-emoji-toggle" title="Смайлы">
+                            &#x1F642;
+                        </button>
+                        <div class="emoji-picker" id="emoji-picker-container" style="display: none;"></div>
+                    </div>
                 </div>
                 <button id="btn-send" disabled>Отправить</button>
             </div>

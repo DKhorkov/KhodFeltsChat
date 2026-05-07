@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     connectWebSocket();
 
     setupSendMessage();
+    setupEmojiPicker();
     setupCloseChat();
     setupCreateChatModal();
     setupSearchUsersModal();
@@ -342,6 +343,40 @@ function sendMessage() {
 
     input.value = '';
     document.getElementById('btn-send').disabled = true;
+}
+
+// ═══════════════════════════════════════
+// Emoji picker
+// ═══════════════════════════════════════
+function setupEmojiPicker() {
+    const toggleBtn = document.getElementById('btn-emoji-toggle');
+    const pickerContainer = document.getElementById('emoji-picker-container');
+    const textarea = document.getElementById('message-input');
+    let pickerInitialized = false;
+
+    toggleBtn.addEventListener('click', () => {
+        const isVisible = pickerContainer.style.display !== 'none';
+
+        if (!pickerInitialized) {
+            createEmojiPicker(pickerContainer, (emoji) => {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const text = textarea.value;
+                textarea.value = text.slice(0, start) + emoji + text.slice(end);
+
+                const cursorPos = start + emoji.length;
+                textarea.selectionStart = cursorPos;
+                textarea.selectionEnd = cursorPos;
+                textarea.focus();
+
+                document.getElementById('btn-send').disabled = !textarea.value.trim();
+            });
+            pickerInitialized = true;
+        }
+
+        pickerContainer.style.display = isVisible ? 'none' : '';
+        toggleBtn.classList.toggle('conversation__emoji-toggle--active', !isVisible);
+    });
 }
 
 // ═══════════════════════════════════════
