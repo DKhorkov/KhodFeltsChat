@@ -224,16 +224,16 @@ info:
 paths:
     /:
         get:
-            description: Works with all HTTP methods
-            operationId: OK
+            description: Serves the home page.
+            operationId: HomePage
             responses:
-                "303":
-                    $ref: '#/responses/SeeOther'
+                "200":
+                    $ref: '#/responses/OK'
                 "500":
                     $ref: '#/responses/InternalServerError'
-            summary: Default Handler for everything that is not a match.
+            summary: HomePage
             tags:
-                - DefaultHandler
+                - web
     /api/chats:
         get:
             description: Provides list of chats for current user with pagination.
@@ -770,6 +770,66 @@ paths:
             summary: CreateWebsocket
             tags:
                 - websockets
+    /web/chat:
+        get:
+            description: Serves the chat page.
+            operationId: ChatPage
+            responses:
+                "200":
+                    $ref: '#/responses/OK'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: ChatPage
+            tags:
+                - web
+    /web/forget-password:
+        get:
+            description: Serves the forget password page.
+            operationId: ForgetPasswordPage
+            responses:
+                "200":
+                    $ref: '#/responses/OK'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: ForgetPasswordPage
+            tags:
+                - web
+    /web/login:
+        get:
+            description: Serves the login and registration page.
+            operationId: LoginPage
+            responses:
+                "200":
+                    $ref: '#/responses/OK'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: LoginPage
+            tags:
+                - web
+    /web/profile:
+        get:
+            description: Serves the user profile page.
+            operationId: ProfilePage
+            responses:
+                "200":
+                    $ref: '#/responses/OK'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: ProfilePage
+            tags:
+                - web
+    /web/verify-email/{token}:
+        get:
+            description: Serves the email verification page.
+            operationId: VerifyEmailPage
+            responses:
+                "200":
+                    $ref: '#/responses/OK'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: VerifyEmailPage
+            tags:
+                - web
 produces:
     - application/json
 responses:

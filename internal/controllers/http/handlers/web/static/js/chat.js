@@ -33,7 +33,9 @@ async function loadCurrentUser() {
         const resp = await fetchWithAuth('/api/users/me');
         if (!resp.ok) return null;
         return await resp.json();
-    } catch {
+    } catch (err) {
+        console.log(err)
+
         return null;
     }
 }
@@ -74,8 +76,8 @@ async function loadChats() {
 
         const chats = await resp.json();
         renderChatList(chats);
-    } catch {
-        // Молча игнорируем
+    } catch (err) {
+        console.log(err)
     }
 }
 
@@ -192,8 +194,8 @@ async function loadMessages(chatId, offset) {
             messages = [...reversed, ...messages];
             prependMessages(reversed);
         }
-    } catch {
-        // Молча игнорируем
+    } catch (err) {
+        console.log(err)
     }
 }
 
@@ -539,8 +541,8 @@ async function searchUsersForCreate(query, selectedUserIds) {
             label.appendChild(info);
             container.appendChild(label);
         }
-    } catch {
-        // Молча игнорируем
+    } catch (err) {
+        console.log(err)
     }
 }
 
@@ -630,7 +632,7 @@ async function searchUsersGlobal(query) {
             item.appendChild(info);
             container.appendChild(item);
         }
-    } catch {
-        // Молча игнорируем
+    } catch (err) {
+        console.log(err)
     }
 }

@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         profile.appendChild(avatar);
         profile.appendChild(name);
         authContainer.appendChild(profile);
-    } catch {
-        // Не авторизован — оставляем кнопку "Войти"
+    } catch (err) {
+        console.log(err)
     }
 });

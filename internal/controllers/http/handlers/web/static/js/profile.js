@@ -19,7 +19,9 @@ async function loadCurrentUser() {
         if (!resp.ok) return null;
 
         return await resp.json();
-    } catch {
+    } catch (err) {
+        console.log(err)
+
         return null;
     }
 }
@@ -162,8 +164,8 @@ function setupLogout() {
                 method: 'DELETE',
                 credentials: 'same-origin',
             });
-        } catch {
-            // Игнорируем ошибки при logout
+        } catch (err) {
+            console.log(err)
         }
 
         window.location.href = '/web/login';
