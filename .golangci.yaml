@@ -362,6 +362,14 @@ linters:
         linters:
           - gochecknoglobals
 
+      - path: internal/controllers/http/handlers/(default|web/.+)/handler.go
+        linters:
+          - gochecknoglobals
+
+      - path: internal/controllers/http/handlers/web/common/error.go
+        linters:
+          - gochecknoglobals
+
       - path: internal/domains/message.go
         line: "17"
         linters:

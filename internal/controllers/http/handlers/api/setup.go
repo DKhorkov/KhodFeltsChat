@@ -107,5 +107,5 @@ func SetupHandlers(
 	putMux.Handle(SessionsURL, refresh_tokens.Handler(authUseCases, cookiesConfig))
 
 	deleteMux := apiMux.Methods(http.MethodDelete).Subrouter()
-	deleteMux.Handle(SessionsURL, logout.Handler(authUseCases))
+	deleteMux.Handle(SessionsURL, logout.Handler(authUseCases, cookiesConfig))
 }

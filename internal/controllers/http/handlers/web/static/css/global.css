@@ -1,0 +1,155 @@
+/* ═══════════════════════════════════════
+   Дизайн-токены: светлая тема
+   ═══════════════════════════════════════ */
+:root {
+    /* Радиусы */
+    --radius-sm:  6px;
+    --radius-md:  8px;
+    --radius-lg:  12px;
+    --radius-full: 50%;
+
+    /* Тени */
+    --shadow-sm:  0 2px 4px rgba(0, 0, 0, 0.08);
+    --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.12);
+    --shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.16);
+
+    /* Отступы */
+    --space-xs:   4px;
+    --space-sm:   8px;
+    --space-md:   12px;
+    --space-lg:   16px;
+    --space-xl:   20px;
+    --space-2xl:  24px;
+    --space-3xl:  32px;
+
+    /* Шрифт */
+    --font-xs:   12px;
+    --font-sm:   13px;
+    --font-md:   14px;
+    --font-lg:   16px;
+    --font-xl:   18px;
+
+    /* Анимации */
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.2s ease;
+    --transition-slow: 0.3s ease;
+
+    /* Фоны */
+    --bg-app:            #ffffff;
+    --bg-panel:          #f7f7f7;
+    --bg-surface:        #ffffff;
+    --bg-hover:          #f0f0f0;
+    --bg-active:         #e3e8ff;
+    --bg-input:          #ffffff;
+    --bg-message-other:  #f0f0f0;
+    --bg-danger:         #fff5f5;
+    --bg-info:           #e3f2fd;
+    --bg-toast:          #2a2a3e;
+
+    /* Границы */
+    --border:              #e0e0e0;
+    --border-input:        #dddddd;
+    --border-danger:       #ffeeee;
+    --border-danger-hover: #feb2b2;
+
+    /* Текст */
+    --text-primary:      #333333;
+    --text-secondary:    #555555;
+    --text-muted:        #666666;
+    --text-placeholder:  #999999;
+    --text-on-accent:    #ffffff;
+    --text-toast:        #e2e2f0;
+
+    /* Акценты */
+    --accent:            #667eea;
+    --accent-hover:      #5a67d8;
+    --accent-secondary:  #764ba2;
+    --danger:            #e53e3e;
+    --info:              #1976d2;
+    --info-text:         #1976d2;
+}
+
+/* ═══════════════════════════════════════
+   Дизайн-токены: тёмная тема
+   ═══════════════════════════════════════ */
+[data-bs-theme="dark"] {
+    --shadow-sm:  0 2px 4px rgba(0, 0, 0, 0.2);
+    --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.4);
+
+    --bg-app:            #1a1a2e;
+    --bg-panel:          #16162a;
+    --bg-surface:        #1e1e30;
+    --bg-hover:          #252540;
+    --bg-active:         #2d3561;
+    --bg-input:          #252540;
+    --bg-message-other:  #252540;
+    --bg-danger:         #2d1515;
+    --bg-info:           #0d2137;
+    --bg-toast:          #2e2e50;
+
+    --border:              #2e2e50;
+    --border-input:        #3a3a60;
+    --border-danger:       #4a2020;
+    --border-danger-hover: #6b3030;
+
+    --text-primary:      #e2e2f0;
+    --text-secondary:    #b8b8d0;
+    --text-muted:        #8888a8;
+    --text-placeholder:  #66668a;
+    --text-toast:        #e2e2f0;
+
+    --accent:            #667eea;
+    --accent-hover:      #7a8ef8;
+    --danger:            #fc6b6b;
+    --info:              #64b5f6;
+    --info-text:         #64b5f6;
+}
+
+/* ═══════════════════════════════════════
+   Сброс и базовые стили
+   ═══════════════════════════════════════ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: var(--font-md);
+    line-height: 1.5;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+}
+
+/* ═══════════════════════════════════════
+   Скроллбары
+   ═══════════════════════════════════════ */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--text-placeholder);
+    border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════
+   Анимации
+   ═══════════════════════════════════════ */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}

@@ -1,19 +1,20 @@
-package default_handler_test
+package forget_password_test
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
-	default_handler "github.com/DKhorkov/kfc/internal/controllers/http/handlers/default"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/forget_password"
 )
 
 func TestMain(m *testing.M) {
 	// Тесты запускаются из директории пакета, а шаблоны загружаются
 	// относительно корня проекта. Переходим в корень.
-	if err := os.Chdir("../../../../.."); err != nil {
+	if err := os.Chdir("../../../../../.."); err != nil {
 		panic("failed to chdir to project root: " + err.Error())
 	}
 
@@ -23,10 +24,10 @@ func TestMain(m *testing.M) {
 func TestHandler_Success(t *testing.T) {
 	t.Parallel()
 
-	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "/web/forget-password", http.NoBody)
 	rr := httptest.NewRecorder()
 
-	default_handler.Handler(rr, req)
+	forget_password.Handler().ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Errorf("Expected status code %d, got %d", http.StatusOK, rr.Code)
@@ -43,20 +44,61 @@ func TestHandler_Success(t *testing.T) {
 	}
 }
 
+func TestHandler_WithEmailParam(t *testing.T) {
+	t.Parallel()
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/web/forget-password?email=test@example.com",
+		http.NoBody,
+	)
+	rr := httptest.NewRecorder()
+
+	forget_password.Handler().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, rr.Code)
+	}
+
+	body := rr.Body.String()
+	if !strings.Contains(body, "test@example.com") {
+		t.Error("Expected body to contain the email address")
+	}
+}
+
+func TestHandler_WithoutEmailParam(t *testing.T) {
+	t.Parallel()
+
+	req := httptest.NewRequest(http.MethodGet, "/web/forget-password", http.NoBody)
+	rr := httptest.NewRecorder()
+
+	forget_password.Handler().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("Expected status code %d, got %d", http.StatusOK, rr.Code)
+	}
+
+	body := rr.Body.String()
+	if body == "" {
+		t.Error("Expected non-empty body")
+	}
+}
+
 func TestHandler_ContainsNavbar(t *testing.T) {
 	t.Parallel()
 
-	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, "/web/forget-password", http.NoBody)
 	rr := httptest.NewRecorder()
 
-	default_handler.Handler(rr, req)
+	forget_password.Handler().ServeHTTP(rr, req)
 
 	body := rr.Body.String()
-	if !contains(body, "navbar") {
+
+	if !strings.Contains(body, "navbar") {
 		t.Error("Expected body to contain navbar")
 	}
 
-	if !contains(body, "KFC Chat") {
+	if !strings.Contains(body, "KFC Chat") {
 		t.Error("Expected body to contain 'KFC Chat'")
 	}
 }
@@ -70,10 +112,10 @@ func TestHandler_Concurrent(t *testing.T) {
 
 	for i := range concurrentCalls {
 		go func(id int) {
-			req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
+			req := httptest.NewRequest(http.MethodGet, "/web/forget-password", http.NoBody)
 			rr := httptest.NewRecorder()
 
-			default_handler.Handler(rr, req)
+			forget_password.Handler().ServeHTTP(rr, req)
 
 			if rr.Code != http.StatusOK {
 				t.Errorf("Goroutine %d: expected status %d, got %d",
@@ -87,18 +129,4 @@ func TestHandler_Concurrent(t *testing.T) {
 	for range concurrentCalls {
 		<-done
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && searchSubstring(s, substr)
-}
-
-func searchSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-
-	return false
 }

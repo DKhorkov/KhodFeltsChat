@@ -4,7 +4,7 @@ services:
     hostname: postgres
     image: postgres:17
     env_file:
-      - ../../../.env
+      - ../../../.env.local
     volumes:
       - ../../../postgres_data:/var/lib/postgresql/data
       - ../../../postgres_backups:/backups
@@ -25,7 +25,7 @@ services:
       - ../../../scripts/postgres:/scripts
       - ../backup_cron_entrypoint.sh:/entrypoint.sh # ← монтируем скрипт
     env_file:
-      - ../../../.env
+      - ../../../.env.local
     entrypoint: /bin/bash /entrypoint.sh
     restart: unless-stopped
     networks:
@@ -34,7 +34,7 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:latest
     env_file:
-      - ../../../.env
+      - ../../../.env.local
     ports:
       - "${TRACING_OUTER_API_TRACES_PORT}:${TRACING_INNER_API_TRACES_PORT}"
       - "${TRACING_OUTER_WEB_PORT}:${TRACING_INNER_WEB_PORT}"
@@ -46,7 +46,7 @@ services:
   prometheus:
     image: prom/prometheus
     env_file:
-      - ../../../.env
+      - ../../../.env.local
     ports:
       - "${PROMETHEUS_OUTER_PORT}:${PROMETHEUS_INNER_PORT}"
     volumes:
@@ -61,7 +61,7 @@ services:
   grafana:
     image: grafana/grafana
     env_file:
-      - ../../../.env
+      - ../../../.env.local
     ports:
       - "${GRAFANA_OUTER_PORT}:${GRAFANA_INNER_PORT}"
     volumes:
@@ -77,7 +77,7 @@ services:
     hostname: redis
     image: redis:latest
     env_file:
-      - ../../../.env
+      - ../../../.env.local
     ports:
       - "${CACHE_OUTER_PORT}:${CACHE_INNER_PORT}"
     volumes:

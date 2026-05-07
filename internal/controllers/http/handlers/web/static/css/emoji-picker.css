@@ -1,0 +1,111 @@
+.emoji-picker {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    margin-bottom: var(--space-sm);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: min(320px, calc(100vw - var(--space-3xl) * 2));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.emoji-picker__tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-xs);
+    gap: var(--space-xs);
+    flex-shrink: 0;
+}
+
+.emoji-picker__tab {
+    flex: 1;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: var(--space-xs);
+    font-size: var(--font-lg);
+    cursor: pointer;
+    transition: background var(--transition-base);
+    line-height: 1;
+}
+
+.emoji-picker__tab:hover {
+    background: var(--bg-hover);
+}
+
+.emoji-picker__tab--active {
+    background: var(--bg-active);
+}
+
+.emoji-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    padding: var(--space-sm);
+    max-height: min(200px, 40vh);
+    overflow-y: auto;
+}
+
+.emoji-picker__item {
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: var(--space-xs);
+    font-size: var(--font-xl);
+    cursor: pointer;
+    line-height: 1;
+    text-align: center;
+    transition: background var(--transition-fast);
+}
+
+.emoji-picker__item:hover {
+    background: var(--bg-hover);
+    transform: scale(1.15);
+}
+
+/* Кнопка-тоггл в composer */
+.conversation__emoji-wrapper {
+    position: absolute;
+    right: var(--space-sm);
+    bottom: var(--space-sm);
+}
+
+.conversation__emoji-toggle {
+    background: none;
+    border: none;
+    font-size: var(--font-xl);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: var(--radius-sm);
+    line-height: 1;
+    opacity: 0.5;
+    transition: opacity var(--transition-base);
+}
+
+.conversation__emoji-toggle:hover,
+.conversation__emoji-toggle--active {
+    opacity: 1;
+}
+
+/* ═══════════════════════════════════════
+   Адаптивность
+   ═══════════════════════════════════════ */
+@media (max-width: 600px) {
+    .emoji-picker {
+        position: fixed;
+        right: var(--space-md);
+        left: var(--space-md);
+        bottom: 80px;
+        width: auto;
+        margin-bottom: 0;
+        z-index: 900;
+    }
+
+    .emoji-picker__grid {
+        grid-template-columns: repeat(7, 1fr);
+    }
+}

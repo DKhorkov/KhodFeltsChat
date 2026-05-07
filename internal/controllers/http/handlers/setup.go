@@ -9,6 +9,7 @@ import (
 	default_handler "github.com/DKhorkov/kfc/internal/controllers/http/handlers/default"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/docs"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/not_allowed"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/logging"
 	metricsmiddleware "github.com/DKhorkov/libs/middlewares/http/metrics"
@@ -19,6 +20,7 @@ import (
 
 const (
 	APIPrefix  = "/api"
+	WebPrefix  = "/web"
 	SwaggerURL = "/%s"
 )
 
@@ -64,4 +66,8 @@ func SetupHandlers(
 		logger,
 		upgrader,
 	)
+
+	// WEB subrouter:
+	webMux := rootMux.PathPrefix(WebPrefix).Subrouter()
+	web.SetupHandlers(webMux)
 }

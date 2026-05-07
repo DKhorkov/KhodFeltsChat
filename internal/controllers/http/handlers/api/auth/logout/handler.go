@@ -3,6 +3,7 @@ package logout
 import (
 	"net/http"
 
+	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/auth/login"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/contextlib"
@@ -25,7 +26,7 @@ import (
 //	500: InternalServerError
 
 // Handler logouts User.
-func Handler(u interfaces.AuthUseCases) http.HandlerFunc {
+func Handler(u interfaces.AuthUseCases, cookiesConfig config.CookiesConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := contextlib.ValueFromContext[uint64](
 			r.Context(),
@@ -44,8 +45,10 @@ func Handler(u interfaces.AuthUseCases) http.HandlerFunc {
 		}
 
 		// Deleting cookies:
-		cookies.Set(w, login.AccessTokenCookieName, "", cookies.Config{MaxAge: -1})
-		cookies.Set(w, login.RefreshTokenCookieName, "", cookies.Config{MaxAge: -1})
+		cookiesConfig.AccessToken.MaxAge = -1
+		cookiesConfig.RefreshToken.MaxAge = -1
+		cookies.Set(w, login.AccessTokenCookieName, "", cookiesConfig.AccessToken)
+		cookies.Set(w, login.RefreshTokenCookieName, "", cookiesConfig.RefreshToken)
 
 		w.WriteHeader(http.StatusNoContent)
 	}
