@@ -15,6 +15,8 @@ WORKDIR /app
 COPY .env .
 COPY ./api ./api
 COPY ./grafana ./grafana
+COPY ./internal/controllers/http/handlers/web/templates ./internal/controllers/http/handlers/web/templates
+COPY ./internal/controllers/http/handlers/web/static ./internal/controllers/http/handlers/web/static
 
 COPY --from=builder /build/migrations/ /app/migrations/
 COPY --from=builder /build/main /app/main
