@@ -90,6 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && modal.style.display !== 'none') {
             closeMyProfileModal();
+            e.stopImmediatePropagation();
         }
     });
 

@@ -1,12 +1,15 @@
 const MESSAGES_PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 300;
+const CHAT_LIST_POLL_INTERVAL_MS = 5000;
 
 let currentUser = null;
 let selectedChatId = null;
+let selectedChat = null;
 let messages = [];
 let ws = null;
 let isLoadingMore = false;
 let hasMoreMessages = true;
+let returnToGroupChat = null;
 
 // ═══════════════════════════════════════
 // Инициализация
@@ -27,6 +30,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupCreateChatModal();
     setupSearchUsersModal();
     setupMemberProfileModal();
+    setupGroupChatModal();
+    setupEscapeHandler();
+
+    // Периодическое обновление списка чатов:
+    setInterval(loadChats, CHAT_LIST_POLL_INTERVAL_MS);
 });
 
 async function loadCurrentUser() {
@@ -42,13 +50,54 @@ async function loadCurrentUser() {
 }
 
 // ═══════════════════════════════════════
+// Глобальный обработчик Escape
+// ═══════════════════════════════════════
+function setupEscapeHandler() {
+    document.addEventListener('keydown', async (e) => {
+        if (e.key !== 'Escape') return;
+
+        // Закрываем модалки по приоритету (сверху вниз):
+        const modals = [
+            'modal-member-profile',
+            'modal-group-chat',
+            'modal-search-users',
+            'modal-create-chat',
+        ];
+
+        for (const id of modals) {
+            const modal = document.getElementById(id);
+            if (modal && modal.style.display !== 'none') {
+                modal.style.display = 'none';
+
+                // Если закрыли профиль участника и нужно вернуться к модалке группового чата:
+                if (id === 'modal-member-profile' && returnToGroupChat) {
+                    showGroupChatInfo(returnToGroupChat);
+                    returnToGroupChat = null;
+                }
+
+                return;
+            }
+        }
+
+        // Если модалок нет — закрываем панель чата:
+        if (selectedChatId) {
+            selectedChatId = null;
+            selectedChat = null;
+            document.getElementById('conversation').style.display = 'none';
+            document.getElementById('conversation-placeholder').style.display = '';
+            await loadChats();
+        }
+    });
+}
+
+// ═══════════════════════════════════════
 // WebSocket
 // ═══════════════════════════════════════
 function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     ws = new WebSocket(protocol + '//' + window.location.host + '/api/ws');
 
-    ws.onmessage = (event) => {
+    ws.onmessage = async (event) => {
         const message = JSON.parse(event.data);
 
         if (selectedChatId === message.chatId) {
@@ -58,7 +107,7 @@ function connectWebSocket() {
         }
 
         // Обновляем список чатов (непрочитанное):
-        loadChats();
+        await loadChats();
     };
 
     ws.onclose = () => {
@@ -97,7 +146,7 @@ function renderChatList(chats) {
         avatar.textContent = title.charAt(0).toUpperCase();
         avatar.addEventListener('click', (e) => {
             e.stopPropagation();
-            openChatMemberProfile(chat);
+            openChatInfo(chat);
         });
 
         const info = document.createElement('div');
@@ -143,6 +192,7 @@ function getOtherMember(chat) {
 // ═══════════════════════════════════════
 async function selectChat(chat) {
     selectedChatId = chat.id;
+    selectedChat = chat;
     messages = [];
     hasMoreMessages = true;
 
@@ -151,13 +201,13 @@ async function selectChat(chat) {
 
     const titleEl = document.getElementById('conversation-title');
     titleEl.textContent = getChatTitle(chat);
-    titleEl.onclick = () => openChatMemberProfile(chat);
+    titleEl.onclick = () => openChatInfo(chat);
 
     await loadMessages(chat.id, 0);
     scrollToBottom();
 
     // Обновляем active в списке:
-    loadChats();
+    await loadChats();
 
     // Подписка на подгрузку старых сообщений при скролле вверх:
     const msgList = document.getElementById('messages-list');
@@ -383,12 +433,25 @@ function setupEmojiPicker() {
 // Закрытие чата
 // ═══════════════════════════════════════
 function setupCloseChat() {
-    document.getElementById('btn-close-chat').addEventListener('click', () => {
+    document.getElementById('btn-close-chat').addEventListener('click', async () => {
         selectedChatId = null;
+        selectedChat = null;
         document.getElementById('conversation').style.display = 'none';
         document.getElementById('conversation-placeholder').style.display = '';
-        loadChats();
+        await loadChats();
     });
+}
+
+// ═══════════════════════════════════════
+// Информация о чате (роутер)
+// ═══════════════════════════════════════
+function openChatInfo(chat) {
+    if (chat.type === 'private') {
+        const member = getOtherMember(chat);
+        if (member) showMemberProfile(member);
+    } else {
+        showGroupChatInfo(chat);
+    }
 }
 
 // ═══════════════════════════════════════
@@ -398,20 +461,22 @@ function setupMemberProfileModal() {
     const overlay = document.getElementById('modal-member-profile');
 
     document.getElementById('btn-close-member-profile').addEventListener('click', () => {
-        overlay.style.display = 'none';
+        closeMemberProfile();
     });
 
     overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) overlay.style.display = 'none';
+        if (e.target === overlay) closeMemberProfile();
     });
 }
 
-function openChatMemberProfile(chat) {
-    if (chat.type === 'private') {
-        const member = getOtherMember(chat);
-        if (member) showMemberProfile(member);
+function closeMemberProfile() {
+    document.getElementById('modal-member-profile').style.display = 'none';
+
+    // Если пришли из модалки группового чата — возвращаемся к ней:
+    if (returnToGroupChat) {
+        showGroupChatInfo(returnToGroupChat);
+        returnToGroupChat = null;
     }
-    // Для групповых чатов можно расширить позже
 }
 
 function showMemberProfile(user) {
@@ -426,6 +491,80 @@ function showMemberProfile(user) {
 
     document.getElementById('member-created-at').textContent = formatDate(user.createdAt);
     document.getElementById('modal-member-profile').style.display = '';
+}
+
+// ═══════════════════════════════════════
+// Модалка группового чата
+// ═══════════════════════════════════════
+function setupGroupChatModal() {
+    const overlay = document.getElementById('modal-group-chat');
+
+    document.getElementById('btn-close-group-chat').addEventListener('click', () => {
+        overlay.style.display = 'none';
+    });
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.style.display = 'none';
+    });
+}
+
+function showGroupChatInfo(chat) {
+    const title = getChatTitle(chat);
+
+    document.getElementById('group-chat-avatar').textContent = title.charAt(0).toUpperCase();
+    document.getElementById('group-chat-title').textContent = title;
+
+    const descEl = document.getElementById('group-chat-description');
+    descEl.textContent = chat.description || '';
+    descEl.style.display = chat.description ? '' : 'none';
+
+    const members = chat.members || [];
+    document.getElementById('group-chat-members-count').textContent =
+        'Участники (' + members.length + ')';
+
+    const list = document.getElementById('group-chat-members-list');
+    list.innerHTML = '';
+
+    for (const member of members) {
+        const item = document.createElement('div');
+        item.className = 'user-item user-item--clickable';
+        item.addEventListener('click', () => {
+            // Запоминаем чат, чтобы вернуться после закрытия профиля:
+            returnToGroupChat = chat;
+            document.getElementById('modal-group-chat').style.display = 'none';
+            showMemberProfile(member);
+        });
+
+        const avatar = document.createElement('div');
+        avatar.className = 'user-item__avatar';
+        avatar.textContent = member.username.charAt(0).toUpperCase();
+
+        const info = document.createElement('div');
+        info.className = 'user-item__info';
+
+        const name = document.createElement('div');
+        name.className = 'user-item__name';
+        name.textContent = member.username;
+
+        if (member.id === currentUser.id) {
+            const badge = document.createElement('span');
+            badge.className = 'group-chat-modal__member-badge';
+            badge.textContent = '(вы)';
+            name.appendChild(badge);
+        }
+
+        const email = document.createElement('div');
+        email.className = 'user-item__email';
+        email.textContent = member.email;
+
+        info.appendChild(name);
+        info.appendChild(email);
+        item.appendChild(avatar);
+        item.appendChild(info);
+        list.appendChild(item);
+    }
+
+    document.getElementById('modal-group-chat').style.display = '';
 }
 
 // ═══════════════════════════════════════

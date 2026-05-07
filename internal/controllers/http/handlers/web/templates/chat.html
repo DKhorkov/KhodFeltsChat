@@ -138,5 +138,23 @@
             </div>
         </div>
     </div>
+
+    <!-- Модалка информации о групповом чате -->
+    <div class="modal-overlay" id="modal-group-chat" style="display: none;">
+        <div class="modal-content profile-modal" id="modal-group-chat-content">
+            <button class="modal-content__close" id="btn-close-group-chat">&times;</button>
+            <div class="profile-modal__header">
+                <div class="profile-modal__avatar" id="group-chat-avatar"></div>
+                <div class="profile-modal__title">
+                    <h2 id="group-chat-title"></h2>
+                    <span class="profile-modal__email" id="group-chat-description"></span>
+                </div>
+            </div>
+            <div class="group-chat-modal__members-header">
+                <span id="group-chat-members-count"></span>
+            </div>
+            <div class="group-chat-modal__members-list" id="group-chat-members-list"></div>
+        </div>
+    </div>
 </body>
 </html>

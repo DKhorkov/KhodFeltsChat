@@ -600,3 +600,27 @@
 .btn--primary:hover:not(:disabled) {
     background: var(--accent-hover);
 }
+
+/* ═══════════════════════════════════════
+   Модалка группового чата
+   ═══════════════════════════════════════ */
+.group-chat-modal__members-header {
+    margin-top: var(--space-xl);
+    margin-bottom: var(--space-md);
+    font-size: var(--font-md);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.group-chat-modal__members-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.group-chat-modal__member-badge {
+    font-size: var(--font-xs);
+    color: var(--text-muted);
+    margin-left: var(--space-xs);
+}
