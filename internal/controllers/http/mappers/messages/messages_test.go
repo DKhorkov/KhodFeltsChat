@@ -848,7 +848,6 @@ func TestMapMessagesEdgeCases(t *testing.T) {
 		sender := result[0].Sender
 		assert.Equal(t, uint64(1), sender.ID)
 		assert.Equal(t, "test", sender.Username)
-		// Не должно быть полей Email, Password и т.д.
 	})
 
 	t.Run("Order preservation", func(t *testing.T) {

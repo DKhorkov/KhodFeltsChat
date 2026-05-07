@@ -3,17 +3,29 @@ package forget_password
 import (
 	"html/template"
 	"net/http"
+	"sync"
 
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
 	webcommon "github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/common"
 )
 
-var forgetPasswordTemplate = template.Must(
-	template.ParseFiles(
-		"internal/controllers/http/handlers/web/templates/forget_password.html",
-		"internal/controllers/http/handlers/web/templates/navbar.html",
-	),
+var (
+	forgetPasswordTemplate     *template.Template
+	forgetPasswordTemplateOnce sync.Once
 )
+
+func getForgetPasswordTemplate() *template.Template {
+	forgetPasswordTemplateOnce.Do(func() {
+		forgetPasswordTemplate = template.Must(
+			template.ParseFiles(
+				"internal/controllers/http/handlers/web/templates/forget_password.html",
+				"internal/controllers/http/handlers/web/templates/navbar.html",
+			),
+		)
+	})
+
+	return forgetPasswordTemplate
+}
 
 type templateData struct {
 	Email string
@@ -38,7 +50,7 @@ func Handler() http.Handler {
 			Email: r.URL.Query().Get("email"),
 		}
 
-		if err := forgetPasswordTemplate.Execute(w, data); err != nil {
+		if err := getForgetPasswordTemplate().Execute(w, data); err != nil {
 			webcommon.RenderError(w, http.StatusInternalServerError, err.Error())
 		}
 	})
