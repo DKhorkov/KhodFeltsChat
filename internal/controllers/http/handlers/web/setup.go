@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/chat"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/forget_password"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/login"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/profile"
@@ -17,6 +18,7 @@ const (
 	ForgetPasswordURL = "/forget-password"
 	VerifyEmailURL    = "/verify-email/{%s}"
 	ProfileURL        = "/profile"
+	ChatURL           = "/chat"
 	StaticURL         = "/static/"
 
 	StaticFilePath = "internal/controllers/http/handlers" + WebURL + StaticURL
@@ -27,6 +29,7 @@ func SetupHandlers(webMux *mux.Router) {
 	getMux.Handle(LoginURL, login.Handler())
 	getMux.Handle(ForgetPasswordURL, forget_password.Handler())
 	getMux.Handle(ProfileURL, profile.Handler())
+	getMux.Handle(ChatURL, chat.Handler())
 	getMux.Handle(
 		fmt.Sprintf(VerifyEmailURL, verify_email.TokenRouteKey),
 		verify_email.Handler(),

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KFC Chat</title>
+    <link rel="stylesheet" href="/web/static/css/global.css">
+    <link rel="stylesheet" href="/web/static/css/navbar.css">
+    <link rel="stylesheet" href="/web/static/css/alert-modal.css">
+    <link rel="stylesheet" href="/web/static/css/chat.css">
+    <script src="/web/static/js/auth.js" defer></script>
+    <script src="/web/static/js/navbar.js" defer></script>
+    <script src="/web/static/js/alert-modal.js" defer></script>
+    <script src="/web/static/js/errors-mapper.js" defer></script>
+    <script src="/web/static/js/chat.js" defer></script>
+</head>
+<body>
+    {{template "navbar"}}
+
+    <div class="chat-layout">
+        <aside class="sidebar">
+            <div class="sidebar__header">
+                <h3>Чаты</h3>
+                <button class="sidebar__icon-btn" id="btn-create-chat" title="Создать чат">+</button>
+                <button class="sidebar__icon-btn" id="btn-search-users" title="Поиск пользователей">&#x1F50D;</button>
+            </div>
+            <div class="sidebar__list" id="chat-list"></div>
+        </aside>
+
+        <main class="conversation" id="conversation" style="display: none;">
+            <div class="conversation__header">
+                <h3 class="conversation__header-title" id="conversation-title"></h3>
+                <button class="conversation__close-btn" id="btn-close-chat" title="Закрыть чат">&times;</button>
+            </div>
+
+            <div class="conversation__messages" id="messages-list"></div>
+
+            <div class="conversation__composer">
+                <div class="conversation__composer-input">
+                    <textarea
+                        id="message-input"
+                        placeholder="Введите сообщение..."
+                        rows="3"
+                    ></textarea>
+                </div>
+                <button id="btn-send" disabled>Отправить</button>
+            </div>
+        </main>
+
+        <div class="conversation__placeholder" id="conversation-placeholder">
+            <p>Выберите чат для начала общения</p>
+        </div>
+    </div>
+
+    <!-- Модалка создания чата -->
+    <div class="modal-overlay" id="modal-create-chat" style="display: none;">
+        <div class="modal-content" id="modal-create-chat-content">
+            <button class="modal-content__close" id="btn-close-create-chat">&times;</button>
+            <h2 class="modal-content__title">Создать чат</h2>
+
+            <div class="modal-content__form-group">
+                <label>Тип чата</label>
+                <select id="create-chat-type">
+                    <option value="private">Приватный</option>
+                    <option value="group">Групповой</option>
+                </select>
+            </div>
+
+            <div class="modal-content__form-group" id="group-title-field" style="display: none;">
+                <label>Название чата</label>
+                <input id="create-chat-title" placeholder="Название чата">
+            </div>
+
+            <div class="modal-content__form-group" id="group-description-field" style="display: none;">
+                <label>Описание чата</label>
+                <input id="create-chat-description" placeholder="Описание чата">
+            </div>
+
+            <div class="modal-content__form-group">
+                <label>Поиск пользователей</label>
+                <input id="create-chat-search" placeholder="Введите имя пользователя...">
+            </div>
+
+            <div class="modal-content__users-list" id="create-chat-users" style="display: none;"></div>
+
+            <div class="modal-content__actions">
+                <button class="btn--primary" id="btn-do-create-chat">Создать</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка поиска пользователей -->
+    <div class="modal-overlay" id="modal-search-users" style="display: none;">
+        <div class="modal-content" id="modal-search-users-content">
+            <button class="modal-content__close" id="btn-close-search-users">&times;</button>
+            <h2 class="modal-content__title">Поиск пользователей</h2>
+
+            <div class="modal-content__form-group">
+                <input id="search-users-input" placeholder="Введите имя пользователя...">
+            </div>
+
+            <div class="modal-content__users-list" id="search-users-list" style="display: none;"></div>
+            <div class="modal-content__no-results" id="search-users-empty" style="display: none;">
+                Пользователи не найдены
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка профиля участника -->
+    <div class="modal-overlay" id="modal-member-profile" style="display: none;">
+        <div class="modal-content profile-modal" id="modal-member-profile-content">
+            <button class="modal-content__close" id="btn-close-member-profile">&times;</button>
+            <div class="profile-modal__header">
+                <div class="profile-modal__avatar" id="member-avatar"></div>
+                <div class="profile-modal__title">
+                    <h2 id="member-username"></h2>
+                    <span class="profile-modal__email" id="member-email"></span>
+                </div>
+            </div>
+            <div class="profile-modal__details">
+                <div class="profile-modal__row">
+                    <span class="profile-modal__label">Email подтверждён</span>
+                    <span class="profile-modal__value" id="member-email-confirmed"></span>
+                </div>
+                <div class="profile-modal__row">
+                    <span class="profile-modal__label">Дата регистрации</span>
+                    <span class="profile-modal__value" id="member-created-at"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

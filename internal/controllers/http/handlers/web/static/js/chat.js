@@ -1,0 +1,636 @@
+const MESSAGES_PAGE_SIZE = 50;
+const SEARCH_DEBOUNCE_MS = 300;
+
+let currentUser = null;
+let selectedChatId = null;
+let messages = [];
+let ws = null;
+let isLoadingMore = false;
+let hasMoreMessages = true;
+
+// ═══════════════════════════════════════
+// Инициализация
+// ═══════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+    currentUser = await loadCurrentUser();
+    if (!currentUser) {
+        window.location.href = '/web/login';
+        return;
+    }
+
+    await loadChats();
+    connectWebSocket();
+
+    setupSendMessage();
+    setupCloseChat();
+    setupCreateChatModal();
+    setupSearchUsersModal();
+    setupMemberProfileModal();
+});
+
+async function loadCurrentUser() {
+    try {
+        const resp = await fetchWithAuth('/api/users/me');
+        if (!resp.ok) return null;
+        return await resp.json();
+    } catch {
+        return null;
+    }
+}
+
+// ═══════════════════════════════════════
+// WebSocket
+// ═══════════════════════════════════════
+function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(protocol + '//' + window.location.host + '/api/ws');
+
+    ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+
+        if (selectedChatId === message.chatId) {
+            messages.push(message);
+            appendMessageBubble(message);
+            scrollToBottom();
+        }
+
+        // Обновляем список чатов (непрочитанное):
+        loadChats();
+    };
+
+    ws.onclose = () => {
+        // Переподключение через 3 секунды:
+        setTimeout(connectWebSocket, 3000);
+    };
+}
+
+// ═══════════════════════════════════════
+// Список чатов
+// ═══════════════════════════════════════
+async function loadChats() {
+    try {
+        const resp = await fetchWithAuth('/api/chats');
+        if (!resp.ok) return;
+
+        const chats = await resp.json();
+        renderChatList(chats);
+    } catch {
+        // Молча игнорируем
+    }
+}
+
+function renderChatList(chats) {
+    const list = document.getElementById('chat-list');
+    list.innerHTML = '';
+
+    for (const chat of chats) {
+        const item = document.createElement('div');
+        item.className = 'chat-item' + (selectedChatId === chat.id ? ' chat-item--active' : '');
+
+        const title = getChatTitle(chat);
+
+        const avatar = document.createElement('div');
+        avatar.className = 'chat-item__avatar';
+        avatar.textContent = title.charAt(0).toUpperCase();
+        avatar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openChatMemberProfile(chat);
+        });
+
+        const info = document.createElement('div');
+        info.className = 'chat-item__info';
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'chat-item__title' + (!chat.isRead ? ' chat-item__title--bold' : '');
+        titleEl.textContent = title;
+        info.appendChild(titleEl);
+
+        item.appendChild(avatar);
+        item.appendChild(info);
+
+        if (!chat.isRead) {
+            const dot = document.createElement('div');
+            dot.className = 'chat-item__unread-dot';
+            item.appendChild(dot);
+        }
+
+        item.addEventListener('click', () => selectChat(chat));
+        list.appendChild(item);
+    }
+}
+
+function getChatTitle(chat) {
+    if (chat.title) return chat.title;
+
+    if (chat.type === 'private' && chat.members) {
+        const other = chat.members.find(m => m.id !== currentUser.id);
+        if (other) return other.username;
+    }
+
+    return 'Чат #' + chat.id;
+}
+
+function getOtherMember(chat) {
+    if (chat.type !== 'private' || !chat.members) return null;
+    return chat.members.find(m => m.id !== currentUser.id) || null;
+}
+
+// ═══════════════════════════════════════
+// Выбор чата и загрузка сообщений
+// ═══════════════════════════════════════
+async function selectChat(chat) {
+    selectedChatId = chat.id;
+    messages = [];
+    hasMoreMessages = true;
+
+    document.getElementById('conversation').style.display = '';
+    document.getElementById('conversation-placeholder').style.display = 'none';
+
+    const titleEl = document.getElementById('conversation-title');
+    titleEl.textContent = getChatTitle(chat);
+    titleEl.onclick = () => openChatMemberProfile(chat);
+
+    await loadMessages(chat.id, 0);
+    scrollToBottom();
+
+    // Обновляем active в списке:
+    loadChats();
+
+    // Подписка на подгрузку старых сообщений при скролле вверх:
+    const msgList = document.getElementById('messages-list');
+    msgList.onscroll = async () => {
+        if (msgList.scrollTop <= 10 && !isLoadingMore && hasMoreMessages) {
+            const prevHeight = msgList.scrollHeight;
+            await loadMoreMessages();
+            msgList.scrollTop = msgList.scrollHeight - prevHeight;
+        }
+    };
+}
+
+async function loadMessages(chatId, offset) {
+    try {
+        const resp = await fetchWithAuth(
+            '/api/chats/' + chatId + '/messages?limit=' + MESSAGES_PAGE_SIZE + '&offset=' + offset
+        );
+        if (!resp.ok) return;
+
+        const fetched = await resp.json();
+        if (!fetched || fetched.length === 0) {
+            hasMoreMessages = false;
+            return;
+        }
+
+        hasMoreMessages = fetched.length >= MESSAGES_PAGE_SIZE;
+
+        // API возвращает от новых к старым, разворачиваем:
+        const reversed = fetched.reverse();
+
+        if (offset === 0) {
+            messages = reversed;
+            renderMessages();
+        } else {
+            messages = [...reversed, ...messages];
+            prependMessages(reversed);
+        }
+    } catch {
+        // Молча игнорируем
+    }
+}
+
+async function loadMoreMessages() {
+    if (isLoadingMore || !hasMoreMessages || !selectedChatId) return;
+    isLoadingMore = true;
+
+    await loadMessages(selectedChatId, messages.length);
+
+    isLoadingMore = false;
+}
+
+// ═══════════════════════════════════════
+// Рендеринг сообщений
+// ═══════════════════════════════════════
+function renderMessages() {
+    const container = document.getElementById('messages-list');
+    container.innerHTML = '';
+
+    for (let i = 0; i < messages.length; i++) {
+        if (isFirstUnread(messages[i], i)) {
+            const divider = document.createElement('div');
+            divider.className = 'conversation__unread-divider';
+            divider.innerHTML = '<span>Новые сообщения</span>';
+            container.appendChild(divider);
+        }
+
+        container.appendChild(createMessageBubble(messages[i]));
+    }
+}
+
+function prependMessages(olderMessages) {
+    const container = document.getElementById('messages-list');
+    const fragment = document.createDocumentFragment();
+
+    for (const msg of olderMessages) {
+        fragment.appendChild(createMessageBubble(msg));
+    }
+
+    container.insertBefore(fragment, container.firstChild);
+}
+
+function appendMessageBubble(message) {
+    const container = document.getElementById('messages-list');
+    container.appendChild(createMessageBubble(message));
+}
+
+function createMessageBubble(message) {
+    const isOwn = message.sender.id === currentUser.id;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble' + (isOwn ? ' message-bubble--own' : '');
+
+    const header = document.createElement('div');
+    header.className = 'message-bubble__header';
+
+    const sender = document.createElement('span');
+    sender.className = 'message-bubble__sender';
+    sender.textContent = isOwn ? 'Вы' : message.sender.username;
+
+    const time = document.createElement('span');
+    time.className = 'message-bubble__time';
+    time.textContent = formatTime(message.createdAt);
+
+    header.appendChild(sender);
+    header.appendChild(time);
+
+    const text = document.createElement('div');
+    text.className = 'message-bubble__text';
+    text.textContent = message.text;
+
+    bubble.appendChild(header);
+    bubble.appendChild(text);
+
+    return bubble;
+}
+
+function isFirstUnread(message, index) {
+    if (message.isRead || message.sender.id === currentUser.id) return false;
+    if (index === 0) return true;
+
+    const prev = messages[index - 1];
+    return prev.isRead || prev.sender.id === currentUser.id;
+}
+
+function scrollToBottom() {
+    const container = document.getElementById('messages-list');
+    container.scrollTop = container.scrollHeight;
+}
+
+function formatTime(dateStr) {
+    return new Date(dateStr).toLocaleString('ru-RU');
+}
+
+function formatDate(dateStr) {
+    return new Date(dateStr).toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    });
+}
+
+// ═══════════════════════════════════════
+// Отправка сообщений
+// ═══════════════════════════════════════
+function setupSendMessage() {
+    const input = document.getElementById('message-input');
+    const btn = document.getElementById('btn-send');
+
+    input.addEventListener('input', () => {
+        btn.disabled = !input.value.trim();
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    btn.addEventListener('click', sendMessage);
+}
+
+function sendMessage() {
+    const input = document.getElementById('message-input');
+    const text = input.value.trim();
+    if (!text || !selectedChatId || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+    ws.send(JSON.stringify({ chatId: selectedChatId, text }));
+
+    // Оптимистичное добавление:
+    const optimisticMessage = {
+        id: Date.now(),
+        chatId: selectedChatId,
+        text,
+        createdAt: new Date().toISOString(),
+        sender: { id: currentUser.id, username: currentUser.username },
+        isRead: true,
+    };
+
+    messages.push(optimisticMessage);
+    appendMessageBubble(optimisticMessage);
+    scrollToBottom();
+
+    input.value = '';
+    document.getElementById('btn-send').disabled = true;
+}
+
+// ═══════════════════════════════════════
+// Закрытие чата
+// ═══════════════════════════════════════
+function setupCloseChat() {
+    document.getElementById('btn-close-chat').addEventListener('click', () => {
+        selectedChatId = null;
+        document.getElementById('conversation').style.display = 'none';
+        document.getElementById('conversation-placeholder').style.display = '';
+        loadChats();
+    });
+}
+
+// ═══════════════════════════════════════
+// Модалка профиля участника
+// ═══════════════════════════════════════
+function setupMemberProfileModal() {
+    const overlay = document.getElementById('modal-member-profile');
+
+    document.getElementById('btn-close-member-profile').addEventListener('click', () => {
+        overlay.style.display = 'none';
+    });
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.style.display = 'none';
+    });
+}
+
+function openChatMemberProfile(chat) {
+    if (chat.type === 'private') {
+        const member = getOtherMember(chat);
+        if (member) showMemberProfile(member);
+    }
+    // Для групповых чатов можно расширить позже
+}
+
+function showMemberProfile(user) {
+    document.getElementById('member-avatar').textContent = user.username.charAt(0).toUpperCase();
+    document.getElementById('member-username').textContent = user.username;
+    document.getElementById('member-email').textContent = user.email;
+
+    const confirmedEl = document.getElementById('member-email-confirmed');
+    confirmedEl.textContent = user.emailConfirmed ? 'Да' : 'Нет';
+    confirmedEl.className = 'profile-modal__value ' +
+        (user.emailConfirmed ? 'profile-modal__value--success' : 'profile-modal__value--warning');
+
+    document.getElementById('member-created-at').textContent = formatDate(user.createdAt);
+    document.getElementById('modal-member-profile').style.display = '';
+}
+
+// ═══════════════════════════════════════
+// Модалка создания чата
+// ═══════════════════════════════════════
+function setupCreateChatModal() {
+    const overlay = document.getElementById('modal-create-chat');
+    const typeSelect = document.getElementById('create-chat-type');
+    const searchInput = document.getElementById('create-chat-search');
+    const selectedUserIds = new Set();
+
+    document.getElementById('btn-create-chat').addEventListener('click', () => {
+        overlay.style.display = '';
+        resetCreateChatModal();
+    });
+
+    document.getElementById('btn-close-create-chat').addEventListener('click', () => {
+        overlay.style.display = 'none';
+    });
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.style.display = 'none';
+    });
+
+    typeSelect.addEventListener('change', () => {
+        const isGroup = typeSelect.value === 'group';
+        document.getElementById('group-title-field').style.display = isGroup ? '' : 'none';
+        document.getElementById('group-description-field').style.display = isGroup ? '' : 'none';
+    });
+
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => searchUsersForCreate(searchInput.value, selectedUserIds), SEARCH_DEBOUNCE_MS);
+    });
+
+    document.getElementById('btn-do-create-chat').addEventListener('click', async () => {
+        if (selectedUserIds.size === 0) {
+            showInfo('Укажите хотя бы одного участника');
+            return;
+        }
+
+        const body = {
+            type: typeSelect.value,
+            members: Array.from(selectedUserIds).map(id => ({ id })),
+        };
+
+        if (typeSelect.value === 'group') {
+            const title = document.getElementById('create-chat-title').value.trim();
+            const description = document.getElementById('create-chat-description').value.trim();
+            if (title) body.title = title;
+            if (description) body.description = description;
+        }
+
+        try {
+            const resp = await fetchWithAuth('/api/chats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+
+            if (!resp.ok) {
+                const text = await resp.text();
+                showError(mapError(text));
+                return;
+            }
+
+            overlay.style.display = 'none';
+            await loadChats();
+        } catch (err) {
+            showError('Ошибка сети: ' + err.message);
+        }
+    });
+
+    function resetCreateChatModal() {
+        typeSelect.value = 'private';
+        document.getElementById('group-title-field').style.display = 'none';
+        document.getElementById('group-description-field').style.display = 'none';
+        document.getElementById('create-chat-title').value = '';
+        document.getElementById('create-chat-description').value = '';
+        searchInput.value = '';
+        document.getElementById('create-chat-users').style.display = 'none';
+        document.getElementById('create-chat-users').innerHTML = '';
+        selectedUserIds.clear();
+    }
+}
+
+async function searchUsersForCreate(query, selectedUserIds) {
+    const container = document.getElementById('create-chat-users');
+
+    if (!query.trim()) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+    }
+
+    try {
+        const resp = await fetchWithAuth('/api/users?username=' + encodeURIComponent(query));
+        if (!resp.ok) return;
+
+        const users = await resp.json();
+        container.innerHTML = '';
+
+        if (!users || users.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = '';
+
+        for (const user of users) {
+            if (user.id === currentUser.id) continue;
+
+            const label = document.createElement('label');
+            label.className = 'user-item user-item--selectable';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'user-item__checkbox';
+            checkbox.checked = selectedUserIds.has(user.id);
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    selectedUserIds.add(user.id);
+                } else {
+                    selectedUserIds.delete(user.id);
+                }
+            });
+
+            const avatar = document.createElement('div');
+            avatar.className = 'user-item__avatar';
+            avatar.textContent = user.username.charAt(0).toUpperCase();
+
+            const info = document.createElement('div');
+            info.className = 'user-item__info';
+
+            const name = document.createElement('div');
+            name.className = 'user-item__name';
+            name.textContent = user.username;
+
+            const email = document.createElement('div');
+            email.className = 'user-item__email';
+            email.textContent = user.email;
+
+            info.appendChild(name);
+            info.appendChild(email);
+            label.appendChild(checkbox);
+            label.appendChild(avatar);
+            label.appendChild(info);
+            container.appendChild(label);
+        }
+    } catch {
+        // Молча игнорируем
+    }
+}
+
+// ═══════════════════════════════════════
+// Модалка поиска пользователей
+// ═══════════════════════════════════════
+function setupSearchUsersModal() {
+    const overlay = document.getElementById('modal-search-users');
+    const input = document.getElementById('search-users-input');
+
+    document.getElementById('btn-search-users').addEventListener('click', () => {
+        overlay.style.display = '';
+        input.value = '';
+        document.getElementById('search-users-list').style.display = 'none';
+        document.getElementById('search-users-list').innerHTML = '';
+        document.getElementById('search-users-empty').style.display = 'none';
+    });
+
+    document.getElementById('btn-close-search-users').addEventListener('click', () => {
+        overlay.style.display = 'none';
+    });
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.style.display = 'none';
+    });
+
+    let searchTimeout;
+    input.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => searchUsersGlobal(input.value), SEARCH_DEBOUNCE_MS);
+    });
+}
+
+async function searchUsersGlobal(query) {
+    const container = document.getElementById('search-users-list');
+    const emptyEl = document.getElementById('search-users-empty');
+
+    if (!query.trim()) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        emptyEl.style.display = 'none';
+        return;
+    }
+
+    try {
+        const resp = await fetchWithAuth('/api/users?username=' + encodeURIComponent(query));
+        if (!resp.ok) return;
+
+        const users = await resp.json();
+        container.innerHTML = '';
+
+        if (!users || users.length === 0) {
+            container.style.display = 'none';
+            emptyEl.style.display = '';
+            return;
+        }
+
+        emptyEl.style.display = 'none';
+        container.style.display = '';
+
+        for (const user of users) {
+            const item = document.createElement('div');
+            item.className = 'user-item user-item--clickable';
+            item.addEventListener('click', () => {
+                document.getElementById('modal-search-users').style.display = 'none';
+                showMemberProfile(user);
+            });
+
+            const avatar = document.createElement('div');
+            avatar.className = 'user-item__avatar';
+            avatar.textContent = user.username.charAt(0).toUpperCase();
+
+            const info = document.createElement('div');
+            info.className = 'user-item__info';
+
+            const name = document.createElement('div');
+            name.className = 'user-item__name';
+            name.textContent = user.username;
+
+            const email = document.createElement('div');
+            email.className = 'user-item__email';
+            email.textContent = user.email;
+
+            info.appendChild(name);
+            info.appendChild(email);
+            item.appendChild(avatar);
+            item.appendChild(info);
+            container.appendChild(item);
+        }
+    } catch {
+        // Молча игнорируем
+    }
+}
