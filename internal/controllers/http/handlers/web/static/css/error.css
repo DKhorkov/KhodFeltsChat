@@ -59,3 +59,17 @@
 .error-card__btn:hover {
     background: var(--accent-hover);
 }
+
+/* ═══════════════════════════════════════
+   Адаптивность
+   ═══════════════════════════════════════ */
+@media (max-width: 600px) {
+    .error-card {
+        width: calc(100vw - var(--space-xl) * 2);
+        padding: var(--space-xl);
+    }
+
+    .error-card__code {
+        font-size: 36px;
+    }
+}

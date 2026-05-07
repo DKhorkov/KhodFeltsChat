@@ -653,3 +653,61 @@
     color: var(--text-muted);
     margin-left: var(--space-xs);
 }
+
+/* ═══════════════════════════════════════
+   Адаптивность
+   ═══════════════════════════════════════ */
+@media (max-width: 600px) {
+    /* Сайдбар на мобильном — на всю ширину */
+    .chat-layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        min-width: 0;
+        height: auto;
+        max-height: none;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+
+    /* Когда чат выбран — сайдбар скрывается, переписка на весь экран */
+    .chat-layout--chat-open .sidebar {
+        display: none;
+    }
+
+    .chat-layout--chat-open .conversation {
+        height: calc(100vh - 49px);
+    }
+
+    .chat-layout--chat-open .conversation__placeholder {
+        display: none !important;
+    }
+
+    /* Список чатов — ограничиваем высоту, чтобы placeholder был виден */
+    .sidebar__list {
+        max-height: calc(100vh - 49px - 60px);
+    }
+
+    /* Плейсхолдер — уменьшаем */
+    .conversation__placeholder {
+        min-height: 120px;
+        flex: 0;
+        padding: var(--space-xl);
+    }
+
+    /* Сообщения — компактнее */
+    .message-bubble {
+        max-width: 85%;
+    }
+
+    .conversation__composer {
+        padding: var(--space-md);
+    }
+
+    .conversation__composer button {
+        padding: var(--space-md) var(--space-lg);
+        font-size: var(--font-sm);
+    }
+}

@@ -116,3 +116,13 @@
 .login-form__link--danger {
     color: var(--danger);
 }
+
+/* ═══════════════════════════════════════
+   Адаптивность
+   ═══════════════════════════════════════ */
+@media (max-width: 600px) {
+    .login-card {
+        width: calc(100vw - var(--space-xl) * 2);
+        padding: var(--space-xl);
+    }
+}

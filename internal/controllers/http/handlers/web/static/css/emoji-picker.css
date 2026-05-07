@@ -90,3 +90,17 @@
 .conversation__emoji-toggle--active {
     opacity: 1;
 }
+
+/* ═══════════════════════════════════════
+   Адаптивность
+   ═══════════════════════════════════════ */
+@media (max-width: 600px) {
+    .emoji-picker {
+        width: calc(100vw - var(--space-xl) * 2);
+        right: calc(-1 * var(--space-sm));
+    }
+
+    .emoji-picker__grid {
+        grid-template-columns: repeat(7, 1fr);
+    }
+}

@@ -69,3 +69,13 @@
 .alert-modal__btn--info:hover {
     background: var(--accent-hover);
 }
+
+/* ═══════════════════════════════════════
+   Адаптивность
+   ═══════════════════════════════════════ */
+@media (max-width: 600px) {
+    .alert-modal {
+        width: calc(100vw - var(--space-xl) * 2);
+        padding: var(--space-xl);
+    }
+}

@@ -81,10 +81,7 @@ function setupEscapeHandler() {
 
         // Если модалок нет — закрываем панель чата:
         if (selectedChatId) {
-            selectedChatId = null;
-            selectedChat = null;
-            document.getElementById('conversation').style.display = 'none';
-            document.getElementById('conversation-placeholder').style.display = '';
+            closeChat();
             await loadChats();
         }
     });
@@ -198,6 +195,7 @@ async function selectChat(chat) {
 
     document.getElementById('conversation').style.display = '';
     document.getElementById('conversation-placeholder').style.display = 'none';
+    document.querySelector('.chat-layout').classList.add('chat-layout--chat-open');
 
     const titleEl = document.getElementById('conversation-title');
     titleEl.textContent = getChatTitle(chat);
@@ -434,12 +432,17 @@ function setupEmojiPicker() {
 // ═══════════════════════════════════════
 function setupCloseChat() {
     document.getElementById('btn-close-chat').addEventListener('click', async () => {
-        selectedChatId = null;
-        selectedChat = null;
-        document.getElementById('conversation').style.display = 'none';
-        document.getElementById('conversation-placeholder').style.display = '';
+        closeChat();
         await loadChats();
     });
+}
+
+function closeChat() {
+    selectedChatId = null;
+    selectedChat = null;
+    document.getElementById('conversation').style.display = 'none';
+    document.getElementById('conversation-placeholder').style.display = '';
+    document.querySelector('.chat-layout').classList.remove('chat-layout--chat-open');
 }
 
 // ═══════════════════════════════════════

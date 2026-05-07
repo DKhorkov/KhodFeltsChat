@@ -324,3 +324,22 @@
 .btn--danger:hover {
     opacity: 0.9;
 }
+
+/* ═══════════════════════════════════════
+   Адаптивность
+   ═══════════════════════════════════════ */
+@media (max-width: 600px) {
+    .navbar {
+        padding: var(--space-sm) var(--space-lg);
+    }
+
+    .modal-content {
+        width: calc(100vw - var(--space-xl) * 2);
+        padding: var(--space-xl);
+        max-height: 90vh;
+    }
+
+    .profile-modal {
+        width: calc(100vw - var(--space-xl) * 2);
+    }
+}
