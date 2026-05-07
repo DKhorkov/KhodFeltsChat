@@ -666,26 +666,17 @@
     .sidebar {
         width: 100%;
         min-width: 0;
-        height: auto;
-        max-height: none;
-        border-right: none;
-        border-bottom: 1px solid var(--border);
-    }
-
-    /* Плейсхолдер и правая панель скрыты, пока чат не выбран */
-    .conversation__placeholder {
-        display: none !important;
-    }
-
-    .sidebar {
-        width: 100%;
-        min-width: 0;
         flex: 1;
         border-right: none;
     }
 
     .sidebar__list {
         max-height: calc(100vh - 49px - 60px);
+    }
+
+    /* Плейсхолдер скрыт на мобильном */
+    .conversation__placeholder {
+        display: none !important;
     }
 
     /* Когда чат выбран — сайдбар скрывается, переписка на весь экран */
@@ -695,6 +686,8 @@
 
     .chat-layout--chat-open .conversation {
         height: calc(100vh - 49px);
+        max-height: calc(100vh - 49px);
+        overflow: hidden;
     }
 
     /* Сообщения — компактнее */
