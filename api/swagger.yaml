@@ -806,18 +806,6 @@ paths:
             summary: LoginPage
             tags:
                 - web
-    /web/profile:
-        get:
-            description: Serves the user profile page.
-            operationId: ProfilePage
-            responses:
-                "200":
-                    $ref: '#/responses/OK'
-                "500":
-                    $ref: '#/responses/InternalServerError'
-            summary: ProfilePage
-            tags:
-                - web
     /web/verify-email/{token}:
         get:
             description: Serves the email verification page.
