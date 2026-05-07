@@ -192,6 +192,7 @@ async function selectChat(chat) {
     selectedChat = chat;
     messages = [];
     hasMoreMessages = true;
+    document.getElementById('messages-list').innerHTML = '';
 
     document.getElementById('conversation').style.display = '';
     document.getElementById('conversation-placeholder').style.display = 'none';
