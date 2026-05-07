@@ -95,6 +95,15 @@
     font-size: var(--font-lg);
     margin-right: var(--space-md);
     flex-shrink: 0;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.chat-item__avatar:hover {
+    transform: scale(1.12);
+    border-color: var(--accent-hover);
+    box-shadow: 0 0 0 2px var(--accent);
 }
 
 .chat-item__info {
@@ -499,6 +508,14 @@
     font-size: var(--font-md);
     margin-right: var(--space-md);
     flex-shrink: 0;
+    border: 2px solid transparent;
+    transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.user-item--clickable .user-item__avatar:hover {
+    transform: scale(1.12);
+    border-color: var(--accent-hover);
+    box-shadow: 0 0 0 2px var(--accent);
 }
 
 .user-item__info {
