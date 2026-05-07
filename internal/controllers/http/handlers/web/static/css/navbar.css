@@ -309,6 +309,10 @@
     background: var(--accent-hover);
 }
 
+.profile-modal__logout-actions {
+    margin-top: var(--space-lg);
+}
+
 .btn--danger {
     padding: var(--space-md) var(--space-xl);
     background: var(--danger);
