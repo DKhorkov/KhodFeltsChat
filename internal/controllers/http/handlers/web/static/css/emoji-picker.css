@@ -63,7 +63,7 @@
 }
 
 .emoji-picker__item:hover {
-    background: var(--bg-hover);
+    background: none;
     transform: scale(1.15);
 }
 
