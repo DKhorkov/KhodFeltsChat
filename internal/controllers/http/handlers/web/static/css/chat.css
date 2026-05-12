@@ -674,7 +674,7 @@
     padding: var(--space-md) var(--space-lg);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
-    max-width: 320px;
+    width: 320px;
     animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
     pointer-events: auto;
     cursor: pointer;
@@ -769,7 +769,7 @@
         bottom: auto;
         right: var(--space-md);
         left: var(--space-md);
-        flex-direction: column;
+        flex-direction: column-reverse;
     }
 
     .toast {
