@@ -1,6 +1,7 @@
 const MESSAGES_PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 300;
 const CHAT_LIST_POLL_INTERVAL_MS = 5000;
+const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 600;
 
 let currentUser = null;
 let selectedChatId = null;
@@ -101,6 +102,12 @@ function connectWebSocket() {
             messages.push(message);
             appendMessageBubble(message);
             scrollToBottom();
+        }
+
+        // Показываем toast, если сообщение не от текущего пользователя
+        // и чат не открыт (или это другой чат):
+        if (message.sender.id !== currentUser.id && selectedChatId !== message.chatId) {
+            showToast(message.sender.username, message.text, message.chatId);
         }
 
         // Обновляем список чатов (непрочитанное):
@@ -290,6 +297,15 @@ function prependMessages(olderMessages) {
 
 function appendMessageBubble(message) {
     const container = document.getElementById('messages-list');
+    const index = messages.indexOf(message);
+
+    if (index >= 0 && isFirstUnread(message, index)) {
+        const divider = document.createElement('div');
+        divider.className = 'conversation__unread-divider';
+        divider.innerHTML = '<span>Новые сообщения</span>';
+        container.appendChild(divider);
+    }
+
     container.appendChild(createMessageBubble(message));
 }
 
@@ -360,9 +376,15 @@ function setupSendMessage() {
     });
 
     input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
+        if (e.key === 'Enter') {
+            if (IS_MOBILE) {
+                // На мобильном Enter = перенос строки (поведение по умолчанию)
+                return;
+            }
+            if (!e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
         }
     });
 
@@ -444,6 +466,10 @@ function closeChat() {
     document.getElementById('conversation').style.display = 'none';
     document.getElementById('conversation-placeholder').style.display = '';
     document.querySelector('.chat-layout').classList.remove('chat-layout--chat-open');
+
+    // Закрываем emoji picker:
+    document.getElementById('emoji-picker-container').style.display = 'none';
+    document.getElementById('btn-emoji-toggle').classList.remove('conversation__emoji-toggle--active');
 }
 
 // ═══════════════════════════════════════
@@ -813,4 +839,51 @@ async function searchUsersGlobal(query) {
     } catch (err) {
         console.log(err)
     }
+}
+
+// ═══════════════════════════════════════
+// Toast-уведомления
+// ═══════════════════════════════════════
+function showToast(senderName, text, chatId) {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+
+    const sender = document.createElement('div');
+    sender.className = 'toast__sender';
+    sender.textContent = senderName;
+
+    const msg = document.createElement('div');
+    msg.className = 'toast__text';
+    msg.textContent = text;
+
+    toast.appendChild(sender);
+    toast.appendChild(msg);
+
+    toast.addEventListener('click', async () => {
+        toast.remove();
+        try {
+            const resp = await fetchWithAuth('/api/chats');
+            if (resp.ok) {
+                const chats = await resp.json();
+                const chat = chats.find(c => c.id === chatId);
+                if (chat) await selectChat(chat);
+            }
+        } catch (err) {
+            console.log(err);
+        }
+    });
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        if (toast.parentNode) toast.remove();
+    }, 3000);
 }

@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tabs[0].click();
             document.querySelector('#login-form input[name="login"]').value = email;
             document.querySelector('#login-form input[name="password"]').value = password;
-            showInfo('Регистрация прошла успешно. Теперь войдите');
+            showInfo('Вы успешно зарегистрировались. Мы отправили письмо с подтверждением на ' + email + ' — перейдите по ссылке в письме, чтобы активировать аккаунт.');
         } catch (err) {
             showError('Ошибка сети: ' + err.message);
         }

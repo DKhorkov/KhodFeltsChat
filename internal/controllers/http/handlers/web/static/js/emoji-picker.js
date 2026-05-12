@@ -61,8 +61,7 @@ function createEmojiPicker(container, onSelect) {
         tabs.className = 'emoji-picker__tabs';
 
         for (const category of EMOJI_CATEGORIES) {
-            const tab = document.createElement('button');
-            tab.type = 'button';
+            const tab = document.createElement('span');
             tab.className = 'emoji-picker__tab' +
                 (activeCategory === category.name ? ' emoji-picker__tab--active' : '');
             tab.title = category.label;
@@ -79,12 +78,11 @@ function createEmojiPicker(container, onSelect) {
 
         const current = EMOJI_CATEGORIES.find(c => c.name === activeCategory);
         for (const emoji of current.emojis) {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'emoji-picker__item';
-            btn.textContent = emoji;
-            btn.addEventListener('click', () => onSelect(emoji));
-            grid.appendChild(btn);
+            const item = document.createElement('span');
+            item.className = 'emoji-picker__item';
+            item.textContent = emoji;
+            item.addEventListener('click', () => onSelect(emoji));
+            grid.appendChild(item);
         }
 
         container.appendChild(tabs);
