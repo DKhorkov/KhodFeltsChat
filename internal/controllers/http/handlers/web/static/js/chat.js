@@ -204,7 +204,10 @@ async function selectChat(chat) {
     selectedChat = chat;
     messages = [];
     hasMoreMessages = true;
-    document.getElementById('messages-list').innerHTML = '';
+
+    const msgList = document.getElementById('messages-list');
+    msgList.onscroll = null; // Убираем старый обработчик до очистки контента
+    msgList.innerHTML = '';
 
     document.getElementById('conversation').style.display = '';
     document.getElementById('conversation-placeholder').style.display = 'none';
@@ -221,7 +224,6 @@ async function selectChat(chat) {
     await loadChats();
 
     // Подписка на подгрузку старых сообщений при скролле вверх:
-    const msgList = document.getElementById('messages-list');
     msgList.onscroll = async () => {
         if (msgList.scrollTop <= 10 && !isLoadingMore && hasMoreMessages) {
             const prevHeight = msgList.scrollHeight;
