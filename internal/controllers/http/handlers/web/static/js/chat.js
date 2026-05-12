@@ -297,6 +297,15 @@ function prependMessages(olderMessages) {
 
 function appendMessageBubble(message) {
     const container = document.getElementById('messages-list');
+    const index = messages.indexOf(message);
+
+    if (index >= 0 && isFirstUnread(message, index)) {
+        const divider = document.createElement('div');
+        divider.className = 'conversation__unread-divider';
+        divider.innerHTML = '<span>Новые сообщения</span>';
+        container.appendChild(divider);
+    }
+
     container.appendChild(createMessageBubble(message));
 }
 
@@ -457,6 +466,10 @@ function closeChat() {
     document.getElementById('conversation').style.display = 'none';
     document.getElementById('conversation-placeholder').style.display = '';
     document.querySelector('.chat-layout').classList.remove('chat-layout--chat-open');
+
+    // Закрываем emoji picker:
+    document.getElementById('emoji-picker-container').style.display = 'none';
+    document.getElementById('btn-emoji-toggle').classList.remove('conversation__emoji-toggle--active');
 }
 
 // ═══════════════════════════════════════

@@ -48,11 +48,10 @@
     padding: var(--space-sm);
     max-height: min(200px, 40vh);
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .emoji-picker__item {
-    -webkit-appearance: none;
-    appearance: none;
     background: transparent;
     border: none;
     border-radius: var(--radius-sm);
@@ -61,17 +60,11 @@
     cursor: pointer;
     line-height: 1;
     text-align: center;
-    outline: none;
+    overflow: hidden;
 }
 
 .emoji-picker__item:hover {
-    background: transparent;
     transform: scale(1.15);
-}
-
-.emoji-picker__item:focus,
-.emoji-picker__item:active {
-    background: transparent;
 }
 
 /* Кнопка-тоггл в composer */
