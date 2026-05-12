@@ -95,7 +95,7 @@ function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     ws = new WebSocket(protocol + '//' + window.location.host + '/api/ws');
 
-    ws.onmessage = async (event) => {
+    ws.onmessage = (event) => {
         const message = JSON.parse(event.data);
 
         if (selectedChatId === message.chatId) {
@@ -111,12 +111,17 @@ function connectWebSocket() {
         }
 
         // Обновляем список чатов (непрочитанное):
-        await loadChats();
+        loadChats().catch(err => console.log(err));
     };
 
     ws.onclose = () => {
         // Переподключение через 3 секунды:
         setTimeout(connectWebSocket, 3000);
+    };
+
+    ws.onerror = () => {
+        // На iOS WebSocket может оборваться без onclose:
+        ws.close();
     };
 }
 
@@ -348,8 +353,10 @@ function isFirstUnread(message, index) {
 }
 
 function scrollToBottom() {
-    const container = document.getElementById('messages-list');
-    container.scrollTop = container.scrollHeight;
+    requestAnimationFrame(() => {
+        const container = document.getElementById('messages-list');
+        container.scrollTop = container.scrollHeight;
+    });
 }
 
 function formatTime(dateStr) {
@@ -398,6 +405,9 @@ function sendMessage() {
 
     ws.send(JSON.stringify({ chatId: selectedChatId, text }));
 
+    // Помечаем все сообщения как прочитанные и убираем разделитель:
+    markAllAsRead();
+
     // Оптимистичное добавление:
     const optimisticMessage = {
         id: Date.now(),
@@ -414,6 +424,15 @@ function sendMessage() {
 
     input.value = '';
     document.getElementById('btn-send').disabled = true;
+}
+
+function markAllAsRead() {
+    for (const msg of messages) {
+        msg.isRead = true;
+    }
+
+    const divider = document.querySelector('.conversation__unread-divider');
+    if (divider) divider.remove();
 }
 
 // ═══════════════════════════════════════
