@@ -856,6 +856,9 @@ function showToast(senderName, text, chatId) {
     const toast = document.createElement('div');
     toast.className = 'toast';
 
+    const body = document.createElement('div');
+    body.className = 'toast__body';
+
     const sender = document.createElement('div');
     sender.className = 'toast__sender';
     sender.textContent = senderName;
@@ -864,8 +867,19 @@ function showToast(senderName, text, chatId) {
     msg.className = 'toast__text';
     msg.textContent = text;
 
-    toast.appendChild(sender);
-    toast.appendChild(msg);
+    body.appendChild(sender);
+    body.appendChild(msg);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast__close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toast.remove();
+    });
+
+    toast.appendChild(body);
+    toast.appendChild(closeBtn);
 
     toast.addEventListener('click', async () => {
         toast.remove();
