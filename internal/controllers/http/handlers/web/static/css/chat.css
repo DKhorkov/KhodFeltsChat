@@ -678,6 +678,14 @@
     animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
     pointer-events: auto;
     cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+}
+
+.toast__body {
+    flex: 1;
+    min-width: 0;
 }
 
 .toast__sender {
@@ -692,6 +700,23 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.toast__close {
+    background: none;
+    border: none;
+    color: var(--text-toast);
+    font-size: var(--font-lg);
+    cursor: pointer;
+    padding: var(--space-xs);
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-base);
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.toast__close:hover {
+    background: rgba(255, 255, 255, 0.15);
 }
 
 @keyframes toastIn {
