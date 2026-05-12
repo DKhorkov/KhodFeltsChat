@@ -11,7 +11,6 @@ let ws = null;
 let isLoadingMore = false;
 let hasMoreMessages = true;
 let returnToGroupChat = null;
-const unreadMarkers = new Map(); // chatId → id первого непрочитанного сообщения из WS
 
 // ═══════════════════════════════════════
 // Инициализация
