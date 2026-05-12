@@ -61,8 +61,7 @@ function createEmojiPicker(container, onSelect) {
         tabs.className = 'emoji-picker__tabs';
 
         for (const category of EMOJI_CATEGORIES) {
-            const tab = document.createElement('button');
-            tab.type = 'button';
+            const tab = document.createElement('span');
             tab.className = 'emoji-picker__tab' +
                 (activeCategory === category.name ? ' emoji-picker__tab--active' : '');
             tab.title = category.label;
