@@ -51,7 +51,9 @@
 }
 
 .emoji-picker__item {
-    background: none;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
     border: none;
     border-radius: var(--radius-sm);
     padding: var(--space-xs);
@@ -59,12 +61,17 @@
     cursor: pointer;
     line-height: 1;
     text-align: center;
-    transition: background var(--transition-fast);
+    outline: none;
 }
 
 .emoji-picker__item:hover {
-    background: none;
+    background: transparent;
     transform: scale(1.15);
+}
+
+.emoji-picker__item:focus,
+.emoji-picker__item:active {
+    background: transparent;
 }
 
 /* Кнопка-тоггл в composer */
