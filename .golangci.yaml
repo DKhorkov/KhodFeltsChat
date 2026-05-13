@@ -388,6 +388,11 @@ linters:
         linters:
           - exhaustruct
 
+      - path: internal/services/chats/setting.go
+        line: "84"
+        linters:
+          - exhaustruct
+
 formatters:
   enable:
     - gofmt # Check if the code is formatted according to 'gofmt' command.

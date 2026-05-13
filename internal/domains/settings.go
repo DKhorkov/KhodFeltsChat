@@ -11,7 +11,7 @@ const (
 
 type Settings struct {
 	ID        uint64    `json:"id"`
-	UserID    uint64    `json:"userID"`
+	UserID    uint64    `json:"userId"`
 	Theme     ThemeType `json:"theme"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
