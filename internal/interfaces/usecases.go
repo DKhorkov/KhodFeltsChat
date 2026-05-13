@@ -6,7 +6,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/domains"
 )
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/users_usecases.go -package=mockusecases -exclude_interfaces=AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/users_usecases.go -package=mockusecases -exclude_interfaces=AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases
 type UsersUseCases interface {
 	GetUsers(
 		ctx context.Context,
@@ -17,7 +17,7 @@ type UsersUseCases interface {
 	UpdateUser(ctx context.Context, userData domains.UpdateUserDTO) (*domains.User, error)
 }
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/auth_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/auth_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases
 type AuthUseCases interface {
 	RegisterUser(ctx context.Context, dto domains.RegisterDTO) (*domains.User, error)
 	LoginUser(ctx context.Context, dto domains.LoginDTO) (*domains.TokensDTO, error)
@@ -30,7 +30,7 @@ type AuthUseCases interface {
 	SendVerifyEmailMessage(ctx context.Context, email string) error
 }
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/chats_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,MessagesUseCases,NotificationsUseCases
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/chats_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases
 type ChatsUseCases interface {
 	GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error)
 	GetUserChats(
@@ -41,13 +41,19 @@ type ChatsUseCases interface {
 	CreateChat(ctx context.Context, chat domains.Chat) (*domains.Chat, error)
 }
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/messages_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,NotificationsUseCases
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/messages_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,NotificationsUseCases,SettingsUseCases
 type MessagesUseCases interface {
 	MessagesService
 }
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/notifications_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,ChatsUseCases,MessagesUseCases,AuthUseCases
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/notifications_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,ChatsUseCases,MessagesUseCases,AuthUseCases,SettingsUseCases
 type NotificationsUseCases interface {
 	SendForgetPasswordMessage(ctx context.Context, userID uint64) error
 	SendVerifyEmailMessage(ctx context.Context, userID uint64) error
+}
+
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/settings_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases
+type SettingsUseCases interface {
+	GetSettingsByUserID(ctx context.Context, userID uint64) (*domains.Settings, error)
+	UpdateSettings(ctx context.Context, settings domains.Settings) (*domains.Settings, error)
 }

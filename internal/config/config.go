@@ -436,6 +436,41 @@ func New() Config {
 							},
 						},
 					},
+					Settings: tracing.SpanConfig{
+						Name: "Settings repository",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Settings Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Settings Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
 				},
 				Services: SpanServices{
 					Auth: tracing.SpanConfig{
@@ -602,6 +637,41 @@ func New() Config {
 							},
 							End: tracing.SpanEventConfig{
 								Name: "Received response from Notifications service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+					Settings: tracing.SpanConfig{
+						Name: "Settings service",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Settings Service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Settings Service",
 								Opts: []trace.EventOption{
 									trace.WithAttributes(
 										attribute.String(
@@ -790,6 +860,41 @@ func New() Config {
 							},
 						},
 					},
+					Settings: tracing.SpanConfig{
+						Name: "Settings useCases",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Settings UseCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Settings UseCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
 				},
 				Handlers: SpanHandlers{
 					VerifyEmail: tracing.SpanConfig{
@@ -919,6 +1024,7 @@ type SpanRepositories struct {
 	Emails   tracing.SpanConfig
 	Chats    tracing.SpanConfig
 	Messages tracing.SpanConfig
+	Settings tracing.SpanConfig
 }
 
 type SpanServices struct {
@@ -927,6 +1033,7 @@ type SpanServices struct {
 	Chats         tracing.SpanConfig
 	Messages      tracing.SpanConfig
 	Notifications tracing.SpanConfig
+	Settings      tracing.SpanConfig
 }
 
 type SpanUseCases struct {
@@ -935,6 +1042,7 @@ type SpanUseCases struct {
 	Chats         tracing.SpanConfig
 	Messages      tracing.SpanConfig
 	Notifications tracing.SpanConfig
+	Settings      tracing.SpanConfig
 }
 
 type SpanHandlers struct {

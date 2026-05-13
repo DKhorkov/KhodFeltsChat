@@ -14,17 +14,20 @@ import (
 	chatsrepository "github.com/DKhorkov/kfc/internal/repositories/chats"
 	emailsrepository "github.com/DKhorkov/kfc/internal/repositories/emails"
 	messagesrepository "github.com/DKhorkov/kfc/internal/repositories/messages"
+	settingsrepository "github.com/DKhorkov/kfc/internal/repositories/settings"
 	usersrepository "github.com/DKhorkov/kfc/internal/repositories/users"
 	authservice "github.com/DKhorkov/kfc/internal/services/auth"
 	chatsservice "github.com/DKhorkov/kfc/internal/services/chats"
 	messagesservice "github.com/DKhorkov/kfc/internal/services/messages"
 	notificationsservice "github.com/DKhorkov/kfc/internal/services/notifications"
+	settingsservice "github.com/DKhorkov/kfc/internal/services/settings"
 	usersservice "github.com/DKhorkov/kfc/internal/services/users"
 	"github.com/DKhorkov/kfc/internal/uow"
 	authusecases "github.com/DKhorkov/kfc/internal/usecases/auth"
 	chatsusecases "github.com/DKhorkov/kfc/internal/usecases/chats"
 	messagesusecases "github.com/DKhorkov/kfc/internal/usecases/messages"
 	notificaionsusecases "github.com/DKhorkov/kfc/internal/usecases/notifications"
+	settingsusecases "github.com/DKhorkov/kfc/internal/usecases/settings"
 	usersusecases "github.com/DKhorkov/kfc/internal/usecases/users"
 	forgetpasswordmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/forget_password"
 	messagehandlerbuildertracingdecorator "github.com/DKhorkov/kfc/internal/workers/handlers/builders/tracing_decorator"
@@ -140,6 +143,21 @@ func main() {
 		),
 	)
 
+	settingsService := settingsservice.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.Services.Settings,
+		settingsservice.New(
+			unitOfWork,
+			func(tx postgresql.Transaction) interfaces.SettingsRepository {
+				return settingsrepository.NewTraceDecorator(
+					traceProvider,
+					cfg.Tracing.Spans.Repositories.Settings,
+					settingsrepository.New(tx),
+				)
+			},
+		),
+	)
+
 	authService := authservice.NewTraceDecorator(
 		traceProvider,
 		cfg.Tracing.Spans.Services.Auth,
@@ -157,6 +175,13 @@ func main() {
 					traceProvider,
 					cfg.Tracing.Spans.Repositories.Users,
 					usersrepository.New(tx, logger),
+				)
+			},
+			func(tx postgresql.Transaction) interfaces.SettingsRepository {
+				return settingsrepository.NewTraceDecorator(
+					traceProvider,
+					cfg.Tracing.Spans.Repositories.Settings,
+					settingsrepository.New(tx),
 				)
 			},
 			natsPublisher,
@@ -212,6 +237,12 @@ func main() {
 		traceProvider,
 		cfg.Tracing.Spans.Services.Notifications,
 		notificationsservice.New(emailsRepository),
+	)
+
+	settingsUseCases := settingsusecases.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.UseCases.Settings,
+		settingsusecases.New(settingsService),
 	)
 
 	usersUseCases := usersusecases.NewTraceDecorator(
@@ -345,6 +376,7 @@ func main() {
 		authUseCases,
 		chatsUseCases,
 		messagesUseCases,
+		settingsUseCases,
 		logger,
 		traceProvider,
 		upgrader,

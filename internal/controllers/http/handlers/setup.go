@@ -6,7 +6,7 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api"
-	default_handler "github.com/DKhorkov/kfc/internal/controllers/http/handlers/default"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/default"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/docs"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/not_allowed"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web"
@@ -32,6 +32,7 @@ func SetupHandlers(
 	authUseCases interfaces.AuthUseCases,
 	chatsUseCases interfaces.ChatsUseCases,
 	messagesUseCases interfaces.MessagesUseCases,
+	settingsUseCases interfaces.SettingsUseCases,
 	logger logging.Logger,
 	upgrader interfaces.Upgrader,
 ) {
@@ -63,6 +64,7 @@ func SetupHandlers(
 		authUseCases,
 		chatsUseCases,
 		messagesUseCases,
+		settingsUseCases,
 		logger,
 		upgrader,
 	)

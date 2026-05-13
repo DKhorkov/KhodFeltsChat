@@ -10,4 +10,5 @@
 |-------|---------|
 | `chats/` | `MapChat`, `MapChats` — конвертация Chat (делегирует members в users mapper, messages в messages mapper) |
 | `messages/` | `MapMessage`, `MapMessages` — конвертация Message |
+| `settings/` | `MapSettings` — конвертация Settings |
 | `users/` | `MapUser`, `MapUsers` — конвертация User |
