@@ -41,6 +41,7 @@ func (repo *Repository) CreateSettings(ctx context.Context, settings domains.Set
 	}
 
 	_, err = repo.tx.ExecContext(ctx, stmt, params...)
+
 	return err
 }
 
@@ -60,6 +61,7 @@ func (repo *Repository) GetSettingsByUserID(
 
 	settings := &domains.Settings{}
 	columns := pg.GetEntityColumns(settings)
+
 	if err = repo.tx.QueryRowContext(ctx, stmt, params...).Scan(columns...); err != nil {
 		return nil, err
 	}
@@ -84,5 +86,6 @@ func (repo *Repository) UpdateSettings(
 	}
 
 	_, err = repo.tx.ExecContext(ctx, stmt, params...)
+
 	return err
 }
