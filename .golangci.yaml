@@ -388,7 +388,7 @@ linters:
         linters:
           - exhaustruct
 
-      - path: internal/services/chats/setting.go
+      - path: internal/services/auth/service.go
         line: "84"
         linters:
           - exhaustruct
