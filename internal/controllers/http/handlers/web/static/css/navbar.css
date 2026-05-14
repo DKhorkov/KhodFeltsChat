@@ -330,6 +330,50 @@
 }
 
 /* ═══════════════════════════════════════
+   Переключатель темы
+   ═══════════════════════════════════════ */
+.profile-modal__theme-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: var(--space-sm) 0;
+}
+
+.theme-switch {
+    cursor: pointer;
+}
+
+.theme-switch__track {
+    width: 44px;
+    height: 24px;
+    background: var(--border);
+    border-radius: 12px;
+    position: relative;
+    transition: background var(--transition-base);
+}
+
+.theme-switch__track--on {
+    background: var(--accent);
+}
+
+.theme-switch__thumb {
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: var(--radius-full);
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform var(--transition-base);
+    box-shadow: var(--shadow-sm);
+}
+
+.theme-switch__thumb--on {
+    transform: translateX(20px);
+}
+
+/* ═══════════════════════════════════════
    Адаптивность
    ═══════════════════════════════════════ */
 @media (max-width: 600px) {

@@ -1,4 +1,67 @@
+// ═══════════════════════════════════════
+// Тема: управление через серверные настройки пользователя
+// ═══════════════════════════════════════
+
+const THEME_LIGHT = 0;
+const THEME_DARK = 1;
+
+function applyTheme(themeDark) {
+    if (themeDark) {
+        document.documentElement.setAttribute('data-bs-theme', 'dark');
+    } else {
+        document.documentElement.removeAttribute('data-bs-theme');
+    }
+    localStorage.setItem('theme', themeDark ? 'dark' : 'light');
+    updateThemeSwitchUI();
+}
+
+function isDarkTheme() {
+    return document.documentElement.getAttribute('data-bs-theme') === 'dark';
+}
+
+async function toggleTheme() {
+    const newDark = !isDarkTheme();
+
+    // Применяем сразу для отзывчивости UI
+    applyTheme(newDark);
+
+    // Сохраняем на сервер
+    try {
+        await fetchWithAuth('/api/users/me/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ theme: newDark ? THEME_DARK : THEME_LIGHT }),
+        });
+    } catch (err) {
+        console.error('Не удалось сохранить тему:', err);
+    }
+}
+
+function updateThemeSwitchUI() {
+    const track = document.querySelector('.theme-switch__track');
+    const thumb = document.querySelector('.theme-switch__thumb');
+    if (!track || !thumb) return;
+
+    const dark = isDarkTheme();
+    track.classList.toggle('theme-switch__track--on', dark);
+    thumb.classList.toggle('theme-switch__thumb--on', dark);
+}
+
+function clearTheme() {
+    document.documentElement.removeAttribute('data-bs-theme');
+    localStorage.removeItem('theme');
+    updateThemeSwitchUI();
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    // Обновляем UI переключателя темы (для случая, когда тема применена из localStorage в inline-скрипте)
+    updateThemeSwitchUI();
+
+    const themeSwitchToggle = document.getElementById('theme-switch-toggle');
+    if (themeSwitchToggle) {
+        themeSwitchToggle.addEventListener('click', toggleTheme);
+    }
+
     const authContainer = document.getElementById('navbar-auth');
     if (!authContainer) return;
 
@@ -29,6 +92,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         authContainer.appendChild(profile);
 
         profile.addEventListener('click', () => openMyProfileModal(currentUser));
+
+        // Подтягиваем тему пользователя с сервера
+        try {
+            const settingsResp = await fetchWithAuth('/api/users/me/settings');
+            if (settingsResp.ok) {
+                const settings = await settingsResp.json();
+                applyTheme(settings.theme === THEME_DARK);
+            }
+        } catch (e) {
+            console.log('Не удалось загрузить настройки:', e);
+        }
     } catch (err) {
         console.log(err);
     }
@@ -229,6 +303,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             } catch (err) {
                 console.log(err);
             }
+
+            // Сбрасываем тему на светлую при выходе
+            clearTheme();
 
             // Удаляем куки на клиенте на случай, если сервер не обнулил их корректно
             document.cookie = 'accessToken=; Max-Age=0; path=/';
