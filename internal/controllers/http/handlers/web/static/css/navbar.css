@@ -350,7 +350,8 @@
     background: var(--border);
     border-radius: 12px;
     position: relative;
-    transition: background var(--transition-base);
+    transition: background var(--transition-slow);
+    cursor: pointer;
 }
 
 .theme-switch__track--on {
@@ -360,12 +361,12 @@
 .theme-switch__thumb {
     width: 20px;
     height: 20px;
-    background: #fff;
+    background: var(--text-on-accent);
     border-radius: var(--radius-full);
     position: absolute;
     top: 2px;
     left: 2px;
-    transition: transform var(--transition-base);
+    transition: transform var(--transition-slow);
     box-shadow: var(--shadow-sm);
 }
 
