@@ -42,6 +42,7 @@ func setupRouter(t *testing.T) *mux.Router {
 		mockusecases.NewMockAuthUseCases(ctrl),
 		mockusecases.NewMockChatsUseCases(ctrl),
 		mockusecases.NewMockMessagesUseCases(ctrl),
+		mockusecases.NewMockSettingsUseCases(ctrl),
 		mocks.NewMockLogger(ctrl),
 		mockupgrader.NewMockUpgrader(ctrl),
 	)

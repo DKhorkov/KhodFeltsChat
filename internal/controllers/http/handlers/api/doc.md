@@ -29,6 +29,13 @@ HTTP-обработчики REST API, сгруппированные по пре
 | user_by_id  | GET   | /api/users/{id}  |
 | users       | GET   | /api/users       |
 
+## Settings
+
+| Обработчик      | Метод | Путь                      |
+|-----------------|-------|---------------------------|
+| get_settings    | GET   | /api/users/me/settings    |
+| update_settings | PUT   | /api/users/me/settings    |
+
 ## Chats
 
 | Обработчик  | Метод | Путь        |

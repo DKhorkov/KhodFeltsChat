@@ -37,405 +37,363 @@ func TestHandler(t *testing.T) {
 		return req.WithContext(ctx)
 	}
 
-	t.Run("successful chat creation - private chat", func(t *testing.T) {
-		t.Parallel()
+	now := time.Now()
 
-		// Arrange
-		mockUseCase := mockusecases.NewMockChatsUseCases(ctrl)
-		handler := create.Handler(mockUseCase)
+	tests := []struct {
+		name           string
+		setupRequest   func(t *testing.T) *http.Request
+		setupMock      func(m *mockusecases.MockChatsUseCases)
+		expectedStatus int
+		checkResponse  func(t *testing.T, rr *httptest.ResponseRecorder)
+	}{
+		{
+			name: "successful chat creation - private chat",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		userID := uint64(123)
-		now := time.Now()
+				chatRequest := map[string]any{
+					"title": "Private Chat",
+					"type":  "private",
+				}
+				body, _ := json.Marshal(chatRequest)
 
-		// Ожидаемый ответ от usecase
-		expectedChat := &domains.Chat{
-			ID:          1,
-			Title:       pointers.New("Private Chat"),
-			Description: nil,
-			Type:        domains.ChatTypePrivate,
-			CreatedAt:   now,
-			UpdatedAt:   now,
-			IsRead:      true,
-			Members: []domains.User{
-				{
-					ID:             userID,
-					Username:       "testuser",
-					Email:          "test@example.com",
-					EmailConfirmed: true,
-					CreatedAt:      now,
-					UpdatedAt:      now,
-				},
+				return createRequest(t, body, 123)
 			},
-			Messages: []domains.Message{},
-		}
+			setupMock: func(m *mockusecases.MockChatsUseCases) {
+				expectedChat := &domains.Chat{
+					ID:          1,
+					Title:       pointers.New("Private Chat"),
+					Description: nil,
+					Type:        domains.ChatTypePrivate,
+					CreatedAt:   now,
+					UpdatedAt:   now,
+					IsRead:      true,
+					Members: []domains.User{
+						{
+							ID:             123,
+							Username:       "testuser",
+							Email:          "test@example.com",
+							EmailConfirmed: true,
+							CreatedAt:      now,
+							UpdatedAt:      now,
+						},
+					},
+					Messages: []domains.Message{},
+				}
 
-		// Настройка ожиданий мока
-		mockUseCase.EXPECT().
-			CreateChat(gomock.Any(), gomock.Any()).
-			DoAndReturn(func(_ context.Context, chat domains.Chat) (*domains.Chat, error) {
-				// Проверяем, что пользователь добавлен в участники
-				assert.Equal(t, "Private Chat", *chat.Title)
-				assert.Equal(t, domains.ChatTypePrivate, chat.Type)
-				assert.Len(t, chat.Members, 1)
-				assert.Equal(t, userID, chat.Members[0].ID)
+				m.EXPECT().
+					CreateChat(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ context.Context, chat domains.Chat) (*domains.Chat, error) {
+						assert.Equal(t, "Private Chat", *chat.Title)
+						assert.Equal(t, domains.ChatTypePrivate, chat.Type)
+						assert.Len(t, chat.Members, 1)
+						assert.Equal(t, uint64(123), chat.Members[0].ID)
 
-				return expectedChat, nil
-			})
-
-		chatRequest := map[string]any{
-			"title": "Private Chat",
-			"type":  "private",
-		}
-		body, _ := json.Marshal(chatRequest)
-
-		req := createRequest(t, body, userID)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusCreated, rr.Code)
-		assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
-
-		var response map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-
-		assert.Equal(t, float64(1), response["id"])
-		assert.Equal(t, "Private Chat", response["title"])
-		assert.Equal(t, "private", response["type"])
-		assert.NotNil(t, response["createdAt"])
-		assert.NotNil(t, response["updatedAt"])
-		assert.True(t, response["isRead"].(bool))
-
-		// Проверяем members
-		members, ok := response["members"].([]any)
-		require.True(t, ok, "members should be an array")
-		assert.Len(t, members, 1)
-	})
-
-	t.Run("successful chat creation - group chat", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockChatsUseCases(ctrl)
-		handler := create.Handler(mockUseCase)
-
-		userID := uint64(123)
-		now := time.Now()
-
-		expectedChat := &domains.Chat{
-			ID:          2,
-			Title:       pointers.New("Group Chat"),
-			Description: pointers.New("Test group chat"),
-			Type:        domains.ChatTypeGroup,
-			CreatedAt:   now,
-			UpdatedAt:   now,
-			IsRead:      false,
-			Members: []domains.User{
-				{
-					ID:             userID,
-					Username:       "testuser",
-					EmailConfirmed: true,
-				},
-				{
-					ID:       456,
-					Username: "anotheruser",
-				},
+						return expectedChat, nil
+					})
 			},
-			Messages: []domains.Message{},
-		}
+			expectedStatus: http.StatusCreated,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
 
-		// Настройка ожиданий мока
-		mockUseCase.EXPECT().
-			CreateChat(gomock.Any(), gomock.Any()).
-			Return(expectedChat, nil)
+				assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
 
-		chatRequest := map[string]any{
-			"title":       "Group Chat",
-			"description": "Test group chat",
-			"type":        "group",
-		}
-		body, _ := json.Marshal(chatRequest)
+				var response map[string]any
 
-		req := createRequest(t, body, userID)
-		rr := httptest.NewRecorder()
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
 
-		// Act
-		handler.ServeHTTP(rr, req)
+				assert.Equal(t, float64(1), response["id"])
+				assert.Equal(t, "Private Chat", response["title"])
+				assert.Equal(t, "private", response["type"])
+				assert.NotNil(t, response["createdAt"])
+				assert.NotNil(t, response["updatedAt"])
+				assert.True(t, response["isRead"].(bool))
 
-		// Assert
-		assert.Equal(t, http.StatusCreated, rr.Code)
-
-		var response map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-
-		assert.Equal(t, "Group Chat", response["title"])
-		assert.Equal(t, "Test group chat", response["description"])
-		assert.Equal(t, "group", response["type"])
-		assert.False(t, response["isRead"].(bool))
-	})
-
-	t.Run("unauthorized - no userID in context", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockChatsUseCases(ctrl)
-		handler := create.Handler(mockUseCase)
-
-		chatRequest := map[string]any{
-			"title": "Test Chat",
-			"type":  "private",
-		}
-		body, _ := json.Marshal(chatRequest)
-
-		// Запрос БЕЗ userID в контексте (не используем contextlib.WithValue)
-		req := httptest.NewRequest(http.MethodPost, "/chats", bytes.NewBuffer(body))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-		assert.Contains(t, rr.Body.String(), "context with value userID not found\n")
-	})
-
-	t.Run("bad request - invalid JSON", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockChatsUseCases(ctrl)
-		handler := create.Handler(mockUseCase)
-
-		// Невалидный JSON
-		body := []byte(`{"title": "Test Chat", "type": invalid}`)
-		req := createRequest(t, body, 123)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Contains(t, rr.Body.String(), "invalid character")
-	})
-
-	t.Run("bad request - empty body", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockChatsUseCases(ctrl)
-		handler := create.Handler(mockUseCase)
-
-		// Пустое тело
-		req := createRequest(t, []byte{}, 123)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Contains(t, rr.Body.String(), "unexpected end of JSON input\n")
-	})
-
-	t.Run("bad request - invalid chat data", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockChatsUseCases(ctrl)
-		handler := create.Handler(mockUseCase)
-
-		userID := uint64(123)
-
-		// Настройка мока для возврата ошибки валидации
-		mockUseCase.EXPECT().
-			CreateChat(gomock.Any(), gomock.Any()).
-			Return(nil, customerrors.ErrInvalidChat)
-
-		// Пустое имя чата
-		chatRequest := map[string]any{
-			"title": "",
-			"type":  "private",
-		}
-		body, _ := json.Marshal(chatRequest)
-
-		req := createRequest(t, body, userID)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidChat.Error())
-	})
-
-	t.Run("internal server error", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockChatsUseCases(ctrl)
-		handler := create.Handler(mockUseCase)
-
-		userID := uint64(123)
-
-		// Настройка мока для возврата общей ошибки
-		mockUseCase.EXPECT().
-			CreateChat(gomock.Any(), gomock.Any()).
-			Return(nil, errors.New("database error"))
-
-		chatRequest := map[string]any{
-			"title": "Test Chat",
-			"type":  "private",
-		}
-		body, _ := json.Marshal(chatRequest)
-
-		req := createRequest(t, body, userID)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusInternalServerError, rr.Code)
-		assert.Contains(t, rr.Body.String(), "database error")
-	})
-
-	t.Run("chat with members from request", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockChatsUseCases(ctrl)
-		handler := create.Handler(mockUseCase)
-
-		userID := uint64(123)
-		now := time.Now()
-
-		expectedChat := &domains.Chat{
-			ID:        1,
-			Title:     pointers.New("Group with Members"),
-			Type:      domains.ChatTypeGroup,
-			CreatedAt: now,
-			UpdatedAt: now,
-			IsRead:    true,
-			Members: []domains.User{
-				{ID: 456, Username: "user1"},
-				{ID: 789, Username: "user2"},
-				{ID: userID, Username: "currentuser"},
+				members, ok := response["members"].([]any)
+				require.True(t, ok, "members should be an array")
+				assert.Len(t, members, 1)
 			},
-		}
+		},
+		{
+			name: "successful chat creation - group chat",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		// Настройка ожиданий мока
-		mockUseCase.EXPECT().
-			CreateChat(gomock.Any(), gomock.Any()).
-			DoAndReturn(func(_ context.Context, chat domains.Chat) (*domains.Chat, error) {
-				// Проверяем, что текущий пользователь добавлен к существующим участникам
-				assert.Len(t, chat.Members, 3)
-				assert.Equal(t, userID, chat.Members[2].ID)
-				assert.Equal(t, uint64(456), chat.Members[0].ID)
-				assert.Equal(t, uint64(789), chat.Members[1].ID)
+				chatRequest := map[string]any{
+					"title":       "Group Chat",
+					"description": "Test group chat",
+					"type":        "group",
+				}
+				body, _ := json.Marshal(chatRequest)
 
-				return expectedChat, nil
-			})
-
-		// Запрос с участниками
-		chatRequest := map[string]any{
-			"title": "Group with Members",
-			"type":  "group",
-			"members": []map[string]any{
-				{"id": 456, "username": "user1"},
-				{"id": 789, "username": "user2"},
+				return createRequest(t, body, 123)
 			},
-		}
-		body, _ := json.Marshal(chatRequest)
+			setupMock: func(m *mockusecases.MockChatsUseCases) {
+				expectedChat := &domains.Chat{
+					ID:          2,
+					Title:       pointers.New("Group Chat"),
+					Description: pointers.New("Test group chat"),
+					Type:        domains.ChatTypeGroup,
+					CreatedAt:   now,
+					UpdatedAt:   now,
+					IsRead:      false,
+					Members: []domains.User{
+						{
+							ID:             123,
+							Username:       "testuser",
+							EmailConfirmed: true,
+						},
+						{
+							ID:       456,
+							Username: "anotheruser",
+						},
+					},
+					Messages: []domains.Message{},
+				}
 
-		req := createRequest(t, body, userID)
-		rr := httptest.NewRecorder()
+				m.EXPECT().
+					CreateChat(gomock.Any(), gomock.Any()).
+					Return(expectedChat, nil)
+			},
+			expectedStatus: http.StatusCreated,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
 
-		// Act
-		handler.ServeHTTP(rr, req)
+				var response map[string]any
 
-		// Assert
-		assert.Equal(t, http.StatusCreated, rr.Code)
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
 
-		var response map[string]any
+				assert.Equal(t, "Group Chat", response["title"])
+				assert.Equal(t, "Test group chat", response["description"])
+				assert.Equal(t, "group", response["type"])
+				assert.False(t, response["isRead"].(bool))
+			},
+		},
+		{
+			name: "unauthorized - no userID in context",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
+				chatRequest := map[string]any{
+					"title": "Test Chat",
+					"type":  "private",
+				}
+				body, _ := json.Marshal(chatRequest)
 
-		assert.Equal(t, "Group with Members", response["title"])
+				return httptest.NewRequest(http.MethodPost, "/chats", bytes.NewBuffer(body))
+			},
+			setupMock:      func(_ *mockusecases.MockChatsUseCases) {},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "context with value userID not found\n")
+			},
+		},
+		{
+			name: "bad request - invalid JSON",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		members := response["members"].([]any)
-		assert.Len(t, members, 3)
-	})
+				body := []byte(`{"title": "Test Chat", "type": invalid}`)
 
-	t.Run("missing required fields", func(t *testing.T) {
-		t.Parallel()
+				return createRequest(t, body, 123)
+			},
+			setupMock:      func(_ *mockusecases.MockChatsUseCases) {},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "invalid character")
+			},
+		},
+		{
+			name: "bad request - empty body",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		// Arrange
-		mockUseCase := mockusecases.NewMockChatsUseCases(ctrl)
-		handler := create.Handler(mockUseCase)
+				return createRequest(t, []byte{}, 123)
+			},
+			setupMock:      func(_ *mockusecases.MockChatsUseCases) {},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "unexpected end of JSON input\n")
+			},
+		},
+		{
+			name: "bad request - invalid chat data",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		userID := uint64(123)
+				chatRequest := map[string]any{
+					"title": "",
+					"type":  "private",
+				}
+				body, _ := json.Marshal(chatRequest)
 
-		// Настройка мока для возврата ошибки валидации
-		mockUseCase.EXPECT().
-			CreateChat(gomock.Any(), gomock.Any()).
-			Return(nil, customerrors.ErrInvalidChat)
+				return createRequest(t, body, 123)
+			},
+			setupMock: func(m *mockusecases.MockChatsUseCases) {
+				m.EXPECT().
+					CreateChat(gomock.Any(), gomock.Any()).
+					Return(nil, customerrors.ErrInvalidChat)
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidChat.Error())
+			},
+		},
+		{
+			name: "internal server error",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		// Отсутствует обязательное поле type
-		chatRequest := map[string]any{
-			"title": "Test Chat",
-			// type отсутствует
-		}
-		body, _ := json.Marshal(chatRequest)
+				chatRequest := map[string]any{
+					"title": "Test Chat",
+					"type":  "private",
+				}
+				body, _ := json.Marshal(chatRequest)
 
-		req := createRequest(t, body, userID)
-		rr := httptest.NewRecorder()
+				return createRequest(t, body, 123)
+			},
+			setupMock: func(m *mockusecases.MockChatsUseCases) {
+				m.EXPECT().
+					CreateChat(gomock.Any(), gomock.Any()).
+					Return(nil, errors.New("database error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "database error")
+			},
+		},
+		{
+			name: "chat with members from request",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		// Act
-		handler.ServeHTTP(rr, req)
+				chatRequest := map[string]any{
+					"title": "Group with Members",
+					"type":  "group",
+					"members": []map[string]any{
+						{"id": 456, "username": "user1"},
+						{"id": 789, "username": "user2"},
+					},
+				}
+				body, _ := json.Marshal(chatRequest)
 
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidChat.Error())
-	})
+				return createRequest(t, body, 123)
+			},
+			setupMock: func(m *mockusecases.MockChatsUseCases) {
+				expectedChat := &domains.Chat{
+					ID:        1,
+					Title:     pointers.New("Group with Members"),
+					Type:      domains.ChatTypeGroup,
+					CreatedAt: now,
+					UpdatedAt: now,
+					IsRead:    true,
+					Members: []domains.User{
+						{ID: 456, Username: "user1"},
+						{ID: 789, Username: "user2"},
+						{ID: 123, Username: "currentuser"},
+					},
+				}
 
-	t.Run("invalid chat type", func(t *testing.T) {
-		t.Parallel()
+				m.EXPECT().
+					CreateChat(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(_ context.Context, chat domains.Chat) (*domains.Chat, error) {
+						assert.Len(t, chat.Members, 3)
+						assert.Equal(t, uint64(123), chat.Members[2].ID)
+						assert.Equal(t, uint64(456), chat.Members[0].ID)
+						assert.Equal(t, uint64(789), chat.Members[1].ID)
 
-		// Arrange
-		mockUseCase := mockusecases.NewMockChatsUseCases(ctrl)
-		handler := create.Handler(mockUseCase)
+						return expectedChat, nil
+					})
+			},
+			expectedStatus: http.StatusCreated,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
 
-		userID := uint64(123)
+				var response map[string]any
 
-		// Настройка мока для возврата ошибки валидации
-		mockUseCase.EXPECT().
-			CreateChat(gomock.Any(), gomock.Any()).
-			Return(nil, customerrors.ErrInvalidChat)
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
 
-		// Невалидный тип чата
-		chatRequest := map[string]any{
-			"title": "Test Chat",
-			"type":  "invalid_type",
-		}
-		body, _ := json.Marshal(chatRequest)
+				assert.Equal(t, "Group with Members", response["title"])
 
-		req := createRequest(t, body, userID)
-		rr := httptest.NewRecorder()
+				members := response["members"].([]any)
+				assert.Len(t, members, 3)
+			},
+		},
+		{
+			name: "missing required fields",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		// Act
-		handler.ServeHTTP(rr, req)
+				chatRequest := map[string]any{
+					"title": "Test Chat",
+				}
+				body, _ := json.Marshal(chatRequest)
 
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidChat.Error())
-	})
+				return createRequest(t, body, 123)
+			},
+			setupMock: func(m *mockusecases.MockChatsUseCases) {
+				m.EXPECT().
+					CreateChat(gomock.Any(), gomock.Any()).
+					Return(nil, customerrors.ErrInvalidChat)
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidChat.Error())
+			},
+		},
+		{
+			name: "invalid chat type",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				chatRequest := map[string]any{
+					"title": "Test Chat",
+					"type":  "invalid_type",
+				}
+				body, _ := json.Marshal(chatRequest)
+
+				return createRequest(t, body, 123)
+			},
+			setupMock: func(m *mockusecases.MockChatsUseCases) {
+				m.EXPECT().
+					CreateChat(gomock.Any(), gomock.Any()).
+					Return(nil, customerrors.ErrInvalidChat)
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidChat.Error())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockUseCase := mockusecases.NewMockChatsUseCases(ctrl)
+			tt.setupMock(mockUseCase)
+
+			handler := create.Handler(mockUseCase)
+			req := tt.setupRequest(t)
+			rr := httptest.NewRecorder()
+
+			handler.ServeHTTP(rr, req)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+
+			if tt.checkResponse != nil {
+				tt.checkResponse(t, rr)
+			}
+		})
+	}
 }

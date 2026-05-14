@@ -30,332 +30,598 @@ func TestHandler(t *testing.T) {
 		return httptest.NewRequest(http.MethodPost, "/verify-email/send", requestBody)
 	}
 
-	// Вспомогательная функция для создания SendVerifyEmailMessageDTO
-	createVerifyEmailDTO := func() domains.SendVerifyEmailMessageDTO {
-		return domains.SendVerifyEmailMessageDTO{
-			Email: "user@example.com",
-		}
-	}
-
-	t.Run("successful send verify email message", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		dto := createVerifyEmailDTO()
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), dto.Email).
-			Return(nil)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-		assert.Empty(t, rr.Body.String())
-	})
-
-	t.Run("bad request - empty request body", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		// Пустое тело запроса
-		req := createRequest(t, bytes.NewReader([]byte{}))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("bad request - invalid JSON", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		// Невалидный JSON
-		invalidJSON := `{"email": invalid}`
-		req := createRequest(t, bytes.NewReader([]byte(invalidJSON)))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Contains(t, rr.Body.String(), "invalid character")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("bad request - missing required field", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		// JSON без обязательного поля
-		missingFieldJSON := `{}`
-
-		var dto domains.SendVerifyEmailMessageDTO
-
-		err := json.Unmarshal([]byte(missingFieldJSON), &dto)
-		require.NoError(t, err)
-		assert.Equal(t, "", dto.Email) // Поле будет пустым
-
-		// Use case вернет ошибку UserNotFound для пустого email
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), "").
-			Return(customerrors.ErrUserNotFound)
-
-		req := createRequest(t, bytes.NewReader([]byte(missingFieldJSON)))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("bad request - empty email", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		dto := domains.SendVerifyEmailMessageDTO{
-			Email: "", // Пустой email
-		}
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), "").
-			Return(customerrors.ErrUserNotFound)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("not found - user not found", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		dto := createVerifyEmailDTO()
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), dto.Email).
-			Return(customerrors.ErrUserNotFound)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("conflict - email already confirmed", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		dto := createVerifyEmailDTO()
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), dto.Email).
-			Return(customerrors.ErrEmailAlreadyConfirmed)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusConflict, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrEmailAlreadyConfirmed.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("internal server error - use case error", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		dto := createVerifyEmailDTO()
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), dto.Email).
-			Return(errors.New("email service unavailable"))
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusInternalServerError, rr.Code)
-		assert.Contains(t, rr.Body.String(), "email service unavailable")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("different email formats", func(t *testing.T) {
-		t.Parallel()
-
-		testCases := []struct {
-			name        string
-			email       string
-			expectError bool
-			errorType   error
-		}{
-			{
-				name:        "simple email",
-				email:       "user@example.com",
-				expectError: false,
-			},
-			{
-				name:        "email with plus",
-				email:       "user+tag@example.com",
-				expectError: false,
-			},
-			{
-				name:        "email with dot",
-				email:       "user.name@example.com",
-				expectError: false,
-			},
-			{
-				name:        "email with subdomain",
-				email:       "user@sub.example.com",
-				expectError: false,
-			},
-			{
-				name:        "invalid email format",
-				email:       "not-an-email",
-				expectError: true,
-				errorType:   customerrors.ErrUserNotFound,
-			},
-			{
-				name:        "email already confirmed",
-				email:       "confirmed@example.com",
-				expectError: true,
-				errorType:   customerrors.ErrEmailAlreadyConfirmed,
-			},
-			{
-				name:        "case insensitive email",
-				email:       "USER@EXAMPLE.COM",
-				expectError: false,
-			},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				// Arrange
-				mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-				handler := send_verify_email_message.Handler(mockUseCase)
-
-				dto := domains.SendVerifyEmailMessageDTO{
-					Email: tc.email,
-				}
+	tests := []struct {
+		name           string
+		setupRequest   func(t *testing.T) *http.Request
+		setupMock      func(m *mockusecases.MockAuthUseCases)
+		expectedStatus int
+		checkResponse  func(t *testing.T, rr *httptest.ResponseRecorder)
+	}{
+		{
+			name: "successful send verify email message",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user@example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@example.com").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Empty(t, rr.Body.String())
+			},
+		},
+		{
+			name: "bad request - empty request body",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, bytes.NewReader([]byte{}))
+			},
+			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "bad request - invalid JSON",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, bytes.NewReader([]byte(`{"email": invalid}`)))
+			},
+			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "invalid character")
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "bad request - missing required field",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				missingFieldJSON := `{}`
+				var dto domains.SendVerifyEmailMessageDTO
+				err := json.Unmarshal([]byte(missingFieldJSON), &dto)
+				require.NoError(t, err)
+				assert.Equal(t, "", dto.Email)
+				return createRequest(t, bytes.NewReader([]byte(missingFieldJSON)))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "").
+					Return(customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "bad request - empty email",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: ""}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "").
+					Return(customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "not found - user not found",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@example.com").
+					Return(customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "conflict - email already confirmed",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@example.com").
+					Return(customerrors.ErrEmailAlreadyConfirmed)
+			},
+			expectedStatus: http.StatusConflict,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrEmailAlreadyConfirmed.Error())
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "internal server error - use case error",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@example.com").
+					Return(errors.New("email service unavailable"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "email service unavailable")
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "different email formats - simple email",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@example.com").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "different email formats - email with plus",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user+tag@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user+tag@example.com").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "different email formats - email with dot",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user.name@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user.name@example.com").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "different email formats - email with subdomain",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user@sub.example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@sub.example.com").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "different email formats - invalid email format",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "not-an-email"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "not-an-email").
+					Return(customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
+			},
+		},
+		{
+			name: "different email formats - email already confirmed",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "confirmed@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "confirmed@example.com").
+					Return(customerrors.ErrEmailAlreadyConfirmed)
+			},
+			expectedStatus: http.StatusConflict,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrEmailAlreadyConfirmed.Error())
+			},
+		},
+		{
+			name: "different email formats - case insensitive email",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "USER@EXAMPLE.COM"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "USER@EXAMPLE.COM").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "JSON with extra fields",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				jsonWithExtraFields := `{
+				"email": "user@example.com",
+				"extraField": "should be ignored",
+				"anotherExtra": 123,
+				"username": "user123",
+				"userId": 456
+			}`
+				return createRequest(t, bytes.NewReader([]byte(jsonWithExtraFields)))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@example.com").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "null email in JSON",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				jsonWithNull := `{"email": null}`
+				var dto domains.SendVerifyEmailMessageDTO
+				err := json.Unmarshal([]byte(jsonWithNull), &dto)
+				require.NoError(t, err)
+				assert.Equal(t, "", dto.Email)
+				return createRequest(t, bytes.NewReader([]byte(jsonWithNull)))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "").
+					Return(customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
+			},
+		},
+		{
+			name: "email with special characters",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user.name+tag@example-domain.co.uk"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user.name+tag@example-domain.co.uk").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "non-existent domain email",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user@nonexistent-domain-12345.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@nonexistent-domain-12345.com").
+					Return(customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
+			},
+		},
+		{
+			name: "status code 204 No Content on success",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@example.com").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.NotEqual(t, http.StatusOK, rr.Code, "Should return 204 No Content, not 200 OK")
+				assert.Empty(t, rr.Body.String())
+			},
+		},
+		{
+			name: "case insensitive email matching - uppercase",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "USER@EXAMPLE.COM"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "USER@EXAMPLE.COM").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "case insensitive email matching - mixed case",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "User@Example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "User@Example.com").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "case insensitive email matching - lowercase",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@example.com").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "email with international characters",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user@müller.de"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@müller.de").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "database or external service errors - database connection error",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@example.com").
+					Return(errors.New("database connection failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "database connection failed")
+			},
+		},
+		{
+			name: "database or external service errors - email service error",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@example.com").
+					Return(errors.New("SMTP server unavailable"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "SMTP server unavailable")
+			},
+		},
+		{
+			name: "database or external service errors - rate limit exceeded in service",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "user@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "user@example.com").
+					Return(errors.New("rate limit exceeded"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "rate limit exceeded")
+			},
+		},
+		{
+			name: "already confirmed email should return 409 Conflict",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "already.confirmed@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "already.confirmed@example.com").
+					Return(customerrors.ErrEmailAlreadyConfirmed)
+			},
+			expectedStatus: http.StatusConflict,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrEmailAlreadyConfirmed.Error())
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "user recently registered but email not confirmed",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "new.user@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "new.user@example.com").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "verification for deleted user account",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				dto := domains.SendVerifyEmailMessageDTO{Email: "deleted.user@example.com"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					SendVerifyEmailMessage(gomock.Any(), "deleted.user@example.com").
+					Return(customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
+			},
+		},
+	}
 
-				if tc.expectError {
-					mockUseCase.EXPECT().
-						SendVerifyEmailMessage(gomock.Any(), tc.email).
-						Return(tc.errorType)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-					req := createRequest(t, bytes.NewReader(requestBody))
-					rr := httptest.NewRecorder()
+			mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
+			tt.setupMock(mockUseCase)
 
-					// Act
-					handler.ServeHTTP(rr, req)
+			handler := send_verify_email_message.Handler(mockUseCase)
+			req := tt.setupRequest(t)
+			rr := httptest.NewRecorder()
 
-					// Assert
-					switch {
-					case errors.Is(tc.errorType, customerrors.ErrUserNotFound):
-						assert.Equal(t, http.StatusNotFound, rr.Code)
-					case errors.Is(tc.errorType, customerrors.ErrEmailAlreadyConfirmed):
-						assert.Equal(t, http.StatusConflict, rr.Code)
-					}
+			handler.ServeHTTP(rr, req)
 
-					assert.Contains(t, rr.Body.String(), tc.errorType.Error())
-				} else {
-					mockUseCase.EXPECT().
-						SendVerifyEmailMessage(gomock.Any(), tc.email).
-						Return(nil)
+			assert.Equal(t, tt.expectedStatus, rr.Code)
 
-					req := createRequest(t, bytes.NewReader(requestBody))
-					rr := httptest.NewRecorder()
-
-					// Act
-					handler.ServeHTTP(rr, req)
-
-					// Assert
-					assert.Equal(t, http.StatusNoContent, rr.Code)
-				}
-			})
-		}
-	})
+			if tt.checkResponse != nil {
+				tt.checkResponse(t, rr)
+			}
+		})
+	}
 
 	t.Run("concurrent requests", func(t *testing.T) {
 		t.Parallel()
 
-		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
 		handler := send_verify_email_message.Handler(mockUseCase)
 
 		const numRequests = 5
 
-		// Каждый запрос с разными email
 		emails := []string{
 			"user1@example.com",
 			"user2@example.com",
@@ -364,7 +630,6 @@ func TestHandler(t *testing.T) {
 			"user5@example.com",
 		}
 
-		// Настраиваем мок на конкурентные вызовы
 		for i := range numRequests {
 			mockUseCase.EXPECT().
 				SendVerifyEmailMessage(gomock.Any(), emails[i]).
@@ -373,7 +638,6 @@ func TestHandler(t *testing.T) {
 
 		done := make(chan bool, numRequests)
 
-		// Act - запускаем concurrent запросы
 		for i := range numRequests {
 			go func(idx int) {
 				dto := domains.SendVerifyEmailMessageDTO{
@@ -390,84 +654,17 @@ func TestHandler(t *testing.T) {
 			}(i)
 		}
 
-		// Ждем завершения всех горутин
 		for range numRequests {
 			<-done
 		}
 	})
 
-	t.Run("JSON with extra fields", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		// JSON с дополнительными полями, которых нет в DTO
-		jsonWithExtraFields := `{
-			"email": "user@example.com",
-			"extraField": "should be ignored",
-			"anotherExtra": 123,
-			"username": "user123",
-			"userId": 456
-		}`
-
-		expectedEmail := "user@example.com"
-
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), expectedEmail).
-			Return(nil)
-
-		req := createRequest(t, bytes.NewReader([]byte(jsonWithExtraFields)))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-	})
-
-	t.Run("null email in JSON", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		// JSON с null значением email
-		jsonWithNull := `{"email": null}`
-
-		// При десериализации null в string станет пустой строкой
-		var dto domains.SendVerifyEmailMessageDTO
-
-		err := json.Unmarshal([]byte(jsonWithNull), &dto)
-		require.NoError(t, err)
-		assert.Equal(t, "", dto.Email)
-
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), "").
-			Return(customerrors.ErrUserNotFound)
-
-		req := createRequest(t, bytes.NewReader([]byte(jsonWithNull)))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert - должна быть ошибка "пользователь не найден"
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
-	})
-
 	t.Run("rate limiting scenarios", func(t *testing.T) {
 		t.Parallel()
 
-		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
 		handler := send_verify_email_message.Handler(mockUseCase)
 
-		// Многократные запросы для одного email
 		dto := domains.SendVerifyEmailMessageDTO{
 			Email: "user@example.com",
 		}
@@ -475,15 +672,13 @@ func TestHandler(t *testing.T) {
 		requestBody, err := json.Marshal(dto)
 		require.NoError(t, err)
 
-		// Несколько запросов подряд
 		const attempts = 3
 		for range attempts {
 			mockUseCase.EXPECT().
 				SendVerifyEmailMessage(gomock.Any(), dto.Email).
-				Return(nil) // Всегда успешно (rate limiting на уровне use case)
+				Return(nil)
 		}
 
-		// Act & Assert - несколько запросов
 		for range attempts {
 			req := createRequest(t, bytes.NewReader(requestBody))
 			rr := httptest.NewRecorder()
@@ -492,280 +687,15 @@ func TestHandler(t *testing.T) {
 
 			assert.Equal(t, http.StatusNoContent, rr.Code)
 		}
-	})
-
-	t.Run("email with special characters", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		// Email со специальными символами
-		dto := domains.SendVerifyEmailMessageDTO{
-			Email: "user.name+tag@example-domain.co.uk",
-		}
-
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), dto.Email).
-			Return(nil)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-	})
-
-	t.Run("non-existent domain email", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		// Email с несуществующим доменом
-		dto := domains.SendVerifyEmailMessageDTO{
-			Email: "user@nonexistent-domain-12345.com",
-		}
-
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		// Use case вернет UserNotFound
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), dto.Email).
-			Return(customerrors.ErrUserNotFound)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
-	})
-
-	t.Run("status code 204 No Content on success", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		dto := createVerifyEmailDTO()
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), dto.Email).
-			Return(nil)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert - проверяем, что статус код 204, а не 200
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-		assert.NotEqual(t, http.StatusOK, rr.Code, "Should return 204 No Content, not 200 OK")
-		assert.Empty(t, rr.Body.String())
-	})
-
-	t.Run("case insensitive email matching", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		// Email в разном регистре
-		testEmails := []string{
-			"USER@EXAMPLE.COM",
-			"User@Example.com",
-			"user@example.com",
-		}
-
-		for _, email := range testEmails {
-			dto := domains.SendVerifyEmailMessageDTO{
-				Email: email,
-			}
-
-			requestBody, err := json.Marshal(dto)
-			require.NoError(t, err)
-
-			mockUseCase.EXPECT().
-				SendVerifyEmailMessage(gomock.Any(), email).
-				Return(nil)
-
-			req := createRequest(t, bytes.NewReader(requestBody))
-			rr := httptest.NewRecorder()
-
-			// Act
-			handler.ServeHTTP(rr, req)
-
-			// Assert
-			assert.Equal(t, http.StatusNoContent, rr.Code)
-		}
-	})
-
-	t.Run("email with international characters", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		// Email с международными символами (IDN)
-		dto := domains.SendVerifyEmailMessageDTO{
-			Email: "user@müller.de",
-		}
-
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), dto.Email).
-			Return(nil)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert - зависит от поддержки IDN
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-	})
-
-	t.Run("database or external service errors", func(t *testing.T) {
-		t.Parallel()
-
-		testCases := []struct {
-			name       string
-			error      error
-			statusCode int
-		}{
-			{
-				name:       "database connection error",
-				error:      errors.New("database connection failed"),
-				statusCode: http.StatusInternalServerError,
-			},
-			{
-				name:       "email service error",
-				error:      errors.New("SMTP server unavailable"),
-				statusCode: http.StatusInternalServerError,
-			},
-			{
-				name:       "rate limit exceeded in service",
-				error:      errors.New("rate limit exceeded"),
-				statusCode: http.StatusInternalServerError,
-			},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				// Arrange
-				mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-				handler := send_verify_email_message.Handler(mockUseCase)
-
-				dto := createVerifyEmailDTO()
-				requestBody, err := json.Marshal(dto)
-				require.NoError(t, err)
-
-				mockUseCase.EXPECT().
-					SendVerifyEmailMessage(gomock.Any(), dto.Email).
-					Return(tc.error)
-
-				req := createRequest(t, bytes.NewReader(requestBody))
-				rr := httptest.NewRecorder()
-
-				// Act
-				handler.ServeHTTP(rr, req)
-
-				// Assert
-				assert.Equal(t, tc.statusCode, rr.Code)
-				assert.Contains(t, rr.Body.String(), tc.error.Error())
-			})
-		}
-	})
-
-	t.Run("already confirmed email should return 409 Conflict", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		dto := domains.SendVerifyEmailMessageDTO{
-			Email: "already.confirmed@example.com",
-		}
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), dto.Email).
-			Return(customerrors.ErrEmailAlreadyConfirmed)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusConflict, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrEmailAlreadyConfirmed.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("user recently registered but email not confirmed", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		// Email недавно зарегистрированного пользователя
-		dto := domains.SendVerifyEmailMessageDTO{
-			Email: "new.user@example.com",
-		}
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), dto.Email).
-			Return(nil)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
 	})
 
 	t.Run("multiple verification requests for same email", func(t *testing.T) {
 		t.Parallel()
 
-		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
 		handler := send_verify_email_message.Handler(mockUseCase)
 
-		dto := createVerifyEmailDTO()
+		dto := domains.SendVerifyEmailMessageDTO{Email: "user@example.com"}
 		requestBody, err := json.Marshal(dto)
 		require.NoError(t, err)
 
@@ -777,10 +707,8 @@ func TestHandler(t *testing.T) {
 		req1 := createRequest(t, bytes.NewReader(requestBody))
 		rr1 := httptest.NewRecorder()
 
-		// Act - первый запрос
 		handler.ServeHTTP(rr1, req1)
 
-		// Assert - первый запрос
 		assert.Equal(t, http.StatusNoContent, rr1.Code)
 
 		// Второй запрос - тоже успешно (можно запрашивать повторно)
@@ -791,39 +719,8 @@ func TestHandler(t *testing.T) {
 		req2 := createRequest(t, bytes.NewReader(requestBody))
 		rr2 := httptest.NewRecorder()
 
-		// Act - второй запрос
 		handler.ServeHTTP(rr2, req2)
 
-		// Assert - второй запрос
 		assert.Equal(t, http.StatusNoContent, rr2.Code)
-	})
-
-	t.Run("verification for deleted user account", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := send_verify_email_message.Handler(mockUseCase)
-
-		// Email удаленного пользователя
-		dto := domains.SendVerifyEmailMessageDTO{
-			Email: "deleted.user@example.com",
-		}
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			SendVerifyEmailMessage(gomock.Any(), dto.Email).
-			Return(customerrors.ErrUserNotFound)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
 	})
 }

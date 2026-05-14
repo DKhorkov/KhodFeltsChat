@@ -17,6 +17,8 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/chats/create"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/chats/user_chats"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/chat_messages"
+	get_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/get"
+	update_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/update"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/me"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/update"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/user_by_id"
@@ -43,6 +45,8 @@ const (
 
 	WebsocketURL = "/ws"
 
+	SettingsURL = MeURL + "/settings"
+
 	ChatsURL           = "/chats"
 	GetChatMessagesURL = ChatsURL + "/{%s}/messages"
 )
@@ -54,6 +58,7 @@ func SetupHandlers(
 	authUseCases interfaces.AuthUseCases,
 	chatsUseCases interfaces.ChatsUseCases,
 	messagesUseCases interfaces.MessagesUseCases,
+	settingsUseCases interfaces.SettingsUseCases,
 	logger logging.Logger,
 	upgrader interfaces.Upgrader,
 ) {
@@ -74,6 +79,7 @@ func SetupHandlers(
 	)
 
 	getMux.Handle(WebsocketURL, http.HandlerFunc(websocketHandler.Handle))
+	getMux.Handle(SettingsURL, get_settings.Handler(settingsUseCases))
 	getMux.Handle(ChatsURL, user_chats.Handler(chatsUseCases))
 	getMux.Handle(
 		fmt.Sprintf(GetChatMessagesURL, common.IDRouteKey),
@@ -104,6 +110,7 @@ func SetupHandlers(
 
 	putMux := apiMux.Methods(http.MethodPut).Subrouter()
 	putMux.Handle(MeURL, update.Handler(usersUseCases))
+	putMux.Handle(SettingsURL, update_settings.Handler(settingsUseCases))
 	putMux.Handle(SessionsURL, refresh_tokens.Handler(authUseCases, cookiesConfig))
 
 	deleteMux := apiMux.Methods(http.MethodDelete).Subrouter()

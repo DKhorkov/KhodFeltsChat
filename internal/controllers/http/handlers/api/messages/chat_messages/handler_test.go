@@ -89,455 +89,380 @@ func TestHandler(t *testing.T) {
 		return messages
 	}
 
-	t.Run("successful get chat messages - default pagination", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		userID := uint64(123)
-		chatID := uint64(456)
-		expectedMessages := createTestMessages(chatID, userID, 3)
-
-		mockUseCase.EXPECT().
-			GetChatMessages(gomock.Any(), userID, chatID, nil).
-			Return(expectedMessages, nil)
-
-		req := createRequest(t, userID, chatID, 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-		assert.Equal(
-			t,
-			common.ApplicationJSONContentType,
-			rr.Header().Get(common.ContentTypeHeaderName),
-		)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 3)
-
-		// Проверяем структуру первого сообщения
-		firstMessage := response[0]
-		assert.Equal(t, float64(1), firstMessage["id"])
-		assert.Equal(t, float64(chatID), firstMessage["chatId"])
-		assert.Equal(t, "Message 1", firstMessage["text"])
-		assert.NotNil(t, firstMessage["createdAt"])
-		assert.NotNil(t, firstMessage["updatedAt"])
-
-		// Проверяем отправителя
-		sender, ok := firstMessage["sender"].(map[string]any)
-		require.True(t, ok, "sender should be an object")
-		assert.Equal(t, float64(userID+100), sender["id"])
-		assert.Equal(t, "user"+strconv.Itoa(int(userID+100)), sender["username"])
-	})
-
-	t.Run("successful get chat messages - custom pagination", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		userID := uint64(123)
-		chatID := uint64(456)
-		expectedMessages := createTestMessages(chatID, userID, 2)
-
-		mockUseCase.EXPECT().
-			GetChatMessages(
-				gomock.Any(),
-				userID,
-				chatID,
-				&domains.Pagination{
-					Limit:  pointers.New[uint64](20),
-					Offset: pointers.New[uint64](10),
-				},
-			).
-			Return(expectedMessages, nil)
-
-		req := createRequest(t, userID, chatID, 20, 10)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 2)
-	})
-
-	t.Run("successful get chat messages - empty result", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		userID := uint64(123)
-		chatID := uint64(456)
-
-		mockUseCase.EXPECT().
-			GetChatMessages(gomock.Any(), userID, chatID, nil).
-			Return([]domains.Message{}, nil)
-
-		req := createRequest(t, userID, chatID, 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Empty(t, response)
-	})
-
-	t.Run("unauthorized - no userID in context", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		// Запрос без userID в контексте
-		req := httptest.NewRequest(http.MethodGet, "/chats/123/messages", http.NoBody)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-		assert.Contains(t, rr.Body.String(), "context with value userID not found")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("bad request - invalid chat ID parameter", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		userID := uint64(123)
-
-		// Запрос с невалидным chat ID
-		req := httptest.NewRequest(http.MethodGet, "/chats/invalid/messages", http.NoBody)
-		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
-		vars := map[string]string{
-			common.IDRouteKey: "invalid",
-		}
-		req = mux.SetURLVars(req.WithContext(ctx), vars)
-
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Contains(t, rr.Body.String(), "invalid syntax")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("bad request - empty chat ID parameter", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		userID := uint64(123)
-
-		// Запрос с пустым chat ID
-		req := httptest.NewRequest(http.MethodGet, "/chats//messages", http.NoBody)
-		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
-		vars := map[string]string{
-			common.IDRouteKey: "",
-		}
-		req = mux.SetURLVars(req.WithContext(ctx), vars)
-
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Contains(t, rr.Body.String(), "invalid syntax")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("forbidden - user is not chat member", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		userID := uint64(123)
-		chatID := uint64(456)
-
-		mockUseCase.EXPECT().
-			GetChatMessages(gomock.Any(), userID, chatID, nil).
-			Return(nil, customerrors.ErrUserIsNotChatMember)
-
-		req := createRequest(t, userID, chatID, 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusForbidden, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrUserIsNotChatMember.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("not found - chat not found", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		userID := uint64(123)
-		chatID := uint64(999) // Несуществующий чат
-
-		mockUseCase.EXPECT().
-			GetChatMessages(gomock.Any(), userID, chatID, nil).
-			Return(nil, customerrors.ErrChatNotFound)
-
-		req := createRequest(t, userID, chatID, 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrChatNotFound.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("not found - user not found", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		userID := uint64(999) // Несуществующий пользователь
-		chatID := uint64(456)
-
-		mockUseCase.EXPECT().
-			GetChatMessages(gomock.Any(), userID, chatID, nil).
-			Return(nil, customerrors.ErrUserNotFound)
-
-		req := createRequest(t, userID, chatID, 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("internal server error - use case error", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		userID := uint64(123)
-		chatID := uint64(456)
-
-		mockUseCase.EXPECT().
-			GetChatMessages(gomock.Any(), userID, chatID, nil).
-			Return(nil, errors.New("database connection failed"))
-
-		req := createRequest(t, userID, chatID, 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusInternalServerError, rr.Code)
-		assert.Contains(t, rr.Body.String(), "database connection failed")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("internal server error - JSON encoding error", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		userID := uint64(123)
-		chatID := uint64(456)
-
-		// Создаем сообщения, которые не могут быть замаплены (имитируем ошибку маппера)
-		// В реальном тесте нужно замокать mappers.MapMessages
-		// Но здесь мы просто проверяем сценарий успешного выполнения от use case
-		expectedMessages := createTestMessages(chatID, userID, 1)
-
-		mockUseCase.EXPECT().
-			GetChatMessages(gomock.Any(), userID, chatID, nil).
-			Return(expectedMessages, nil)
-
-		req := createRequest(t, userID, chatID, 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert - должен успешно обработаться, так как маппер работает
-		assert.Equal(t, http.StatusOK, rr.Code)
-	})
-
-	t.Run("pagination with invalid limit parameter", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		userID := uint64(123)
-		chatID := uint64(456)
-		expectedMessages := createTestMessages(chatID, userID, 2)
-
-		// При невалидном limit, GetPaginationFromRequest должен вернуть nil
-		mockUseCase.EXPECT().
-			GetChatMessages(gomock.Any(), userID, chatID, nil).
-			Return(expectedMessages, nil)
-
-		// Запрос с невалидным limit
-		req := httptest.NewRequest(
-			http.MethodGet,
-			"/chats/"+strconv.FormatUint(chatID, 10)+"/messages?limit=invalid&offset=0",
-			http.NoBody,
-		)
-		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
-		vars := map[string]string{
-			common.IDRouteKey: strconv.FormatUint(chatID, 10),
-		}
-		req = mux.SetURLVars(req.WithContext(ctx), vars)
-
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert - должен обработаться с дефолтными значениями
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 2)
-	})
-
-	t.Run("pagination with invalid offset parameter", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		userID := uint64(123)
-		chatID := uint64(456)
-		expectedMessages := createTestMessages(chatID, userID, 2)
-
-		mockUseCase.EXPECT().
-			GetChatMessages(
-				gomock.Any(),
-				userID,
-				chatID,
-				&domains.Pagination{
-					Limit:  pointers.New[uint64](10),
-					Offset: pointers.New[uint64](0),
-				},
-			).
-			Return(expectedMessages, nil)
-
-		// Запрос с невалидным offset
-		req := httptest.NewRequest(
-			http.MethodGet,
-			"/chats/"+strconv.FormatUint(chatID, 10)+"/messages?limit=10&offset=invalid",
-			http.NoBody,
-		)
-		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
-		vars := map[string]string{
-			common.IDRouteKey: strconv.FormatUint(chatID, 10),
-		}
-		req = mux.SetURLVars(req.WithContext(ctx), vars)
-
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert - должен обработаться с дефолтными значениями
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 2)
-	})
-
-	t.Run("zero chat ID", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
-		handler := chat_messages.Handler(mockUseCase)
-
-		userID := uint64(123)
-		chatID := uint64(0) // Нулевой chat ID
-
-		// Use case может обрабатывать нулевой chat ID, но это пограничный случай
-		mockUseCase.EXPECT().
-			GetChatMessages(gomock.Any(), userID, chatID, nil).
-			Return([]domains.Message{}, nil)
-
-		req := createRequest(t, userID, chatID, 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Empty(t, response)
-	})
+	userID := uint64(123)
+	chatID := uint64(456)
+
+	tests := []struct {
+		name           string
+		setupRequest   func(t *testing.T) *http.Request
+		setupMock      func(m *mockusecases.MockMessagesUseCases)
+		expectedStatus int
+		checkResponse  func(t *testing.T, rr *httptest.ResponseRecorder)
+	}{
+		{
+			name: "successful get chat messages - default pagination",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, userID, chatID, 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockMessagesUseCases) {
+				m.EXPECT().
+					GetChatMessages(gomock.Any(), userID, chatID, nil).
+					Return(createTestMessages(chatID, userID, 3), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				assert.Equal(
+					t,
+					common.ApplicationJSONContentType,
+					rr.Header().Get(common.ContentTypeHeaderName),
+				)
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 3)
+
+				firstMessage := response[0]
+				assert.Equal(t, float64(1), firstMessage["id"])
+				assert.Equal(t, float64(chatID), firstMessage["chatId"])
+				assert.Equal(t, "Message 1", firstMessage["text"])
+				assert.NotNil(t, firstMessage["createdAt"])
+				assert.NotNil(t, firstMessage["updatedAt"])
+
+				sender, ok := firstMessage["sender"].(map[string]any)
+				require.True(t, ok, "sender should be an object")
+				assert.Equal(t, float64(userID+100), sender["id"])
+				assert.Equal(t, "user"+strconv.Itoa(int(userID+100)), sender["username"])
+			},
+		},
+		{
+			name: "successful get chat messages - custom pagination",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, userID, chatID, 20, 10)
+			},
+			setupMock: func(m *mockusecases.MockMessagesUseCases) {
+				m.EXPECT().
+					GetChatMessages(
+						gomock.Any(),
+						userID,
+						chatID,
+						&domains.Pagination{
+							Limit:  pointers.New[uint64](20),
+							Offset: pointers.New[uint64](10),
+						},
+					).
+					Return(createTestMessages(chatID, userID, 2), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 2)
+			},
+		},
+		{
+			name: "successful get chat messages - empty result",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, userID, chatID, 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockMessagesUseCases) {
+				m.EXPECT().
+					GetChatMessages(gomock.Any(), userID, chatID, nil).
+					Return([]domains.Message{}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Empty(t, response)
+			},
+		},
+		{
+			name: "unauthorized - no userID in context",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return httptest.NewRequest(http.MethodGet, "/chats/123/messages", http.NoBody)
+			},
+			setupMock:      func(_ *mockusecases.MockMessagesUseCases) {},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "context with value userID not found")
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "bad request - invalid chat ID parameter",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				req := httptest.NewRequest(http.MethodGet, "/chats/invalid/messages", http.NoBody)
+				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
+				vars := map[string]string{
+					common.IDRouteKey: "invalid",
+				}
+				req = mux.SetURLVars(req.WithContext(ctx), vars)
+
+				return req
+			},
+			setupMock:      func(_ *mockusecases.MockMessagesUseCases) {},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "invalid syntax")
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "bad request - empty chat ID parameter",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				req := httptest.NewRequest(http.MethodGet, "/chats//messages", http.NoBody)
+				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
+				vars := map[string]string{
+					common.IDRouteKey: "",
+				}
+				req = mux.SetURLVars(req.WithContext(ctx), vars)
+
+				return req
+			},
+			setupMock:      func(_ *mockusecases.MockMessagesUseCases) {},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "invalid syntax")
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "forbidden - user is not chat member",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, userID, chatID, 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockMessagesUseCases) {
+				m.EXPECT().
+					GetChatMessages(gomock.Any(), userID, chatID, nil).
+					Return(nil, customerrors.ErrUserIsNotChatMember)
+			},
+			expectedStatus: http.StatusForbidden,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrUserIsNotChatMember.Error())
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "not found - chat not found",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, userID, uint64(999), 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockMessagesUseCases) {
+				m.EXPECT().
+					GetChatMessages(gomock.Any(), userID, uint64(999), nil).
+					Return(nil, customerrors.ErrChatNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrChatNotFound.Error())
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "not found - user not found",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, uint64(999), chatID, 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockMessagesUseCases) {
+				m.EXPECT().
+					GetChatMessages(gomock.Any(), uint64(999), chatID, nil).
+					Return(nil, customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "internal server error - use case error",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, userID, chatID, 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockMessagesUseCases) {
+				m.EXPECT().
+					GetChatMessages(gomock.Any(), userID, chatID, nil).
+					Return(nil, errors.New("database connection failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "database connection failed")
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "internal server error - JSON encoding error",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, userID, chatID, 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockMessagesUseCases) {
+				m.EXPECT().
+					GetChatMessages(gomock.Any(), userID, chatID, nil).
+					Return(createTestMessages(chatID, userID, 1), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse:  nil,
+		},
+		{
+			name: "pagination with invalid limit parameter",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				req := httptest.NewRequest(
+					http.MethodGet,
+					"/chats/"+strconv.FormatUint(chatID, 10)+"/messages?limit=invalid&offset=0",
+					http.NoBody,
+				)
+				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
+				vars := map[string]string{
+					common.IDRouteKey: strconv.FormatUint(chatID, 10),
+				}
+				req = mux.SetURLVars(req.WithContext(ctx), vars)
+
+				return req
+			},
+			setupMock: func(m *mockusecases.MockMessagesUseCases) {
+				m.EXPECT().
+					GetChatMessages(gomock.Any(), userID, chatID, nil).
+					Return(createTestMessages(chatID, userID, 2), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 2)
+			},
+		},
+		{
+			name: "pagination with invalid offset parameter",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				req := httptest.NewRequest(
+					http.MethodGet,
+					"/chats/"+strconv.FormatUint(chatID, 10)+"/messages?limit=10&offset=invalid",
+					http.NoBody,
+				)
+				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
+				vars := map[string]string{
+					common.IDRouteKey: strconv.FormatUint(chatID, 10),
+				}
+				req = mux.SetURLVars(req.WithContext(ctx), vars)
+
+				return req
+			},
+			setupMock: func(m *mockusecases.MockMessagesUseCases) {
+				m.EXPECT().
+					GetChatMessages(
+						gomock.Any(),
+						userID,
+						chatID,
+						&domains.Pagination{
+							Limit:  pointers.New[uint64](10),
+							Offset: pointers.New[uint64](0),
+						},
+					).
+					Return(createTestMessages(chatID, userID, 2), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 2)
+			},
+		},
+		{
+			name: "zero chat ID",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, userID, uint64(0), 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockMessagesUseCases) {
+				m.EXPECT().
+					GetChatMessages(gomock.Any(), userID, uint64(0), nil).
+					Return([]domains.Message{}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Empty(t, response)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockUseCase := mockusecases.NewMockMessagesUseCases(ctrl)
+			tt.setupMock(mockUseCase)
+
+			handler := chat_messages.Handler(mockUseCase)
+			req := tt.setupRequest(t)
+			rr := httptest.NewRecorder()
+
+			handler.ServeHTTP(rr, req)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+
+			if tt.checkResponse != nil {
+				tt.checkResponse(t, rr)
+			}
+		})
+	}
 }

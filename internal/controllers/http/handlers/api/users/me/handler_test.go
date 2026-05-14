@@ -52,231 +52,8 @@ func TestHandler(t *testing.T) {
 		}
 	}
 
-	t.Run("successful get current user", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := me.Handler(mockUseCase)
-
-		userID := uint64(123)
-		expectedUser := createTestUser(userID, true)
-
-		mockUseCase.EXPECT().
-			GetUserByID(gomock.Any(), userID).
-			Return(expectedUser, nil)
-
-		req := createRequest(t, userID)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-		assert.Equal(
-			t,
-			common.ApplicationJSONContentType,
-			rr.Header().Get(common.ContentTypeHeaderName),
-		)
-
-		var response map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-
-		// Проверяем все обязательные поля согласно схеме
-		assert.Equal(t, float64(userID), response["id"])
-		assert.Equal(t, "testuser123", response["username"])
-		assert.Equal(t, "user123@example.com", response["email"])
-		assert.True(t, response["emailConfirmed"].(bool))
-		assert.NotNil(t, response["createdAt"])
-		assert.NotNil(t, response["updatedAt"])
-
-		// Проверяем, что пароль не возвращается
-		_, passwordExists := response["password"]
-		assert.False(t, passwordExists, "password should not be included in response")
-	})
-
-	t.Run("successful get current user with unconfirmed email", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := me.Handler(mockUseCase)
-
-		userID := uint64(456)
-		expectedUser := createTestUser(userID, false)
-
-		mockUseCase.EXPECT().
-			GetUserByID(gomock.Any(), userID).
-			Return(expectedUser, nil)
-
-		req := createRequest(t, userID)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-
-		assert.Equal(t, float64(userID), response["id"])
-		assert.Equal(t, "testuser456", response["username"])
-		assert.Equal(t, "user456@example.com", response["email"])
-		assert.False(t, response["emailConfirmed"].(bool))
-	})
-
-	t.Run("unauthorized - no userID in context", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := me.Handler(mockUseCase)
-
-		// Запрос БЕЗ userID в контексте
-		req := httptest.NewRequest(http.MethodGet, "/me", http.NoBody)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-		assert.Contains(t, rr.Body.String(), "context with value userID not found")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("unauthorized - invalid userID type in context", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := me.Handler(mockUseCase)
-
-		// Запрос с userID неверного типа в контексте
-		req := httptest.NewRequest(http.MethodGet, "/me", http.NoBody)
-		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, "not-a-number")
-		req = req.WithContext(ctx)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-		assert.Contains(t, rr.Body.String(), "context with value userID not found")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("not found - user not found", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := me.Handler(mockUseCase)
-
-		userID := uint64(999) // Несуществующий пользователь
-
-		mockUseCase.EXPECT().
-			GetUserByID(gomock.Any(), userID).
-			Return(nil, customerrors.ErrUserNotFound)
-
-		req := createRequest(t, userID)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("internal server error - use case error", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := me.Handler(mockUseCase)
-
-		userID := uint64(123)
-
-		mockUseCase.EXPECT().
-			GetUserByID(gomock.Any(), userID).
-			Return(nil, errors.New("database connection failed"))
-
-		req := createRequest(t, userID)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusInternalServerError, rr.Code)
-		assert.Contains(t, rr.Body.String(), "database connection failed")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("user with minimum valid username length", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := me.Handler(mockUseCase)
-
-		userID := uint64(123)
-		now := time.Now()
-
-		// Согласно схеме: minLength: 5
-		expectedUser := &domains.User{
-			ID:             userID,
-			Username:       "user5", // 5 символов - минимальная длина
-			Email:          "user@example.com",
-			EmailConfirmed: true,
-			Password:       "hashed_password",
-			CreatedAt:      now,
-			UpdatedAt:      now,
-		}
-
-		mockUseCase.EXPECT().
-			GetUserByID(gomock.Any(), userID).
-			Return(expectedUser, nil)
-
-		req := createRequest(t, userID)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-
-		assert.Equal(t, "user5", response["username"])
-	})
-
-	t.Run("user with maximum valid username length", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := me.Handler(mockUseCase)
-
-		userID := uint64(123)
-		now := time.Now()
-
-		// Согласно схеме: maxLength: 70
-		// Создаем username длиной 70 символов
+	// Вспомогательная функция для создания длинного username
+	buildLongUsername := func() string {
 		longUsername := "u"
 
 		var longUsernameSb275 strings.Builder
@@ -286,188 +63,410 @@ func TestHandler(t *testing.T) {
 
 		longUsername += longUsernameSb275.String()
 
-		expectedUser := &domains.User{
-			ID:             userID,
-			Username:       longUsername, // 70 символов - максимальная длина
-			Email:          "user@example.com",
-			EmailConfirmed: true,
-			Password:       "hashed_password",
-			CreatedAt:      now,
-			UpdatedAt:      now,
-		}
+		return longUsername
+	}
 
-		mockUseCase.EXPECT().
-			GetUserByID(gomock.Any(), userID).
-			Return(expectedUser, nil)
+	now := time.Now()
+	longUsername := buildLongUsername()
 
-		req := createRequest(t, userID)
-		rr := httptest.NewRecorder()
+	tests := []struct {
+		name           string
+		setupRequest   func(t *testing.T) *http.Request
+		setupMock      func(m *mockusecases.MockUsersUseCases)
+		expectedStatus int
+		checkResponse  func(t *testing.T, rr *httptest.ResponseRecorder)
+	}{
+		{
+			name: "successful get current user",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 123)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(123)).
+					Return(createTestUser(123, true), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				assert.Equal(
+					t,
+					common.ApplicationJSONContentType,
+					rr.Header().Get(common.ContentTypeHeaderName),
+				)
 
-		// Act
-		handler.ServeHTTP(rr, req)
+				var response map[string]any
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
 
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
+				assert.Equal(t, float64(123), response["id"])
+				assert.Equal(t, "testuser123", response["username"])
+				assert.Equal(t, "user123@example.com", response["email"])
+				assert.True(t, response["emailConfirmed"].(bool))
+				assert.NotNil(t, response["createdAt"])
+				assert.NotNil(t, response["updatedAt"])
 
-		var response map[string]any
+				_, passwordExists := response["password"]
+				assert.False(t, passwordExists, "password should not be included in response")
+			},
+		},
+		{
+			name: "successful get current user with unconfirmed email",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 456)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(456)).
+					Return(createTestUser(456, false), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var response map[string]any
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
 
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
+				assert.Equal(t, float64(456), response["id"])
+				assert.Equal(t, "testuser456", response["username"])
+				assert.Equal(t, "user456@example.com", response["email"])
+				assert.False(t, response["emailConfirmed"].(bool))
+			},
+		},
+		{
+			name: "unauthorized - no userID in context",
+			setupRequest: func(_ *testing.T) *http.Request {
+				return httptest.NewRequest(http.MethodGet, "/me", http.NoBody)
+			},
+			setupMock:      func(_ *mockusecases.MockUsersUseCases) {},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				assert.Contains(t, rr.Body.String(), "context with value userID not found")
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "unauthorized - invalid userID type in context",
+			setupRequest: func(_ *testing.T) *http.Request {
+				req := httptest.NewRequest(http.MethodGet, "/me", http.NoBody)
+				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, "not-a-number")
+				return req.WithContext(ctx)
+			},
+			setupMock:      func(_ *mockusecases.MockUsersUseCases) {},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				assert.Contains(t, rr.Body.String(), "context with value userID not found")
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "not found - user not found",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 999)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(999)).
+					Return(nil, customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "internal server error - use case error",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 123)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(123)).
+					Return(nil, errors.New("database connection failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				assert.Contains(t, rr.Body.String(), "database connection failed")
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "user with minimum valid username length",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 123)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(123)).
+					Return(&domains.User{
+						ID:             123,
+						Username:       "user5",
+						Email:          "user@example.com",
+						EmailConfirmed: true,
+						Password:       "hashed_password",
+						CreatedAt:      now,
+						UpdatedAt:      now,
+					}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var response map[string]any
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Equal(t, "user5", response["username"])
+			},
+		},
+		{
+			name: "user with maximum valid username length",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 123)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(123)).
+					Return(&domains.User{
+						ID:             123,
+						Username:       longUsername,
+						Email:          "user@example.com",
+						EmailConfirmed: true,
+						Password:       "hashed_password",
+						CreatedAt:      now,
+						UpdatedAt:      now,
+					}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var response map[string]any
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Equal(t, longUsername, response["username"])
+				assert.Len(t, response["username"].(string), 70)
+			},
+		},
+		{
+			name: "user with valid email format - simple@example.com",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 123)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(123)).
+					Return(&domains.User{
+						ID: 123, Username: "testuser", Email: "simple@example.com",
+						EmailConfirmed: true, Password: "hashed_password",
+						CreatedAt: now, UpdatedAt: now,
+					}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var response map[string]any
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Equal(t, "simple@example.com", response["email"])
+			},
+		},
+		{
+			name: "user with valid email format - user.name@example.com",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 123)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(123)).
+					Return(&domains.User{
+						ID: 123, Username: "testuser", Email: "user.name@example.com",
+						EmailConfirmed: true, Password: "hashed_password",
+						CreatedAt: now, UpdatedAt: now,
+					}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var response map[string]any
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Equal(t, "user.name@example.com", response["email"])
+			},
+		},
+		{
+			name: "user with valid email format - user_name@example.co.uk",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 123)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(123)).
+					Return(&domains.User{
+						ID: 123, Username: "testuser", Email: "user_name@example.co.uk",
+						EmailConfirmed: true, Password: "hashed_password",
+						CreatedAt: now, UpdatedAt: now,
+					}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var response map[string]any
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Equal(t, "user_name@example.co.uk", response["email"])
+			},
+		},
+		{
+			name: "user with valid email format - user+tag@example.com",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 123)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(123)).
+					Return(&domains.User{
+						ID: 123, Username: "testuser", Email: "user+tag@example.com",
+						EmailConfirmed: true, Password: "hashed_password",
+						CreatedAt: now, UpdatedAt: now,
+					}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var response map[string]any
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Equal(t, "user+tag@example.com", response["email"])
+			},
+		},
+		{
+			name: "user with valid email format - 123456@example.com",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 123)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(123)).
+					Return(&domains.User{
+						ID: 123, Username: "testuser", Email: "123456@example.com",
+						EmailConfirmed: true, Password: "hashed_password",
+						CreatedAt: now, UpdatedAt: now,
+					}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var response map[string]any
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Equal(t, "123456@example.com", response["email"])
+			},
+		},
+		{
+			name: "zero user ID",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 0)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(0)).
+					Return(nil, customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse:  nil,
+		},
+		{
+			name: "user with different timestamps",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 123)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				createdAt := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
+				updatedAt := time.Date(2023, 12, 31, 23, 59, 59, 999999999, time.UTC)
 
-		assert.Equal(t, longUsername, response["username"])
-		assert.Len(t, response["username"].(string), 70)
-	})
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(123)).
+					Return(&domains.User{
+						ID:             123,
+						Username:       "testuser",
+						Email:          "user@example.com",
+						EmailConfirmed: true,
+						Password:       "hashed_password",
+						CreatedAt:      createdAt,
+						UpdatedAt:      updatedAt,
+					}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				var response map[string]any
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
 
-	t.Run("user with valid email format", func(t *testing.T) {
-		t.Parallel()
+				assert.NotNil(t, response["createdAt"])
+				assert.NotNil(t, response["updatedAt"])
 
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := me.Handler(mockUseCase)
+				createdAtStr, _ := response["createdAt"].(string)
+				updatedAtStr, _ := response["updatedAt"].(string)
 
-		userID := uint64(123)
-		now := time.Now()
+				parsedCreatedAt, err1 := time.Parse(time.RFC3339Nano, createdAtStr)
+				parsedUpdatedAt, err2 := time.Parse(time.RFC3339Nano, updatedAtStr)
 
-		testEmails := []string{
-			"simple@example.com",
-			"user.name@example.com",
-			"user_name@example.co.uk",
-			"user+tag@example.com",
-			"123456@example.com",
-		}
+				if err1 == nil && err2 == nil {
+					assert.True(
+						t,
+						parsedUpdatedAt.After(parsedCreatedAt),
+						"updatedAt should be after createdAt",
+					)
+				}
+			},
+		},
+		{
+			name: "JSON encoding preserves field order",
+			setupRequest: func(t *testing.T) *http.Request {
+				return createRequest(t, 123)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUserByID(gomock.Any(), uint64(123)).
+					Return(createTestUser(123, true), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				responseBody := rr.Body.String()
 
-		for _, email := range testEmails {
-			expectedUser := &domains.User{
-				ID:             userID,
-				Username:       "testuser",
-				Email:          email,
-				EmailConfirmed: true,
-				Password:       "hashed_password",
-				CreatedAt:      now,
-				UpdatedAt:      now,
-			}
+				assert.Contains(t, responseBody, `"id"`)
+				assert.Contains(t, responseBody, `"username"`)
+				assert.Contains(t, responseBody, `"email"`)
+				assert.Contains(t, responseBody, `"emailConfirmed"`)
+				assert.Contains(t, responseBody, `"createdAt"`)
+				assert.Contains(t, responseBody, `"updatedAt"`)
 
-			mockUseCase.EXPECT().
-				GetUserByID(gomock.Any(), userID).
-				Return(expectedUser, nil)
+				assert.NotContains(t, responseBody, `"password"`)
+			},
+		},
+	}
 
-			req := createRequest(t, userID)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
+			tt.setupMock(mockUseCase)
+
+			handler := me.Handler(mockUseCase)
+			req := tt.setupRequest(t)
 			rr := httptest.NewRecorder()
 
-			// Act
 			handler.ServeHTTP(rr, req)
 
-			// Assert
-			assert.Equal(t, http.StatusOK, rr.Code)
+			assert.Equal(t, tt.expectedStatus, rr.Code)
 
-			var response map[string]any
-
-			err := json.Unmarshal(rr.Body.Bytes(), &response)
-			require.NoError(t, err)
-
-			assert.Equal(t, email, response["email"])
-		}
-	})
-
-	t.Run("zero user ID", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := me.Handler(mockUseCase)
-
-		userID := uint64(0) // Нулевой ID - пограничный случай
-
-		mockUseCase.EXPECT().
-			GetUserByID(gomock.Any(), userID).
-			Return(nil, customerrors.ErrUserNotFound)
-		// Предполагаем, что пользователь с ID=0 не существует
-
-		req := createRequest(t, userID)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-	})
-
-	t.Run("user with different timestamps", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := me.Handler(mockUseCase)
-
-		userID := uint64(123)
-
-		// Создаем пользователя с разными временными метками
-		createdAt := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
-		updatedAt := time.Date(2023, 12, 31, 23, 59, 59, 999999999, time.UTC)
-
-		expectedUser := &domains.User{
-			ID:             userID,
-			Username:       "testuser",
-			Email:          "user@example.com",
-			EmailConfirmed: true,
-			Password:       "hashed_password",
-			CreatedAt:      createdAt,
-			UpdatedAt:      updatedAt,
-		}
-
-		mockUseCase.EXPECT().
-			GetUserByID(gomock.Any(), userID).
-			Return(expectedUser, nil)
-
-		req := createRequest(t, userID)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-
-		// Проверяем, что временные метки присутствуют
-		assert.NotNil(t, response["createdAt"])
-		assert.NotNil(t, response["updatedAt"])
-
-		// Проверяем, что updatedAt позже createdAt
-		createdAtStr, _ := response["createdAt"].(string)
-		updatedAtStr, _ := response["updatedAt"].(string)
-
-		parsedCreatedAt, err1 := time.Parse(time.RFC3339Nano, createdAtStr)
-		parsedUpdatedAt, err2 := time.Parse(time.RFC3339Nano, updatedAtStr)
-
-		if err1 == nil && err2 == nil {
-			assert.True(
-				t,
-				parsedUpdatedAt.After(parsedCreatedAt),
-				"updatedAt should be after createdAt",
-			)
-		}
-	})
+			if tt.checkResponse != nil {
+				tt.checkResponse(t, rr)
+			}
+		})
+	}
 
 	t.Run("concurrent requests", func(t *testing.T) {
 		t.Parallel()
 
-		// Arrange
 		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
 		handler := me.Handler(mockUseCase)
 
-		// Тестируем, что обработчик безопасен для конкурентного использования
 		const numRequests = 10
 
 		userID := uint64(123)
 		expectedUser := createTestUser(userID, true)
 
-		// Настраиваем мок на вызовы
 		mockUseCase.EXPECT().
 			GetUserByID(gomock.Any(), userID).
 			Times(numRequests).
@@ -475,7 +474,6 @@ func TestHandler(t *testing.T) {
 
 		done := make(chan bool, numRequests)
 
-		// Act - запускаем concurrent запросы
 		for i := range numRequests {
 			go func(_ int) {
 				req := createRequest(t, userID)
@@ -488,48 +486,8 @@ func TestHandler(t *testing.T) {
 			}(i)
 		}
 
-		// Ждем завершения всех горутин
 		for range numRequests {
 			<-done
 		}
-	})
-
-	t.Run("JSON encoding preserves field order", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := me.Handler(mockUseCase)
-
-		userID := uint64(123)
-		expectedUser := createTestUser(userID, true)
-
-		mockUseCase.EXPECT().
-			GetUserByID(gomock.Any(), userID).
-			Return(expectedUser, nil)
-
-		req := createRequest(t, userID)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		// Проверяем, что JSON содержит правильные поля в правильном порядке
-		// (опционально, зависит от требований)
-		responseBody := rr.Body.String()
-
-		// Простая проверка на наличие всех полей
-		assert.Contains(t, responseBody, `"id"`)
-		assert.Contains(t, responseBody, `"username"`)
-		assert.Contains(t, responseBody, `"email"`)
-		assert.Contains(t, responseBody, `"emailConfirmed"`)
-		assert.Contains(t, responseBody, `"createdAt"`)
-		assert.Contains(t, responseBody, `"updatedAt"`)
-
-		// Проверяем, что пароль не возвращается
-		assert.NotContains(t, responseBody, `"password"`)
 	})
 }

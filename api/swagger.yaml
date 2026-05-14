@@ -173,6 +173,20 @@ definitions:
         title: Sender represents a user record, who sent message to the chat.
         type: object
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
+    Settings:
+        properties:
+            theme:
+                description: Theme of the user interface. 0 = Light, 1 = Dark.
+                format: int64
+                maximum: 1
+                minimum: 0
+                type: integer
+                x-go-name: Theme
+        required:
+            - theme
+        title: Settings represents user settings.
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
     User:
         properties:
             createdAt:
@@ -652,6 +666,56 @@ paths:
             summary: UpdateCurrentUser
             tags:
                 - users
+    /api/users/me/settings:
+        get:
+            description: Provides settings of the current authorized User.
+            operationId: GetSettings
+            responses:
+                "200":
+                    description: Settings
+                    schema:
+                        $ref: '#/definitions/Settings'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: GetSettings
+            tags:
+                - settings
+        put:
+            description: Updates settings of the current authorized User.
+            operationId: UpdateSettings
+            parameters:
+                - description: Settings data to update
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/Settings'
+            responses:
+                "200":
+                    description: Settings
+                    schema:
+                        $ref: '#/definitions/Settings'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: UpdateSettings
+            tags:
+                - settings
     /api/users/password/change:
         post:
             description: Changes old password to new password of current user.

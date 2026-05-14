@@ -378,6 +378,7 @@ linters:
       - path: internal/services/auth/service.go
         linters:
           - dupl
+          - exhaustruct
 
       - path: internal/services/users/service.go
         linters:

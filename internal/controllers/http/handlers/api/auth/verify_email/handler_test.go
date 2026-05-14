@@ -32,7 +32,6 @@ func TestHandler(t *testing.T) {
 		url := "/verify-email/" + token
 		req := httptest.NewRequest(http.MethodPost, url, http.NoBody)
 
-		// Устанавливаем параметры маршрута для mux.Vars
 		vars := map[string]string{
 			verify_email.TokenRouteKey: token,
 		}
@@ -41,230 +40,405 @@ func TestHandler(t *testing.T) {
 		return req
 	}
 
-	t.Run("successful email verification", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := verify_email.Handler(mockUseCase)
-
-		token := "valid_verification_token_123"
-
-		mockUseCase.EXPECT().
-			VerifyEmail(gomock.Any(), token).
-			Return(nil)
-
-		req := createRequest(t, token)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-		assert.Empty(t, rr.Body.String())
-	})
-
-	t.Run("unauthorized - invalid JWT token", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := verify_email.Handler(mockUseCase)
-
-		mockUseCase.EXPECT().
-			VerifyEmail(gomock.Any(), invalidJWTToken).
-			Return(customerrors.ErrInvalidJWT)
-
-		req := createRequest(t, invalidJWTToken)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidJWT.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("not found - user not found", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := verify_email.Handler(mockUseCase)
-
-		token := "token_for_nonexistent_user"
-
-		mockUseCase.EXPECT().
-			VerifyEmail(gomock.Any(), token).
-			Return(customerrors.ErrUserNotFound)
-
-		req := createRequest(t, token)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("conflict - email already confirmed", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := verify_email.Handler(mockUseCase)
-
-		token := "token_for_already_confirmed_email"
-
-		mockUseCase.EXPECT().
-			VerifyEmail(gomock.Any(), token).
-			Return(customerrors.ErrEmailAlreadyConfirmed)
-
-		req := createRequest(t, token)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusConflict, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrEmailAlreadyConfirmed.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("internal server error - use case error", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := verify_email.Handler(mockUseCase)
-
-		mockUseCase.EXPECT().
-			VerifyEmail(gomock.Any(), validToken).
-			Return(errors.New("database connection failed"))
-
-		req := createRequest(t, validToken)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusInternalServerError, rr.Code)
-		assert.Contains(t, rr.Body.String(), "database connection failed")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("different token formats", func(t *testing.T) {
-		t.Parallel()
-
-		testCases := []struct {
-			name        string
-			token       string
-			expectError bool
-			errorType   error
-		}{
-			{
-				name:        "standard JWT token",
-				token:       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
-				expectError: false,
+	tests := []struct {
+		name           string
+		setupRequest   func(t *testing.T) *http.Request
+		setupMock      func(m *mockusecases.MockAuthUseCases)
+		expectedStatus int
+		checkResponse  func(t *testing.T, rr *httptest.ResponseRecorder)
+	}{
+		{
+			name: "successful email verification",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "valid_verification_token_123")
 			},
-			{
-				name:        "hex token",
-				token:       "a1b2c3d4e5f67890",
-				expectError: false,
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "valid_verification_token_123").
+					Return(nil)
 			},
-			{
-				name:        "uuid token",
-				token:       "550e8400-e29b-41d4-a716-446655440000",
-				expectError: false,
+			expectedStatus: http.StatusNoContent,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Empty(t, rr.Body.String())
 			},
-			{
-				name:        "token with special chars",
-				token:       "token_with-special.chars+plus=equals",
-				expectError: false,
+		},
+		{
+			name: "unauthorized - invalid JWT token",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, invalidJWTToken)
 			},
-			{
-				name:        "expired token",
-				token:       "expired_jwt_token",
-				expectError: true,
-				errorType:   customerrors.ErrInvalidJWT,
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), invalidJWTToken).
+					Return(customerrors.ErrInvalidJWT)
 			},
-			{
-				name:        "malformed JWT",
-				token:       "not.a.valid.jwt",
-				expectError: true,
-				errorType:   customerrors.ErrInvalidJWT,
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidJWT.Error())
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
 			},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				// Arrange
-				mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-				handler := verify_email.Handler(mockUseCase)
-
-				if tc.expectError {
-					mockUseCase.EXPECT().
-						VerifyEmail(gomock.Any(), tc.token).
-						Return(tc.errorType)
-
-					req := createRequest(t, tc.token)
-					rr := httptest.NewRecorder()
-
-					// Act
-					handler.ServeHTTP(rr, req)
-
-					// Assert
-					switch {
-					case errors.Is(tc.errorType, customerrors.ErrInvalidJWT):
-						assert.Equal(t, http.StatusUnauthorized, rr.Code)
-					case errors.Is(tc.errorType, customerrors.ErrUserNotFound):
-						assert.Equal(t, http.StatusNotFound, rr.Code)
-					case errors.Is(tc.errorType, customerrors.ErrEmailAlreadyConfirmed):
-						assert.Equal(t, http.StatusConflict, rr.Code)
-					}
-
-					assert.Contains(t, rr.Body.String(), tc.errorType.Error())
-				} else {
-					mockUseCase.EXPECT().
-						VerifyEmail(gomock.Any(), tc.token).
-						Return(nil)
-
-					req := createRequest(t, tc.token)
-					rr := httptest.NewRecorder()
-
-					// Act
-					handler.ServeHTTP(rr, req)
-
-					// Assert
-					assert.Equal(t, http.StatusNoContent, rr.Code)
+		},
+		{
+			name: "not found - user not found",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "token_for_nonexistent_user")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "token_for_nonexistent_user").
+					Return(customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "conflict - email already confirmed",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "token_for_already_confirmed_email")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "token_for_already_confirmed_email").
+					Return(customerrors.ErrEmailAlreadyConfirmed)
+			},
+			expectedStatus: http.StatusConflict,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrEmailAlreadyConfirmed.Error())
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "internal server error - use case error",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, validToken)
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), validToken).
+					Return(errors.New("database connection failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "database connection failed")
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "different token formats - standard JWT token",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "different token formats - hex token",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "a1b2c3d4e5f67890")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "a1b2c3d4e5f67890").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "different token formats - uuid token",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "550e8400-e29b-41d4-a716-446655440000")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "550e8400-e29b-41d4-a716-446655440000").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "different token formats - token with special chars",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "token_with-special.chars+plus=equals")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "token_with-special.chars+plus=equals").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "different token formats - expired token",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "expired_jwt_token")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "expired_jwt_token").
+					Return(customerrors.ErrInvalidJWT)
+			},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidJWT.Error())
+			},
+		},
+		{
+			name: "different token formats - malformed JWT",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "not.a.valid.jwt")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "not.a.valid.jwt").
+					Return(customerrors.ErrInvalidJWT)
+			},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidJWT.Error())
+			},
+		},
+		{
+			name: "expired verification token",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "expired_verification_token")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "expired_verification_token").
+					Return(customerrors.ErrInvalidJWT)
+			},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidJWT.Error())
+			},
+		},
+		{
+			name: "very long token",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				var longTokenSb strings.Builder
+				for range 4096 {
+					longTokenSb.WriteString("a")
 				}
-			})
-		}
-	})
+				longToken := longTokenSb.String()
+				return createRequest(t, longToken)
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				var longTokenSb strings.Builder
+				for range 4096 {
+					longTokenSb.WriteString("a")
+				}
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), longTokenSb.String()).
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "verification for deleted user",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "token_for_deleted_user")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "token_for_deleted_user").
+					Return(customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
+			},
+		},
+		{
+			name: "database or external service errors - database connection error",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, validToken)
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), validToken).
+					Return(errors.New("database connection failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "database connection failed")
+			},
+		},
+		{
+			name: "database or external service errors - cache service error",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, validToken)
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), validToken).
+					Return(errors.New("redis connection failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "redis connection failed")
+			},
+		},
+		{
+			name: "database or external service errors - transaction error",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, validToken)
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), validToken).
+					Return(errors.New("transaction failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "transaction failed")
+			},
+		},
+		{
+			name: "status code 204 No Content on success",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "valid_verification_token")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "valid_verification_token").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.NotEqual(t, http.StatusOK, rr.Code, "Should return 204 No Content, not 200 OK")
+				assert.Empty(t, rr.Body.String())
+			},
+		},
+		{
+			name: "token with query parameters in URL",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				token := "token123"
+				url := "/verify-email/" + token + "?redirect=true&mode=web"
+				req := httptest.NewRequest(http.MethodPost, url, http.NoBody)
+				vars := map[string]string{
+					verify_email.TokenRouteKey: token,
+				}
+				req = mux.SetURLVars(req, vars)
+				return req
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "token123").
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+		{
+			name: "verification after user changes email",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "token_for_old_email")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), "token_for_old_email").
+					Return(customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
+			},
+		},
+		{
+			name: "verification with body in request (should be ignored)",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				req := httptest.NewRequest(
+					http.MethodPost,
+					"/verify-email/"+validToken,
+					http.NoBody,
+				)
+				vars := map[string]string{
+					verify_email.TokenRouteKey: validToken,
+				}
+				req = mux.SetURLVars(req, vars)
+				return req
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), validToken).
+					Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
+			tt.setupMock(mockUseCase)
+
+			handler := verify_email.Handler(mockUseCase)
+			req := tt.setupRequest(t)
+			rr := httptest.NewRecorder()
+
+			handler.ServeHTTP(rr, req)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+
+			if tt.checkResponse != nil {
+				tt.checkResponse(t, rr)
+			}
+		})
+	}
 
 	t.Run("concurrent verification requests", func(t *testing.T) {
 		t.Parallel()
 
-		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
 		handler := verify_email.Handler(mockUseCase)
 
 		const numRequests = 5
 
-		// Каждый запрос с разными токенами
 		tokens := []string{"token1", "token2", "token3", "token4", "token5"}
 
-		// Настраиваем мок на конкурентные вызовы
 		for i := range numRequests {
 			mockUseCase.EXPECT().
 				VerifyEmail(gomock.Any(), tokens[i]).
@@ -273,7 +447,6 @@ func TestHandler(t *testing.T) {
 
 		done := make(chan bool, numRequests)
 
-		// Act - запускаем concurrent запросы
 		for i := range numRequests {
 			go func(idx int) {
 				req := createRequest(t, tokens[idx])
@@ -286,41 +459,14 @@ func TestHandler(t *testing.T) {
 			}(i)
 		}
 
-		// Ждем завершения всех горутин
 		for range numRequests {
 			<-done
 		}
 	})
 
-	t.Run("expired verification token", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := verify_email.Handler(mockUseCase)
-
-		token := "expired_verification_token"
-
-		// Истекший токен должен вернуть ошибку InvalidJWT
-		mockUseCase.EXPECT().
-			VerifyEmail(gomock.Any(), token).
-			Return(customerrors.ErrInvalidJWT)
-
-		req := createRequest(t, token)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidJWT.Error())
-	})
-
 	t.Run("token used multiple times", func(t *testing.T) {
 		t.Parallel()
 
-		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
 		handler := verify_email.Handler(mockUseCase)
 
@@ -334,14 +480,11 @@ func TestHandler(t *testing.T) {
 		req1 := createRequest(t, token)
 		rr1 := httptest.NewRecorder()
 
-		// Act - первый вызов
 		handler.ServeHTTP(rr1, req1)
 
-		// Assert - первый вызов
 		assert.Equal(t, http.StatusNoContent, rr1.Code)
 
 		// Второй вызов с тем же токеном - должен вернуть ошибку
-		// (токен одноразовый или email уже подтвержден)
 		mockUseCase.EXPECT().
 			VerifyEmail(gomock.Any(), token).
 			Return(customerrors.ErrEmailAlreadyConfirmed)
@@ -349,180 +492,15 @@ func TestHandler(t *testing.T) {
 		req2 := createRequest(t, token)
 		rr2 := httptest.NewRecorder()
 
-		// Act - второй вызов
 		handler.ServeHTTP(rr2, req2)
 
-		// Assert - второй вызов
 		assert.Equal(t, http.StatusConflict, rr2.Code)
 		assert.Contains(t, rr2.Body.String(), customerrors.ErrEmailAlreadyConfirmed.Error())
-	})
-
-	t.Run("very long token", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := verify_email.Handler(mockUseCase)
-
-		// Создаем очень длинный токен (4096 символов)
-		longToken := ""
-
-		var longTokenSb365 strings.Builder
-		for range 4096 {
-			longTokenSb365.WriteString("a")
-		}
-
-		longToken += longTokenSb365.String()
-
-		mockUseCase.EXPECT().
-			VerifyEmail(gomock.Any(), longToken).
-			Return(nil)
-
-		req := createRequest(t, longToken)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-	})
-
-	t.Run("verification for deleted user", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := verify_email.Handler(mockUseCase)
-
-		token := "token_for_deleted_user"
-
-		// Токен для удаленного пользователя
-		mockUseCase.EXPECT().
-			VerifyEmail(gomock.Any(), token).
-			Return(customerrors.ErrUserNotFound)
-
-		req := createRequest(t, token)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
-	})
-
-	t.Run("database or external service errors", func(t *testing.T) {
-		t.Parallel()
-
-		testCases := []struct {
-			name       string
-			error      error
-			statusCode int
-		}{
-			{
-				name:       "database connection error",
-				error:      errors.New("database connection failed"),
-				statusCode: http.StatusInternalServerError,
-			},
-			{
-				name:       "cache service error",
-				error:      errors.New("redis connection failed"),
-				statusCode: http.StatusInternalServerError,
-			},
-			{
-				name:       "transaction error",
-				error:      errors.New("transaction failed"),
-				statusCode: http.StatusInternalServerError,
-			},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				// Arrange
-				mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-				handler := verify_email.Handler(mockUseCase)
-
-				mockUseCase.EXPECT().
-					VerifyEmail(gomock.Any(), validToken).
-					Return(tc.error)
-
-				req := createRequest(t, validToken)
-				rr := httptest.NewRecorder()
-
-				// Act
-				handler.ServeHTTP(rr, req)
-
-				// Assert
-				assert.Equal(t, tc.statusCode, rr.Code)
-				assert.Contains(t, rr.Body.String(), tc.error.Error())
-			})
-		}
-	})
-
-	t.Run("status code 204 No Content on success", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := verify_email.Handler(mockUseCase)
-
-		token := "valid_verification_token"
-
-		mockUseCase.EXPECT().
-			VerifyEmail(gomock.Any(), token).
-			Return(nil)
-
-		req := createRequest(t, token)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert - проверяем, что статус код 204, а не 200
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-		assert.NotEqual(t, http.StatusOK, rr.Code, "Should return 204 No Content, not 200 OK")
-		assert.Empty(t, rr.Body.String())
-	})
-
-	t.Run("token with query parameters in URL", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := verify_email.Handler(mockUseCase)
-
-		// Токен, который может быть передан как часть URL
-		token := "token123"
-
-		// URL с query параметрами
-		url := "/verify-email/" + token + "?redirect=true&mode=web"
-		req := httptest.NewRequest(http.MethodPost, url, http.NoBody)
-		vars := map[string]string{
-			verify_email.TokenRouteKey: token,
-		}
-		req = mux.SetURLVars(req, vars)
-
-		rr := httptest.NewRecorder()
-
-		mockUseCase.EXPECT().
-			VerifyEmail(gomock.Any(), token).
-			Return(nil)
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
 	})
 
 	t.Run("multiple verification attempts with different outcomes", func(t *testing.T) {
 		t.Parallel()
 
-		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
 		handler := verify_email.Handler(mockUseCase)
 
@@ -566,73 +544,13 @@ func TestHandler(t *testing.T) {
 			req := createRequest(t, tc.token)
 			rr := httptest.NewRecorder()
 
-			// Act
 			handler.ServeHTTP(rr, req)
 
-			// Assert
 			assert.Equal(t, tc.statusCode, rr.Code)
 
 			if tc.error != nil {
 				assert.Contains(t, rr.Body.String(), tc.error.Error())
 			}
 		}
-	})
-
-	t.Run("verification after user changes email", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := verify_email.Handler(mockUseCase)
-
-		// Токен для подтверждения старого email (после смены email)
-		token := "token_for_old_email"
-
-		// Пользователь сменил email, старый email больше не привязан к аккаунту
-		mockUseCase.EXPECT().
-			VerifyEmail(gomock.Any(), token).
-			Return(customerrors.ErrUserNotFound)
-
-		req := createRequest(t, token)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
-	})
-
-	t.Run("verification with body in request (should be ignored)", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		handler := verify_email.Handler(mockUseCase)
-
-		// Запрос с телом (должно игнорироваться)
-		req := httptest.NewRequest(
-			http.MethodPost,
-			"/verify-email/"+validToken,
-			http.NoBody,
-		)
-		// Можно добавить тело, но обработчик его не читает
-		vars := map[string]string{
-			verify_email.TokenRouteKey: validToken,
-		}
-		req = mux.SetURLVars(req, vars)
-
-		rr := httptest.NewRecorder()
-
-		mockUseCase.EXPECT().
-			VerifyEmail(gomock.Any(), validToken).
-			Return(nil)
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
 	})
 }

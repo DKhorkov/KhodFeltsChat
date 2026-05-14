@@ -26,10 +26,11 @@ func TestService_RegisterUser(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		mockUOW             func(*mockuow.MockUnitOfWork)
-		mockAuthRepository  func(*mockrepositories.MockAuthRepository)
-		mockUsersRepository func(*mockrepositories.MockUsersRepository)
-		mockNatsPublisher   func(*mocknats.MockPublisher)
+		mockUOW                func(*mockuow.MockUnitOfWork)
+		mockAuthRepository     func(*mockrepositories.MockAuthRepository)
+		mockUsersRepository    func(*mockrepositories.MockUsersRepository)
+		mockSettingsRepository func(*mockrepositories.MockSettingsRepository)
+		mockNatsPublisher      func(*mocknats.MockPublisher)
 	}
 
 	type args struct {
@@ -84,6 +85,11 @@ func TestService_RegisterUser(t *testing.T) {
 					ar.EXPECT().
 						RegisterUser(gomock.Any(), gomock.AssignableToTypeOf(domains.RegisterDTO{})).
 						Return(uint64(1), nil)
+				},
+				mockSettingsRepository: func(sr *mockrepositories.MockSettingsRepository) {
+					sr.EXPECT().
+						CreateSettings(gomock.Any(), gomock.AssignableToTypeOf(domains.Settings{})).
+						Return(nil)
 				},
 				mockNatsPublisher: func(p *mocknats.MockPublisher) {
 					p.EXPECT().
@@ -278,6 +284,11 @@ func TestService_RegisterUser(t *testing.T) {
 						RegisterUser(gomock.Any(), gomock.Any()).
 						Return(uint64(1), nil)
 				},
+				mockSettingsRepository: func(sr *mockrepositories.MockSettingsRepository) {
+					sr.EXPECT().
+						CreateSettings(gomock.Any(), gomock.Any()).
+						Return(nil)
+				},
 				mockNatsPublisher: func(p *mocknats.MockPublisher) {
 					p.EXPECT().
 						Publish(gomock.Any(), gomock.Any()).
@@ -308,6 +319,7 @@ func TestService_RegisterUser(t *testing.T) {
 			mockUOW := mockuow.NewMockUnitOfWork(ctrl)
 			mockAuthRepo := mockrepositories.NewMockAuthRepository(ctrl)
 			mockUsersRepo := mockrepositories.NewMockUsersRepository(ctrl)
+			mockSettingsRepo := mockrepositories.NewMockSettingsRepository(ctrl)
 			mockNatsPublisher := mocknats.NewMockPublisher(ctrl)
 
 			if tt.fields.mockUOW != nil {
@@ -320,6 +332,10 @@ func TestService_RegisterUser(t *testing.T) {
 
 			if tt.fields.mockUsersRepository != nil {
 				tt.fields.mockUsersRepository(mockUsersRepo)
+			}
+
+			if tt.fields.mockSettingsRepository != nil {
+				tt.fields.mockSettingsRepository(mockSettingsRepo)
 			}
 
 			if tt.fields.mockNatsPublisher != nil {
@@ -335,10 +351,15 @@ func TestService_RegisterUser(t *testing.T) {
 				return mockUsersRepo
 			}
 
+			newSettingsRepoFunc := func(_ pg.Transaction) interfaces.SettingsRepository {
+				return mockSettingsRepo
+			}
+
 			service := auth.New(
 				mockUOW,
 				newAuthRepoFunc,
 				newUsersRepoFunc,
+				newSettingsRepoFunc,
 				mockNatsPublisher,
 				natsConfig,
 			)
@@ -514,6 +535,7 @@ func TestService_CreateRefreshToken(t *testing.T) {
 				newAuthRepoFunc,
 				nil,
 				nil,
+				nil,
 				natsConfig,
 			)
 
@@ -672,6 +694,7 @@ func TestService_GetRefreshTokenByUserID(t *testing.T) {
 				newAuthRepoFunc,
 				nil,
 				nil,
+				nil,
 				natsConfig,
 			)
 
@@ -791,6 +814,7 @@ func TestService_ExpireRefreshToken(t *testing.T) {
 				newAuthRepoFunc,
 				nil,
 				nil,
+				nil,
 				natsConfig,
 			)
 
@@ -907,6 +931,7 @@ func TestService_VerifyEmail(t *testing.T) {
 			service := auth.New(
 				mockUOW,
 				newAuthRepoFunc,
+				nil,
 				nil,
 				nil,
 				natsConfig,
@@ -1138,6 +1163,7 @@ func TestService_ForgetPassword(t *testing.T) {
 				newAuthRepoFunc,
 				nil,
 				nil,
+				nil,
 				natsConfig,
 			)
 
@@ -1257,6 +1283,7 @@ func TestService_ChangePassword(t *testing.T) {
 			service := auth.New(
 				mockUOW,
 				newAuthRepoFunc,
+				nil,
 				nil,
 				nil,
 				natsConfig,
@@ -1422,6 +1449,7 @@ func TestService_SendForgetPasswordMessage(t *testing.T) {
 				mockUOW,
 				nil,
 				newUsersRepoFunc,
+				nil,
 				mockNatsPublisher,
 				natsConfig,
 			)
@@ -1590,6 +1618,7 @@ func TestService_SendVerifyEmailMessage(t *testing.T) {
 				mockUOW,
 				nil,
 				newUsersRepoFunc,
+				nil,
 				mockNatsPublisher,
 				natsConfig,
 			)

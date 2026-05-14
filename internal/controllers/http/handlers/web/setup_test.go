@@ -8,6 +8,7 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web"
 	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -26,87 +27,56 @@ func TestSetupHandlers_RoutesRegistered(t *testing.T) {
 	webMux := mux.NewRouter()
 	web.SetupHandlers(webMux)
 
-	routes := []struct {
-		path   string
+	tests := []struct {
+		name   string
 		method string
+		path   string
 	}{
-		{path: "/login", method: http.MethodGet},
-		{path: "/forget-password", method: http.MethodGet},
-		{path: "/chat", method: http.MethodGet},
-		{path: "/verify-email/test-token", method: http.MethodGet},
+		{"GET /login", http.MethodGet, "/login"},
+		{"GET /forget-password", http.MethodGet, "/forget-password"},
+		{"GET /chat", http.MethodGet, "/chat"},
+		{"GET /verify-email/test-token", http.MethodGet, "/verify-email/test-token"},
 	}
 
-	for _, route := range routes {
-		req := httptest.NewRequest(route.method, route.path, http.NoBody)
-		match := mux.RouteMatch{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-		if !webMux.Match(req, &match) {
-			t.Errorf("Expected route %s %s to be registered", route.method, route.path)
-		}
+			req := httptest.NewRequest(tt.method, tt.path, http.NoBody)
+			match := mux.RouteMatch{}
+			assert.True(t, webMux.Match(req, &match), "Expected %s %s to be registered", tt.method, tt.path)
+		})
 	}
 }
 
-func TestSetupHandlers_LoginPage(t *testing.T) {
+func TestSetupHandlers_Pages(t *testing.T) {
 	t.Parallel()
 
 	webMux := mux.NewRouter()
 	web.SetupHandlers(webMux)
 
-	req := httptest.NewRequest(http.MethodGet, "/login", http.NoBody)
-	rr := httptest.NewRecorder()
-
-	webMux.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Errorf("Expected status %d for /login, got %d", http.StatusOK, rr.Code)
+	tests := []struct {
+		name           string
+		path           string
+		expectedStatus int
+	}{
+		{"login page", "/login", http.StatusOK},
+		{"chat page", "/chat", http.StatusOK},
+		{"forget password page", "/forget-password", http.StatusOK},
+		{"verify email page", "/verify-email/some-token", http.StatusOK},
 	}
-}
 
-func TestSetupHandlers_ChatPage(t *testing.T) {
-	t.Parallel()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	webMux := mux.NewRouter()
-	web.SetupHandlers(webMux)
+			req := httptest.NewRequest(http.MethodGet, tt.path, http.NoBody)
+			rr := httptest.NewRecorder()
 
-	req := httptest.NewRequest(http.MethodGet, "/chat", http.NoBody)
-	rr := httptest.NewRecorder()
+			webMux.ServeHTTP(rr, req)
 
-	webMux.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Errorf("Expected status %d for /chat, got %d", http.StatusOK, rr.Code)
-	}
-}
-
-func TestSetupHandlers_ForgetPasswordPage(t *testing.T) {
-	t.Parallel()
-
-	webMux := mux.NewRouter()
-	web.SetupHandlers(webMux)
-
-	req := httptest.NewRequest(http.MethodGet, "/forget-password", http.NoBody)
-	rr := httptest.NewRecorder()
-
-	webMux.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Errorf("Expected status %d for /forget-password, got %d", http.StatusOK, rr.Code)
-	}
-}
-
-func TestSetupHandlers_VerifyEmailPage(t *testing.T) {
-	t.Parallel()
-
-	webMux := mux.NewRouter()
-	web.SetupHandlers(webMux)
-
-	req := httptest.NewRequest(http.MethodGet, "/verify-email/some-token", http.NoBody)
-	rr := httptest.NewRecorder()
-
-	webMux.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Errorf("Expected status %d for /verify-email/{token}, got %d", http.StatusOK, rr.Code)
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+		})
 	}
 }
 
@@ -119,7 +89,5 @@ func TestSetupHandlers_PostNotAllowed(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/login", http.NoBody)
 	match := mux.RouteMatch{}
 
-	if webMux.Match(req, &match) {
-		t.Error("Expected POST /login to not match any route")
-	}
+	assert.False(t, webMux.Match(req, &match), "Expected POST /login to not match any route")
 }

@@ -136,3 +136,19 @@ Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjgxMzk4Njk
 GET http://localhost:8080/api/chats/1/messages?limit=2&offset=0
 Content-Type: application/json
 Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjgxMzk4NjksInZhbHVlIjo4fQ.EDC1g59iOI50AF79i1mnPux0qz0bf1e9l0tao0o8GeM
+
+###
+
+GET http://localhost:8080/api/users/me/settings
+Content-Type: application/json
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzg3NTA2ODAsInZhbHVlIjoxfQ.sPpiNlw1F8MlnYRZUNcel818DSN4Pxgb31Sk3-nN20M
+
+###
+
+PUT http://localhost:8080/api/users/me/settings
+Content-Type: application/json
+Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzg3NTA2ODAsInZhbHVlIjoxfQ.sPpiNlw1F8MlnYRZUNcel818DSN4Pxgb31Sk3-nN20M
+
+{
+  "theme": 1
+}

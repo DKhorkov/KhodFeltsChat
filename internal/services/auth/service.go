@@ -17,26 +17,29 @@ import (
 )
 
 type Service struct {
-	uow                    interfaces.UnitOfWork
-	newAuthRepositoryFunc  func(tx pg.Transaction) interfaces.AuthRepository
-	newUsersRepositoryFunc func(tx pg.Transaction) interfaces.UsersRepository
-	natsPublisher          customnats.Publisher
-	natsConfig             config.NATSConfig
+	uow                       interfaces.UnitOfWork
+	newAuthRepositoryFunc     func(tx pg.Transaction) interfaces.AuthRepository
+	newUsersRepositoryFunc    func(tx pg.Transaction) interfaces.UsersRepository
+	newSettingsRepositoryFunc func(tx pg.Transaction) interfaces.SettingsRepository
+	natsPublisher             customnats.Publisher
+	natsConfig                config.NATSConfig
 }
 
 func New(
 	uow interfaces.UnitOfWork,
 	newAuthRepositoryFunc func(tx pg.Transaction) interfaces.AuthRepository,
 	newUsersRepositoryFunc func(tx pg.Transaction) interfaces.UsersRepository,
+	newSettingsRepositoryFunc func(tx pg.Transaction) interfaces.SettingsRepository,
 	natsPublisher customnats.Publisher,
 	natsConfig config.NATSConfig,
 ) *Service {
 	return &Service{
-		uow:                    uow,
-		newAuthRepositoryFunc:  newAuthRepositoryFunc,
-		newUsersRepositoryFunc: newUsersRepositoryFunc,
-		natsPublisher:          natsPublisher,
-		natsConfig:             natsConfig,
+		uow:                       uow,
+		newAuthRepositoryFunc:     newAuthRepositoryFunc,
+		newUsersRepositoryFunc:    newUsersRepositoryFunc,
+		newSettingsRepositoryFunc: newSettingsRepositoryFunc,
+		natsPublisher:             natsPublisher,
+		natsConfig:                natsConfig,
 	}
 }
 
@@ -74,6 +77,14 @@ func (s *Service) RegisterUser(
 
 			user, err = usersRepository.GetUserByEmail(ctx, userData.Email)
 			if err != nil {
+				return err
+			}
+
+			settingsRepository := s.newSettingsRepositoryFunc(tx)
+			if err = settingsRepository.CreateSettings(ctx, domains.Settings{
+				UserID: user.ID,
+				Theme:  domains.ThemeLight,
+			}); err != nil {
 				return err
 			}
 
