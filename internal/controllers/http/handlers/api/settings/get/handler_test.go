@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/settings/get"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/get"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"

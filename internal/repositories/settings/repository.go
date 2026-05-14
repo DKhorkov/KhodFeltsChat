@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	tableName = "settings"
+	settingsTableName = "settings"
 
 	idColumnName        = "id"
 	userIDColumnName    = "user_id"
@@ -31,9 +31,15 @@ func New(tx pg.Transaction) *Repository {
 
 func (repo *Repository) CreateSettings(ctx context.Context, settings domains.Settings) error {
 	stmt, params, err := sq.
-		Insert(tableName).
-		Columns(userIDColumnName, themeColumnName).
-		Values(settings.UserID, settings.Theme).
+		Insert(settingsTableName).
+		Columns(
+			userIDColumnName,
+			themeColumnName,
+		).
+		Values(
+			settings.UserID,
+			settings.Theme,
+		).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
@@ -51,7 +57,7 @@ func (repo *Repository) GetSettingsByUserID(
 ) (*domains.Settings, error) {
 	stmt, params, err := sq.
 		Select(selectAllColumns).
-		From(tableName).
+		From(settingsTableName).
 		Where(sq.Eq{userIDColumnName: userID}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
@@ -74,7 +80,7 @@ func (repo *Repository) UpdateSettings(
 	settings domains.Settings,
 ) error {
 	builder := sq.
-		Update(tableName).
+		Update(settingsTableName).
 		Where(sq.Eq{userIDColumnName: settings.UserID}).
 		Set(themeColumnName, settings.Theme).
 		Set(updatedAtColumnName, time.Now()).

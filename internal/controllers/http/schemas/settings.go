@@ -11,10 +11,6 @@ type Settings struct {
 	Theme int `json:"theme"`
 }
 
-// GetSettingsInput
-// swagger:parameters GetSettings
-type GetSettingsInput struct{}
-
 // UpdateSettingsInput
 // swagger:parameters UpdateSettings
 type UpdateSettingsInput struct {
