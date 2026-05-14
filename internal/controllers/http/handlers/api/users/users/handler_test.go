@@ -25,7 +25,6 @@ func TestHandler(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 
-	// Вспомогательная функция для создания запроса
 	createRequest := func(t *testing.T, usernameFilter string, limit, offset int) *http.Request {
 		t.Helper()
 
@@ -58,7 +57,6 @@ func TestHandler(t *testing.T) {
 		return httptest.NewRequest(http.MethodGet, url, http.NoBody)
 	}
 
-	// Вспомогательная функция для создания тестовых пользователей
 	createTestUsers := func(count int) []domains.User {
 		now := time.Now()
 		users := make([]domains.User, count)
@@ -69,7 +67,7 @@ func TestHandler(t *testing.T) {
 				ID:             userID,
 				Username:       "testuser" + strconv.FormatUint(userID, 10),
 				Email:          "user" + strconv.FormatUint(userID, 10) + "@example.com",
-				EmailConfirmed: i%2 == 0, // Каждый второй email не подтвержден
+				EmailConfirmed: i%2 == 0,
 				Password:       "hashed_password_here",
 				CreatedAt:      now.Add(time.Duration(i) * time.Hour),
 				UpdatedAt:      now.Add(time.Duration(i) * time.Hour),
@@ -79,13 +77,12 @@ func TestHandler(t *testing.T) {
 		return users
 	}
 
-	// Вспомогательная функция для создания пользователей с определенным username
 	createTestUsersWithUsername := func(username string, count int) []domains.User {
 		now := time.Now()
 		users := make([]domains.User, count)
 
 		for i := range count {
-			userID := uint64(i + 1000) // Начинаем с 1000 чтобы не пересекаться
+			userID := uint64(i + 1000)
 			users[i] = domains.User{
 				ID:             userID,
 				Username:       username + strconv.Itoa(i+1),
@@ -100,438 +97,513 @@ func TestHandler(t *testing.T) {
 		return users
 	}
 
-	t.Run("successful get users without filters", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		expectedUsers := createTestUsers(3)
-
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), nil, nil).
-			Return(expectedUsers, nil)
-
-		req := createRequest(t, "", 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-		assert.Equal(
-			t,
-			common.ApplicationJSONContentType,
-			rr.Header().Get(common.ContentTypeHeaderName),
-		)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 3)
-
-		// Проверяем структуру первого пользователя
-		firstUser := response[0]
-		assert.Equal(t, float64(1), firstUser["id"])
-		assert.Equal(t, "testuser1", firstUser["username"])
-		assert.Equal(t, "user1@example.com", firstUser["email"])
-		assert.True(t, firstUser["emailConfirmed"].(bool))
-		assert.NotNil(t, firstUser["createdAt"])
-		assert.NotNil(t, firstUser["updatedAt"])
-
-		// Проверяем, что пароль не возвращается
-		_, passwordExists := firstUser["password"]
-		assert.False(t, passwordExists, "password should not be included in response")
-	})
-
-	t.Run("successful get users with username filter", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		usernameFilter := "john"
-		expectedUsers := createTestUsersWithUsername(usernameFilter, 2)
-
-		expectedFilters := &domains.UsersFilters{
-			Username: pointers.New(usernameFilter),
-		}
-
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), expectedFilters, nil).
-			Return(expectedUsers, nil)
-
-		req := createRequest(t, usernameFilter, 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 2)
-
-		// Проверяем, что все пользователи содержат искомый username
-		for _, user := range response {
-			username := user["username"].(string)
-			assert.Contains(t, username, usernameFilter)
-		}
-	})
-
-	t.Run("successful get users with pagination", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		expectedUsers := createTestUsers(2)
-
-		expectedPagination := &domains.Pagination{
-			Limit:  pointers.New[uint64](10),
-			Offset: pointers.New[uint64](20),
-		}
-
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), nil, expectedPagination).
-			Return(expectedUsers, nil)
-
-		req := createRequest(t, "", 10, 20)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 2)
-	})
-
-	t.Run("successful get users with username filter and pagination", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		usernameFilter := "alice"
-		expectedUsers := createTestUsersWithUsername(usernameFilter, 3)
-
-		expectedFilters := &domains.UsersFilters{
-			Username: pointers.New(usernameFilter),
-		}
-
-		expectedPagination := &domains.Pagination{
-			Limit:  pointers.New[uint64](5),
-			Offset: pointers.New[uint64](10),
-		}
-
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), expectedFilters, expectedPagination).
-			Return(expectedUsers, nil)
-
-		req := createRequest(t, usernameFilter, 5, 10)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 3)
-	})
-
-	t.Run("successful get users - empty result", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), nil, nil).
-			Return([]domains.User{}, nil)
-
-		req := createRequest(t, "", 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Empty(t, response)
-	})
-
-	t.Run("internal server error - use case error", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), nil, nil).
-			Return(nil, errors.New("database connection failed"))
-
-		req := createRequest(t, "", 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusInternalServerError, rr.Code)
-		assert.Contains(t, rr.Body.String(), "database connection failed")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-	})
-
-	t.Run("pagination with invalid limit parameter", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		expectedUsers := createTestUsers(2)
-
-		// При невалидном limit, GetPaginationFromRequest должен вернуть nil
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), nil, nil).
-			Return(expectedUsers, nil)
-
-		// Запрос с невалидным limit
-		req := httptest.NewRequest(http.MethodGet, "/users?limit=invalid&offset=0", http.NoBody)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert - должен обработаться с дефолтными значениями
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 2)
-	})
-
-	t.Run("pagination with invalid offset parameter", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		expectedUsers := createTestUsers(2)
-
-		mockUseCase.EXPECT().
-			GetUsers(
-				gomock.Any(),
-				nil,
-				&domains.Pagination{
-					Limit:  pointers.New[uint64](10),
-					Offset: pointers.New[uint64](0),
-				},
-			).
-			Return(expectedUsers, nil)
-
-		// Запрос с невалидным offset
-		req := httptest.NewRequest(http.MethodGet, "/users?limit=10&offset=invalid", http.NoBody)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert - должен обработаться с дефолтными значениями
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 2)
-	})
-
-	t.Run("username filter with empty string", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		expectedUsers := createTestUsers(3)
-
-		// При пустом username фильтр не должен создаваться
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), nil, nil).
-			Return(expectedUsers, nil)
-
-		req := createRequest(t, "", 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 3)
-	})
-
-	t.Run("large number of users", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		const userCount = 100
-
-		expectedUsers := createTestUsers(userCount)
-
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), nil, nil).
-			Return(expectedUsers, nil)
-
-		req := createRequest(t, "", 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, userCount)
-	})
-
-	t.Run("different HTTP methods", func(t *testing.T) {
-		t.Parallel()
-
-		testCases := []struct {
-			name           string
-			method         string
-			expectedStatus int
-		}{
-			{"GET method", http.MethodGet, http.StatusOK},
-			{"POST method", http.MethodPost, http.StatusOK}, // Обработчик не проверяет метод
-			{"PUT method", http.MethodPut, http.StatusOK},
-			{"DELETE method", http.MethodDelete, http.StatusOK},
-			{"PATCH method", http.MethodPatch, http.StatusOK},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				// Arrange
-				mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-				handler := users.Handler(mockUseCase)
-
-				expectedUsers := createTestUsers(2)
-
-				mockUseCase.EXPECT().
+	tests := []struct {
+		name           string
+		setupRequest   func(t *testing.T) *http.Request
+		setupMock      func(m *mockusecases.MockUsersUseCases)
+		expectedStatus int
+		checkResponse  func(t *testing.T, rr *httptest.ResponseRecorder)
+	}{
+		{
+			name: "successful get users without filters",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, "", 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
 					GetUsers(gomock.Any(), nil, nil).
-					Return(expectedUsers, nil)
+					Return(createTestUsers(3), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
 
-				req := httptest.NewRequest(tc.method, "/users", http.NoBody)
-				rr := httptest.NewRecorder()
+				assert.Equal(
+					t,
+					common.ApplicationJSONContentType,
+					rr.Header().Get(common.ContentTypeHeaderName),
+				)
 
-				// Act
-				handler.ServeHTTP(rr, req)
+				var response []map[string]any
 
-				// Assert
-				assert.Equal(t, tc.expectedStatus, rr.Code)
-			})
-		}
-	})
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 3)
 
-	t.Run("multiple query parameters with same name", func(t *testing.T) {
-		t.Parallel()
+				firstUser := response[0]
+				assert.Equal(t, float64(1), firstUser["id"])
+				assert.Equal(t, "testuser1", firstUser["username"])
+				assert.Equal(t, "user1@example.com", firstUser["email"])
+				assert.True(t, firstUser["emailConfirmed"].(bool))
+				assert.NotNil(t, firstUser["createdAt"])
+				assert.NotNil(t, firstUser["updatedAt"])
 
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
+				_, passwordExists := firstUser["password"]
+				assert.False(t, passwordExists, "password should not be included in response")
+			},
+		},
+		{
+			name: "successful get users with username filter",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		expectedUsers := createTestUsers(2)
+				return createRequest(t, "john", 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), &domains.UsersFilters{Username: pointers.New("john")}, nil).
+					Return(createTestUsersWithUsername("john", 2), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
 
-		// Должен взять первое значение username
-		expectedFilters := &domains.UsersFilters{
-			Username: pointers.New("first"),
-		}
+				var response []map[string]any
 
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), expectedFilters, nil).
-			Return(expectedUsers, nil)
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 2)
 
-		// Запрос с дублирующимися параметрами username
-		req := httptest.NewRequest(
-			http.MethodGet,
-			"/users?username=first&username=second",
-			http.NoBody,
-		)
-		rr := httptest.NewRecorder()
+				for _, user := range response {
+					username := user["username"].(string)
+					assert.Contains(t, username, "john")
+				}
+			},
+		},
+		{
+			name: "successful get users with pagination",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		// Act
-		handler.ServeHTTP(rr, req)
+				return createRequest(t, "", 10, 20)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, &domains.Pagination{
+						Limit:  pointers.New[uint64](10),
+						Offset: pointers.New[uint64](20),
+					}).
+					Return(createTestUsers(2), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
 
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
+				var response []map[string]any
 
-		var response []map[string]any
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 2)
+			},
+		},
+		{
+			name: "successful get users with username filter and pagination",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 2)
-	})
+				return createRequest(t, "alice", 5, 10)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(
+						gomock.Any(),
+						&domains.UsersFilters{Username: pointers.New("alice")},
+						&domains.Pagination{
+							Limit:  pointers.New[uint64](5),
+							Offset: pointers.New[uint64](10),
+						},
+					).
+					Return(createTestUsersWithUsername("alice", 3), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 3)
+			},
+		},
+		{
+			name: "successful get users - empty result",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, "", 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, nil).
+					Return([]domains.User{}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Empty(t, response)
+			},
+		},
+		{
+			name: "internal server error - use case error",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, "", 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, nil).
+					Return(nil, errors.New("database connection failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				assert.Contains(t, rr.Body.String(), "database connection failed")
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+			},
+		},
+		{
+			name: "pagination with invalid limit parameter",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return httptest.NewRequest(http.MethodGet, "/users?limit=invalid&offset=0", http.NoBody)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, nil).
+					Return(createTestUsers(2), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 2)
+			},
+		},
+		{
+			name: "pagination with invalid offset parameter",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return httptest.NewRequest(http.MethodGet, "/users?limit=10&offset=invalid", http.NoBody)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(
+						gomock.Any(),
+						nil,
+						&domains.Pagination{
+							Limit:  pointers.New[uint64](10),
+							Offset: pointers.New[uint64](0),
+						},
+					).
+					Return(createTestUsers(2), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 2)
+			},
+		},
+		{
+			name: "username filter with empty string",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, "", 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, nil).
+					Return(createTestUsers(3), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 3)
+			},
+		},
+		{
+			name: "large number of users",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, "", 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, nil).
+					Return(createTestUsers(100), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 100)
+			},
+		},
+		{
+			name: "GET method",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return httptest.NewRequest(http.MethodGet, "/users", http.NoBody)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, nil).
+					Return(createTestUsers(2), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "POST method",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return httptest.NewRequest(http.MethodPost, "/users", http.NoBody)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, nil).
+					Return(createTestUsers(2), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "PUT method",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return httptest.NewRequest(http.MethodPut, "/users", http.NoBody)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, nil).
+					Return(createTestUsers(2), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "DELETE method",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return httptest.NewRequest(http.MethodDelete, "/users", http.NoBody)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, nil).
+					Return(createTestUsers(2), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "PATCH method",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return httptest.NewRequest(http.MethodPatch, "/users", http.NoBody)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, nil).
+					Return(createTestUsers(2), nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name: "multiple query parameters with same name",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return httptest.NewRequest(
+					http.MethodGet,
+					"/users?username=first&username=second",
+					http.NoBody,
+				)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), &domains.UsersFilters{Username: pointers.New("first")}, nil).
+					Return(createTestUsers(2), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 2)
+			},
+		},
+		{
+			name: "URL encoded username filter",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return httptest.NewRequest(http.MethodGet, "/users?username=john%20doe%40example", http.NoBody)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(
+						gomock.Any(),
+						&domains.UsersFilters{Username: pointers.New("john doe@example")},
+						nil,
+					).
+					Return(createTestUsersWithUsername("john doe@example", 1), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 1)
+				assert.Contains(t, response[0]["username"].(string), "john doe@example")
+			},
+		},
+		{
+			name: "max limit value",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, "", 100, 0)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, &domains.Pagination{
+						Limit:  pointers.New[uint64](100),
+						Offset: pointers.New[uint64](0),
+					}).
+					Return(createTestUsers(50), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 50)
+			},
+		},
+		{
+			name: "zero limit and offset",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, "", 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, nil).
+					Return(createTestUsers(3), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				var response []map[string]any
+
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
+				assert.Len(t, response, 3)
+			},
+		},
+		{
+			name: "JSON encoding preserves structure",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, "", 0, 0)
+			},
+			setupMock: func(m *mockusecases.MockUsersUseCases) {
+				m.EXPECT().
+					GetUsers(gomock.Any(), nil, nil).
+					Return(createTestUsers(2), nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				responseBody := rr.Body.String()
+				assert.True(t, responseBody != "")
+				assert.Contains(t, responseBody, `"id"`)
+				assert.Contains(t, responseBody, `"username"`)
+				assert.Contains(t, responseBody, `"email"`)
+				assert.Contains(t, responseBody, `"emailConfirmed"`)
+				assert.Contains(t, responseBody, `"createdAt"`)
+				assert.Contains(t, responseBody, `"updatedAt"`)
+				assert.NotContains(t, responseBody, `"password"`)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
+			tt.setupMock(mockUseCase)
+
+			handler := users.Handler(mockUseCase)
+			req := tt.setupRequest(t)
+			rr := httptest.NewRecorder()
+
+			handler.ServeHTTP(rr, req)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+
+			if tt.checkResponse != nil {
+				tt.checkResponse(t, rr)
+			}
+		})
+	}
 
 	t.Run("concurrent requests with different filters", func(t *testing.T) {
 		t.Parallel()
 
-		// Arrange
 		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
 		handler := users.Handler(mockUseCase)
 
-		// Тестируем, что обработчик безопасен для конкурентного использования
 		const numRequests = 5
 
 		usernames := []string{"user1", "user2", "user3", "user4", "user5"}
 
-		// Настраиваем мок на вызовы с разными фильтрами
 		for _, username := range usernames {
 			expectedUsers := createTestUsersWithUsername(username, 1)
 			expectedFilters := &domains.UsersFilters{
@@ -545,7 +617,6 @@ func TestHandler(t *testing.T) {
 
 		done := make(chan bool, numRequests)
 
-		// Act - запускаем concurrent запросы
 		for _, username := range usernames {
 			go func(name string) {
 				req := createRequest(t, name, 0, 0)
@@ -565,153 +636,8 @@ func TestHandler(t *testing.T) {
 			}(username)
 		}
 
-		// Ждем завершения всех горутин
 		for range numRequests {
 			<-done
 		}
-	})
-
-	t.Run("URL encoded username filter", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		// Username с пробелами и специальными символами
-		encodedUsername := "john%20doe%40example"
-		decodedUsername := "john doe@example"
-
-		expectedUsers := createTestUsersWithUsername(decodedUsername, 1)
-		expectedFilters := &domains.UsersFilters{
-			Username: pointers.New(decodedUsername),
-		}
-
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), expectedFilters, nil).
-			Return(expectedUsers, nil)
-
-		// Запрос с URL-encoded username
-		req := httptest.NewRequest(http.MethodGet, "/users?username="+encodedUsername, http.NoBody)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 1)
-
-		// Username в ответе должен соответствовать декодированному значению
-		assert.Contains(t, response[0]["username"].(string), decodedUsername)
-	})
-
-	t.Run("max limit value", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		expectedUsers := createTestUsers(50)
-
-		expectedPagination := &domains.Pagination{
-			Limit:  pointers.New[uint64](100), // Максимальный лимит
-			Offset: pointers.New[uint64](0),
-		}
-
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), nil, expectedPagination).
-			Return(expectedUsers, nil)
-
-		req := createRequest(t, "", 100, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 50)
-	})
-
-	t.Run("zero limit and offset", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		expectedUsers := createTestUsers(3)
-
-		// При limit=0, GetPaginationFromRequest должен вернуть nil
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), nil, nil).
-			Return(expectedUsers, nil)
-
-		req := createRequest(t, "", 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		var response []map[string]any
-
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
-		assert.Len(t, response, 3)
-	})
-
-	t.Run("JSON encoding preserves structure", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockUsersUseCases(ctrl)
-		handler := users.Handler(mockUseCase)
-
-		expectedUsers := createTestUsers(2)
-
-		mockUseCase.EXPECT().
-			GetUsers(gomock.Any(), nil, nil).
-			Return(expectedUsers, nil)
-
-		req := createRequest(t, "", 0, 0)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-
-		// Проверяем, что JSON содержит правильные поля
-		responseBody := rr.Body.String()
-
-		// Должен быть массив
-		assert.True(t, responseBody != "")
-
-		// Проверяем наличие обязательных полей
-		assert.Contains(t, responseBody, `"id"`)
-		assert.Contains(t, responseBody, `"username"`)
-		assert.Contains(t, responseBody, `"email"`)
-		assert.Contains(t, responseBody, `"emailConfirmed"`)
-		assert.Contains(t, responseBody, `"createdAt"`)
-		assert.Contains(t, responseBody, `"updatedAt"`)
-
-		// Проверяем, что пароль не возвращается
-		assert.NotContains(t, responseBody, `"password"`)
 	})
 }

@@ -35,201 +35,186 @@ func TestHandler(t *testing.T) {
 		return req.WithContext(ctx)
 	}
 
-	t.Run("successful update settings to dark theme", func(t *testing.T) {
-		t.Parallel()
+	now := time.Now()
 
-		// Arrange
-		mockUseCase := mockusecases.NewMockSettingsUseCases(ctrl)
-		handler := update.Handler(mockUseCase)
+	tests := []struct {
+		name           string
+		setupRequest   func(t *testing.T) *http.Request
+		setupMock      func(m *mockusecases.MockSettingsUseCases)
+		expectedStatus int
+		checkResponse  func(t *testing.T, rr *httptest.ResponseRecorder)
+	}{
+		{
+			name: "successful update settings to dark theme",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		userID := uint64(123)
-		now := time.Now()
+				body, _ := json.Marshal(map[string]any{"theme": 1})
 
-		mockUseCase.EXPECT().
-			UpdateSettings(gomock.Any(), domains.Settings{UserID: userID, Theme: domains.ThemeDark}).
-			Return(&domains.Settings{
-				ID:        1,
-				UserID:    userID,
-				Theme:     domains.ThemeDark,
-				CreatedAt: now,
-				UpdatedAt: now,
-			}, nil)
+				return createRequest(t, 123, body)
+			},
+			setupMock: func(m *mockusecases.MockSettingsUseCases) {
+				m.EXPECT().
+					UpdateSettings(gomock.Any(), domains.Settings{UserID: 123, Theme: domains.ThemeDark}).
+					Return(&domains.Settings{
+						ID:        1,
+						UserID:    123,
+						Theme:     domains.ThemeDark,
+						CreatedAt: now,
+						UpdatedAt: now,
+					}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
 
-		body, _ := json.Marshal(map[string]any{"theme": 1})
-		req := createRequest(t, userID, body)
-		rr := httptest.NewRecorder()
+				assert.Equal(
+					t,
+					common.ApplicationJSONContentType,
+					rr.Header().Get(common.ContentTypeHeaderName),
+				)
 
-		// Act
-		handler.ServeHTTP(rr, req)
+				var response map[string]any
 
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-		assert.Equal(
-			t,
-			common.ApplicationJSONContentType,
-			rr.Header().Get(common.ContentTypeHeaderName),
-		)
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
 
-		var response map[string]any
+				assert.Equal(t, float64(1), response["theme"])
+			},
+		},
+		{
+			name: "successful update settings to light theme",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
+				body, _ := json.Marshal(map[string]any{"theme": 0})
 
-		assert.Equal(t, float64(1), response["theme"])
-	})
+				return createRequest(t, 456, body)
+			},
+			setupMock: func(m *mockusecases.MockSettingsUseCases) {
+				m.EXPECT().
+					UpdateSettings(gomock.Any(), domains.Settings{UserID: 456, Theme: domains.ThemeLight}).
+					Return(&domains.Settings{
+						ID:        2,
+						UserID:    456,
+						Theme:     domains.ThemeLight,
+						CreatedAt: now,
+						UpdatedAt: now,
+					}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
 
-	t.Run("successful update settings to light theme", func(t *testing.T) {
-		t.Parallel()
+				var response map[string]any
 
-		// Arrange
-		mockUseCase := mockusecases.NewMockSettingsUseCases(ctrl)
-		handler := update.Handler(mockUseCase)
+				err := json.Unmarshal(rr.Body.Bytes(), &response)
+				require.NoError(t, err)
 
-		userID := uint64(456)
-		now := time.Now()
+				assert.Equal(t, float64(0), response["theme"])
+			},
+		},
+		{
+			name: "unauthorized - no userID in context",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		mockUseCase.EXPECT().
-			UpdateSettings(gomock.Any(), domains.Settings{UserID: userID, Theme: domains.ThemeLight}).
-			Return(&domains.Settings{
-				ID:        2,
-				UserID:    userID,
-				Theme:     domains.ThemeLight,
-				CreatedAt: now,
-				UpdatedAt: now,
-			}, nil)
+				body, _ := json.Marshal(map[string]any{"theme": 1})
 
-		body, _ := json.Marshal(map[string]any{"theme": 0})
-		req := createRequest(t, userID, body)
-		rr := httptest.NewRecorder()
+				return httptest.NewRequest(http.MethodPut, "/api/users/me/settings", bytes.NewReader(body))
+			},
+			setupMock:      func(_ *mockusecases.MockSettingsUseCases) {},
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name: "bad request - invalid JSON",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		// Act
-		handler.ServeHTTP(rr, req)
+				return createRequest(t, 123, []byte("invalid json"))
+			},
+			setupMock:      func(_ *mockusecases.MockSettingsUseCases) {},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "settings not found",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
+				body, _ := json.Marshal(map[string]any{"theme": 1})
 
-		var response map[string]any
+				return createRequest(t, 999, body)
+			},
+			setupMock: func(m *mockusecases.MockSettingsUseCases) {
+				m.EXPECT().
+					UpdateSettings(gomock.Any(), gomock.Any()).
+					Return(nil, customerrors.ErrSettingsNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name: "internal server error",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		err := json.Unmarshal(rr.Body.Bytes(), &response)
-		require.NoError(t, err)
+				body, _ := json.Marshal(map[string]any{"theme": 1})
 
-		assert.Equal(t, float64(0), response["theme"])
-	})
+				return createRequest(t, 123, body)
+			},
+			setupMock: func(m *mockusecases.MockSettingsUseCases) {
+				m.EXPECT().
+					UpdateSettings(gomock.Any(), gomock.Any()).
+					Return(nil, errors.New("database error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
 
-	t.Run("unauthorized - no userID in context", func(t *testing.T) {
-		t.Parallel()
+				assert.Contains(t, rr.Body.String(), "database error")
+			},
+		},
+		{
+			name: "userID from context is used, not from body",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		// Arrange
-		mockUseCase := mockusecases.NewMockSettingsUseCases(ctrl)
-		handler := update.Handler(mockUseCase)
+				body, _ := json.Marshal(map[string]any{"theme": 1, "userID": 999})
 
-		body, _ := json.Marshal(map[string]any{"theme": 1})
-		req := httptest.NewRequest(http.MethodPut, "/api/users/me/settings", bytes.NewReader(body))
-		rr := httptest.NewRecorder()
+				return createRequest(t, 123, body)
+			},
+			setupMock: func(m *mockusecases.MockSettingsUseCases) {
+				m.EXPECT().
+					UpdateSettings(gomock.Any(), domains.Settings{UserID: 123, Theme: domains.ThemeDark}).
+					Return(&domains.Settings{
+						ID:        1,
+						UserID:    123,
+						Theme:     domains.ThemeDark,
+						CreatedAt: now,
+						UpdatedAt: now,
+					}, nil)
+			},
+			expectedStatus: http.StatusOK,
+		},
+	}
 
-		// Act
-		handler.ServeHTTP(rr, req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-		// Assert
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-	})
+			mockUseCase := mockusecases.NewMockSettingsUseCases(ctrl)
+			tt.setupMock(mockUseCase)
 
-	t.Run("bad request - invalid JSON", func(t *testing.T) {
-		t.Parallel()
+			handler := update.Handler(mockUseCase)
+			req := tt.setupRequest(t)
+			rr := httptest.NewRecorder()
 
-		// Arrange
-		mockUseCase := mockusecases.NewMockSettingsUseCases(ctrl)
-		handler := update.Handler(mockUseCase)
+			handler.ServeHTTP(rr, req)
 
-		userID := uint64(123)
-		req := createRequest(t, userID, []byte("invalid json"))
-		rr := httptest.NewRecorder()
+			assert.Equal(t, tt.expectedStatus, rr.Code)
 
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-	})
-
-	t.Run("settings not found", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockSettingsUseCases(ctrl)
-		handler := update.Handler(mockUseCase)
-
-		userID := uint64(999)
-
-		mockUseCase.EXPECT().
-			UpdateSettings(gomock.Any(), gomock.Any()).
-			Return(nil, customerrors.ErrSettingsNotFound)
-
-		body, _ := json.Marshal(map[string]any{"theme": 1})
-		req := createRequest(t, userID, body)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-	})
-
-	t.Run("internal server error", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockSettingsUseCases(ctrl)
-		handler := update.Handler(mockUseCase)
-
-		userID := uint64(123)
-
-		mockUseCase.EXPECT().
-			UpdateSettings(gomock.Any(), gomock.Any()).
-			Return(nil, errors.New("database error"))
-
-		body, _ := json.Marshal(map[string]any{"theme": 1})
-		req := createRequest(t, userID, body)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusInternalServerError, rr.Code)
-		assert.Contains(t, rr.Body.String(), "database error")
-	})
-
-	t.Run("userID from context is used, not from body", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockSettingsUseCases(ctrl)
-		handler := update.Handler(mockUseCase)
-
-		userID := uint64(123)
-		now := time.Now()
-
-		// Тело содержит другой userID, но хэндлер должен использовать userID из контекста
-		mockUseCase.EXPECT().
-			UpdateSettings(gomock.Any(), domains.Settings{UserID: userID, Theme: domains.ThemeDark}).
-			Return(&domains.Settings{
-				ID:        1,
-				UserID:    userID,
-				Theme:     domains.ThemeDark,
-				CreatedAt: now,
-				UpdatedAt: now,
-			}, nil)
-
-		body, _ := json.Marshal(map[string]any{"theme": 1, "userID": 999})
-		req := createRequest(t, userID, body)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusOK, rr.Code)
-	})
+			if tt.checkResponse != nil {
+				tt.checkResponse(t, rr)
+			}
+		})
+	}
 }

@@ -76,285 +76,36 @@ func TestHandler(t *testing.T) {
 		}
 	}
 
-	t.Run("successful token refresh", func(t *testing.T) {
-		t.Parallel()
+	cookiesConfig := createCookiesConfig()
 
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := refresh_tokens.Handler(mockUseCase, cookiesConfig)
-		expectedTokens := createTestTokens()
-
-		mockUseCase.EXPECT().
-			RefreshTokens(gomock.Any(), validToken).
-			Return(&expectedTokens, nil)
-
-		req := createRequest(t, validToken)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-		assert.Empty(t, rr.Body.String())
-
-		// Проверяем, что установлены правильные куки
-		cookies := rr.Result().Cookies()
-		assert.Len(t, cookies, 2)
-
-		// Находим access token cookie
-		var (
-			accessTokenCookie  *http.Cookie
-			refreshTokenCookie *http.Cookie
-		)
-
-		for _, cookie := range cookies {
-			switch cookie.Name {
-			case login.AccessTokenCookieName:
-				accessTokenCookie = cookie
-			case login.RefreshTokenCookieName:
-				refreshTokenCookie = cookie
-			}
-		}
-
-		require.NotNil(t, accessTokenCookie)
-		require.NotNil(t, refreshTokenCookie)
-
-		// Проверяем значения токенов
-		assert.Equal(t, expectedTokens.AccessToken, accessTokenCookie.Value)
-		assert.Equal(t, expectedTokens.RefreshToken, refreshTokenCookie.Value)
-
-		// Проверяем настройки access token cookie
-		assert.Equal(t, cookiesConfig.AccessToken.Path, accessTokenCookie.Path)
-		assert.Equal(t, cookiesConfig.AccessToken.Domain, accessTokenCookie.Domain)
-		assert.Equal(t, cookiesConfig.AccessToken.MaxAge, accessTokenCookie.MaxAge)
-		assert.Equal(t, cookiesConfig.AccessToken.Secure, accessTokenCookie.Secure)
-		assert.Equal(t, cookiesConfig.AccessToken.HTTPOnly, accessTokenCookie.HttpOnly)
-		assert.Equal(t, int(cookiesConfig.AccessToken.SameSite), int(accessTokenCookie.SameSite))
-
-		// Проверяем настройки refresh token cookie
-		assert.Equal(t, cookiesConfig.RefreshToken.Path, refreshTokenCookie.Path)
-		assert.Equal(t, cookiesConfig.RefreshToken.Domain, refreshTokenCookie.Domain)
-		assert.Equal(t, cookiesConfig.RefreshToken.MaxAge, refreshTokenCookie.MaxAge)
-		assert.Equal(t, cookiesConfig.RefreshToken.Secure, refreshTokenCookie.Secure)
-		assert.Equal(t, cookiesConfig.RefreshToken.HTTPOnly, refreshTokenCookie.HttpOnly)
-		assert.Equal(t, int(cookiesConfig.RefreshToken.SameSite), int(refreshTokenCookie.SameSite))
-	})
-
-	t.Run("unauthorized - missing refresh token cookie", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := refresh_tokens.Handler(mockUseCase, cookiesConfig)
-
-		// Запрос без куки
-		req := createRequest(t, "")
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-		assert.Contains(t, rr.Body.String(), "http: named cookie not present")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-
-		// Проверяем, что куки не установлены
-		c := rr.Result().Cookies()
-		assert.Empty(t, c)
-	})
-
-	t.Run("unauthorized - invalid JWT token", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := refresh_tokens.Handler(mockUseCase, cookiesConfig)
-
-		invalidToken := "invalid_jwt_token"
-
-		mockUseCase.EXPECT().
-			RefreshTokens(gomock.Any(), invalidToken).
-			Return(&domains.TokensDTO{}, customerrors.ErrInvalidJWT)
-
-		req := createRequest(t, invalidToken)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidJWT.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-
-		// Проверяем, что куки не установлены
-		c := rr.Result().Cookies()
-		assert.Empty(t, c)
-	})
-
-	t.Run("unauthorized - access token does not belong to refresh token", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := refresh_tokens.Handler(mockUseCase, cookiesConfig)
-
-		refreshToken := "refresh_token_with_mismatched_access"
-
-		mockUseCase.EXPECT().
-			RefreshTokens(gomock.Any(), refreshToken).
-			Return(&domains.TokensDTO{}, customerrors.ErrAccessTokenDoesNotBelongToRefreshToken)
-
-		req := createRequest(t, refreshToken)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-		assert.Contains(
-			t,
-			rr.Body.String(),
-			customerrors.ErrAccessTokenDoesNotBelongToRefreshToken.Error(),
-		)
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-
-		// Проверяем, что куки не установлены
-		c := rr.Result().Cookies()
-		assert.Empty(t, c)
-	})
-
-	t.Run("internal server error - use case error", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := refresh_tokens.Handler(mockUseCase, cookiesConfig)
-
-		mockUseCase.EXPECT().
-			RefreshTokens(gomock.Any(), validToken).
-			Return(&domains.TokensDTO{}, errors.New("database connection failed"))
-
-		req := createRequest(t, validToken)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusInternalServerError, rr.Code)
-		assert.Contains(t, rr.Body.String(), "database connection failed")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-
-		// Проверяем, что куки не установлены
-		c := rr.Result().Cookies()
-		assert.Empty(t, c)
-	})
-
-	t.Run("success with different cookie configurations", func(t *testing.T) {
-		t.Parallel()
-
-		testCases := []struct {
-			name          string
-			cookiesConfig config.CookiesConfig
-		}{
-			{
-				name: "secure cookies",
-				cookiesConfig: config.CookiesConfig{
-					AccessToken: cookies.Config{
-						Path:     "/api",
-						Domain:   "secure.example.com",
-						MaxAge:   300,
-						Secure:   true,
-						HTTPOnly: true,
-						SameSite: http.SameSiteStrictMode,
-					},
-					RefreshToken: cookies.Config{
-						Path:     "/api",
-						Domain:   "secure.example.com",
-						MaxAge:   2592000, // 30 дней
-						Secure:   true,
-						HTTPOnly: true,
-						SameSite: http.SameSiteStrictMode,
-					},
-				},
+	tests := []struct {
+		name           string
+		cookiesConfig  *config.CookiesConfig // nil означает использовать дефолтный
+		setupRequest   func(t *testing.T) *http.Request
+		setupMock      func(m *mockusecases.MockAuthUseCases)
+		expectedStatus int
+		checkResponse  func(t *testing.T, rr *httptest.ResponseRecorder)
+	}{
+		{
+			name: "successful token refresh",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, validToken)
 			},
-			{
-				name: "development cookies (non-secure)",
-				cookiesConfig: config.CookiesConfig{
-					AccessToken: cookies.Config{
-						Path:     "/",
-						Domain:   "localhost",
-						MaxAge:   900,
-						Secure:   false,
-						HTTPOnly: true,
-						SameSite: http.SameSiteLaxMode,
-					},
-					RefreshToken: cookies.Config{
-						Path:     "/",
-						Domain:   "localhost",
-						MaxAge:   604800,
-						Secure:   false,
-						HTTPOnly: true,
-						SameSite: http.SameSiteLaxMode,
-					},
-				},
-			},
-			{
-				name: "session cookies (no MaxAge)",
-				cookiesConfig: config.CookiesConfig{
-					AccessToken: cookies.Config{
-						Path:     "/",
-						Domain:   "example.com",
-						MaxAge:   0, // Session cookie
-						Secure:   true,
-						HTTPOnly: true,
-						SameSite: http.SameSiteNoneMode,
-					},
-					RefreshToken: cookies.Config{
-						Path:     "/",
-						Domain:   "example.com",
-						MaxAge:   0, // Session cookie
-						Secure:   true,
-						HTTPOnly: true,
-						SameSite: http.SameSiteNoneMode,
-					},
-				},
-			},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				// Arrange
-				mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-				handler := refresh_tokens.Handler(mockUseCase, tc.cookiesConfig)
-
-				expectedTokens := createTestTokens()
-
-				mockUseCase.EXPECT().
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := domains.TokensDTO{
+					AccessToken:  "new_access_token_123",
+					RefreshToken: "new_refresh_token_456",
+				}
+				m.EXPECT().
 					RefreshTokens(gomock.Any(), validToken).
 					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Empty(t, rr.Body.String())
 
-				req := createRequest(t, validToken)
-				rr := httptest.NewRecorder()
-
-				// Act
-				handler.ServeHTTP(rr, req)
-
-				// Assert
-				assert.Equal(t, http.StatusNoContent, rr.Code)
-
-				// Проверяем куки
 				c := rr.Result().Cookies()
 				assert.Len(t, c, 2)
 
@@ -375,164 +126,551 @@ func TestHandler(t *testing.T) {
 				require.NotNil(t, accessTokenCookie)
 				require.NotNil(t, refreshTokenCookie)
 
-				// Проверяем настройки
-				assert.Equal(t, tc.cookiesConfig.AccessToken.Path, accessTokenCookie.Path)
-				assert.Equal(t, tc.cookiesConfig.AccessToken.Domain, accessTokenCookie.Domain)
-				assert.Equal(t, tc.cookiesConfig.AccessToken.MaxAge, accessTokenCookie.MaxAge)
-				assert.Equal(t, tc.cookiesConfig.AccessToken.Secure, accessTokenCookie.Secure)
-				assert.Equal(t, tc.cookiesConfig.AccessToken.HTTPOnly, accessTokenCookie.HttpOnly)
-				assert.Equal(
+				assert.Equal(t, "new_access_token_123", accessTokenCookie.Value)
+				assert.Equal(t, "new_refresh_token_456", refreshTokenCookie.Value)
+
+				cc := createCookiesConfig()
+
+				assert.Equal(t, cc.AccessToken.Path, accessTokenCookie.Path)
+				assert.Equal(t, cc.AccessToken.Domain, accessTokenCookie.Domain)
+				assert.Equal(t, cc.AccessToken.MaxAge, accessTokenCookie.MaxAge)
+				assert.Equal(t, cc.AccessToken.Secure, accessTokenCookie.Secure)
+				assert.Equal(t, cc.AccessToken.HTTPOnly, accessTokenCookie.HttpOnly)
+				assert.Equal(t, int(cc.AccessToken.SameSite), int(accessTokenCookie.SameSite))
+
+				assert.Equal(t, cc.RefreshToken.Path, refreshTokenCookie.Path)
+				assert.Equal(t, cc.RefreshToken.Domain, refreshTokenCookie.Domain)
+				assert.Equal(t, cc.RefreshToken.MaxAge, refreshTokenCookie.MaxAge)
+				assert.Equal(t, cc.RefreshToken.Secure, refreshTokenCookie.Secure)
+				assert.Equal(t, cc.RefreshToken.HTTPOnly, refreshTokenCookie.HttpOnly)
+				assert.Equal(t, int(cc.RefreshToken.SameSite), int(refreshTokenCookie.SameSite))
+			},
+		},
+		{
+			name: "unauthorized - missing refresh token cookie",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "")
+			},
+			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "http: named cookie not present")
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+
+				c := rr.Result().Cookies()
+				assert.Empty(t, c)
+			},
+		},
+		{
+			name: "unauthorized - invalid JWT token",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "invalid_jwt_token")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), "invalid_jwt_token").
+					Return(&domains.TokensDTO{}, customerrors.ErrInvalidJWT)
+			},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidJWT.Error())
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+
+				c := rr.Result().Cookies()
+				assert.Empty(t, c)
+			},
+		},
+		{
+			name: "unauthorized - access token does not belong to refresh token",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "refresh_token_with_mismatched_access")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), "refresh_token_with_mismatched_access").
+					Return(&domains.TokensDTO{}, customerrors.ErrAccessTokenDoesNotBelongToRefreshToken)
+			},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(
 					t,
-					int(tc.cookiesConfig.AccessToken.SameSite),
-					int(accessTokenCookie.SameSite),
+					rr.Body.String(),
+					customerrors.ErrAccessTokenDoesNotBelongToRefreshToken.Error(),
 				)
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
 
-				assert.Equal(t, tc.cookiesConfig.RefreshToken.Path, refreshTokenCookie.Path)
-				assert.Equal(t, tc.cookiesConfig.RefreshToken.Domain, refreshTokenCookie.Domain)
-				assert.Equal(t, tc.cookiesConfig.RefreshToken.MaxAge, refreshTokenCookie.MaxAge)
-				assert.Equal(t, tc.cookiesConfig.RefreshToken.Secure, refreshTokenCookie.Secure)
-				assert.Equal(t, tc.cookiesConfig.RefreshToken.HTTPOnly, refreshTokenCookie.HttpOnly)
-				assert.Equal(
-					t,
-					int(tc.cookiesConfig.RefreshToken.SameSite),
-					int(refreshTokenCookie.SameSite),
-				)
-			})
-		}
-	})
+				c := rr.Result().Cookies()
+				assert.Empty(t, c)
+			},
+		},
+		{
+			name: "internal server error - use case error",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, validToken)
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), validToken).
+					Return(&domains.TokensDTO{}, errors.New("database connection failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), "database connection failed")
+				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
 
-	t.Run("multiple refresh token cookies - first one is used", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := refresh_tokens.Handler(mockUseCase, cookiesConfig)
-
-		// Первый токен будет использован
-		firstToken := "first_refresh_token"
-		secondToken := "second_refresh_token"
-
-		expectedTokens := createTestTokens()
-
-		// Ожидаем, что будет использован первый токен
-		mockUseCase.EXPECT().
-			RefreshTokens(gomock.Any(), firstToken).
-			Return(&expectedTokens, nil)
-
-		req := httptest.NewRequest(http.MethodPost, "/refresh", http.NoBody)
-
-		// Добавляем две куки с одинаковым именем
-		req.AddCookie(&http.Cookie{
-			Name:  login.RefreshTokenCookieName,
-			Value: firstToken,
-		})
-		req.AddCookie(&http.Cookie{
-			Name:  login.RefreshTokenCookieName,
-			Value: secondToken,
-		})
-
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-	})
-
-	t.Run("different HTTP methods", func(t *testing.T) {
-		t.Parallel()
-
-		testCases := []struct {
-			name           string
-			method         string
-			expectedStatus int
-		}{
-			{"POST method", http.MethodPost, http.StatusNoContent},
-			{"GET method", http.MethodGet, http.StatusNoContent}, // Обработчик не проверяет метод
-			{"PUT method", http.MethodPut, http.StatusNoContent},
-			{"PATCH method", http.MethodPatch, http.StatusNoContent},
-			{"DELETE method", http.MethodDelete, http.StatusNoContent},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				// Arrange
-				mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-				cookiesConfig := createCookiesConfig()
-				handler := refresh_tokens.Handler(mockUseCase, cookiesConfig)
-
-				expectedTokens := createTestTokens()
-
-				mockUseCase.EXPECT().
+				c := rr.Result().Cookies()
+				assert.Empty(t, c)
+			},
+		},
+		{
+			name: "secure cookies configuration",
+			cookiesConfig: &config.CookiesConfig{
+				AccessToken: cookies.Config{
+					Path:     "/api",
+					Domain:   "secure.example.com",
+					MaxAge:   300,
+					Secure:   true,
+					HTTPOnly: true,
+					SameSite: http.SameSiteStrictMode,
+				},
+				RefreshToken: cookies.Config{
+					Path:     "/api",
+					Domain:   "secure.example.com",
+					MaxAge:   2592000,
+					Secure:   true,
+					HTTPOnly: true,
+					SameSite: http.SameSiteStrictMode,
+				},
+			},
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, validToken)
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := domains.TokensDTO{
+					AccessToken:  "new_access_token_123",
+					RefreshToken: "new_refresh_token_456",
+				}
+				m.EXPECT().
 					RefreshTokens(gomock.Any(), validToken).
 					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				c := rr.Result().Cookies()
+				assert.Len(t, c, 2)
 
-				req := httptest.NewRequest(tc.method, "/refresh", http.NoBody)
+				var (
+					accessTokenCookie  *http.Cookie
+					refreshTokenCookie *http.Cookie
+				)
+
+				for _, cookie := range c {
+					switch cookie.Name {
+					case login.AccessTokenCookieName:
+						accessTokenCookie = cookie
+					case login.RefreshTokenCookieName:
+						refreshTokenCookie = cookie
+					}
+				}
+
+				require.NotNil(t, accessTokenCookie)
+				require.NotNil(t, refreshTokenCookie)
+
+				assert.Equal(t, "/api", accessTokenCookie.Path)
+				assert.Equal(t, "secure.example.com", accessTokenCookie.Domain)
+				assert.Equal(t, 300, accessTokenCookie.MaxAge)
+				assert.True(t, accessTokenCookie.Secure)
+				assert.True(t, accessTokenCookie.HttpOnly)
+				assert.Equal(t, int(http.SameSiteStrictMode), int(accessTokenCookie.SameSite))
+
+				assert.Equal(t, "/api", refreshTokenCookie.Path)
+				assert.Equal(t, "secure.example.com", refreshTokenCookie.Domain)
+				assert.Equal(t, 2592000, refreshTokenCookie.MaxAge)
+				assert.True(t, refreshTokenCookie.Secure)
+				assert.True(t, refreshTokenCookie.HttpOnly)
+				assert.Equal(t, int(http.SameSiteStrictMode), int(refreshTokenCookie.SameSite))
+			},
+		},
+		{
+			name: "development cookies (non-secure) configuration",
+			cookiesConfig: &config.CookiesConfig{
+				AccessToken: cookies.Config{
+					Path:     "/",
+					Domain:   "localhost",
+					MaxAge:   900,
+					Secure:   false,
+					HTTPOnly: true,
+					SameSite: http.SameSiteLaxMode,
+				},
+				RefreshToken: cookies.Config{
+					Path:     "/",
+					Domain:   "localhost",
+					MaxAge:   604800,
+					Secure:   false,
+					HTTPOnly: true,
+					SameSite: http.SameSiteLaxMode,
+				},
+			},
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, validToken)
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := domains.TokensDTO{
+					AccessToken:  "new_access_token_123",
+					RefreshToken: "new_refresh_token_456",
+				}
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), validToken).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				c := rr.Result().Cookies()
+				assert.Len(t, c, 2)
+
+				var (
+					accessTokenCookie  *http.Cookie
+					refreshTokenCookie *http.Cookie
+				)
+
+				for _, cookie := range c {
+					switch cookie.Name {
+					case login.AccessTokenCookieName:
+						accessTokenCookie = cookie
+					case login.RefreshTokenCookieName:
+						refreshTokenCookie = cookie
+					}
+				}
+
+				require.NotNil(t, accessTokenCookie)
+				require.NotNil(t, refreshTokenCookie)
+
+				assert.Equal(t, "/", accessTokenCookie.Path)
+				assert.Equal(t, "localhost", accessTokenCookie.Domain)
+				assert.Equal(t, 900, accessTokenCookie.MaxAge)
+				assert.False(t, accessTokenCookie.Secure)
+				assert.True(t, accessTokenCookie.HttpOnly)
+				assert.Equal(t, int(http.SameSiteLaxMode), int(accessTokenCookie.SameSite))
+
+				assert.Equal(t, "/", refreshTokenCookie.Path)
+				assert.Equal(t, "localhost", refreshTokenCookie.Domain)
+				assert.Equal(t, 604800, refreshTokenCookie.MaxAge)
+				assert.False(t, refreshTokenCookie.Secure)
+				assert.True(t, refreshTokenCookie.HttpOnly)
+				assert.Equal(t, int(http.SameSiteLaxMode), int(refreshTokenCookie.SameSite))
+			},
+		},
+		{
+			name: "session cookies (no MaxAge) configuration",
+			cookiesConfig: &config.CookiesConfig{
+				AccessToken: cookies.Config{
+					Path:     "/",
+					Domain:   "example.com",
+					MaxAge:   0,
+					Secure:   true,
+					HTTPOnly: true,
+					SameSite: http.SameSiteNoneMode,
+				},
+				RefreshToken: cookies.Config{
+					Path:     "/",
+					Domain:   "example.com",
+					MaxAge:   0,
+					Secure:   true,
+					HTTPOnly: true,
+					SameSite: http.SameSiteNoneMode,
+				},
+			},
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, validToken)
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := domains.TokensDTO{
+					AccessToken:  "new_access_token_123",
+					RefreshToken: "new_refresh_token_456",
+				}
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), validToken).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				c := rr.Result().Cookies()
+				assert.Len(t, c, 2)
+
+				var (
+					accessTokenCookie  *http.Cookie
+					refreshTokenCookie *http.Cookie
+				)
+
+				for _, cookie := range c {
+					switch cookie.Name {
+					case login.AccessTokenCookieName:
+						accessTokenCookie = cookie
+					case login.RefreshTokenCookieName:
+						refreshTokenCookie = cookie
+					}
+				}
+
+				require.NotNil(t, accessTokenCookie)
+				require.NotNil(t, refreshTokenCookie)
+
+				assert.Equal(t, 0, accessTokenCookie.MaxAge)
+				assert.True(t, accessTokenCookie.Secure)
+				assert.Equal(t, int(http.SameSiteNoneMode), int(accessTokenCookie.SameSite))
+
+				assert.Equal(t, 0, refreshTokenCookie.MaxAge)
+				assert.True(t, refreshTokenCookie.Secure)
+				assert.Equal(t, int(http.SameSiteNoneMode), int(refreshTokenCookie.SameSite))
+			},
+		},
+		{
+			name: "multiple refresh token cookies - first one is used",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				req := httptest.NewRequest(http.MethodPost, "/refresh", http.NoBody)
 				req.AddCookie(&http.Cookie{
 					Name:  login.RefreshTokenCookieName,
-					Value: validToken,
+					Value: "first_refresh_token",
 				})
+				req.AddCookie(&http.Cookie{
+					Name:  login.RefreshTokenCookieName,
+					Value: "second_refresh_token",
+				})
+				return req
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := domains.TokensDTO{
+					AccessToken:  "new_access_token_123",
+					RefreshToken: "new_refresh_token_456",
+				}
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), "first_refresh_token").
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name: "POST method",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				req := httptest.NewRequest(http.MethodPost, "/refresh", http.NoBody)
+				req.AddCookie(&http.Cookie{Name: login.RefreshTokenCookieName, Value: validToken})
+				return req
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), validToken).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name: "GET method",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				req := httptest.NewRequest(http.MethodGet, "/refresh", http.NoBody)
+				req.AddCookie(&http.Cookie{Name: login.RefreshTokenCookieName, Value: validToken})
+				return req
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), validToken).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name: "PUT method",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				req := httptest.NewRequest(http.MethodPut, "/refresh", http.NoBody)
+				req.AddCookie(&http.Cookie{Name: login.RefreshTokenCookieName, Value: validToken})
+				return req
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), validToken).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name: "PATCH method",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				req := httptest.NewRequest(http.MethodPatch, "/refresh", http.NoBody)
+				req.AddCookie(&http.Cookie{Name: login.RefreshTokenCookieName, Value: validToken})
+				return req
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), validToken).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name: "DELETE method",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				req := httptest.NewRequest(http.MethodDelete, "/refresh", http.NoBody)
+				req.AddCookie(&http.Cookie{Name: login.RefreshTokenCookieName, Value: validToken})
+				return req
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), validToken).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name: "very long refresh token",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				var longTokenSb strings.Builder
+				for range 4096 {
+					longTokenSb.WriteString("a")
+				}
+				longToken := longTokenSb.String()
+				return createRequest(t, longToken)
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				var longTokenSb strings.Builder
+				for range 4096 {
+					longTokenSb.WriteString("a")
+				}
+				longToken := longTokenSb.String()
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), longToken).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name: "empty tokens from use case",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, validToken)
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := domains.TokensDTO{
+					AccessToken:  "",
+					RefreshToken: "",
+				}
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), validToken).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				c := rr.Result().Cookies()
+				assert.Len(t, c, 2)
 
-				rr := httptest.NewRecorder()
+				var (
+					accessTokenCookie  *http.Cookie
+					refreshTokenCookie *http.Cookie
+				)
 
-				// Act
-				handler.ServeHTTP(rr, req)
+				for _, cookie := range c {
+					switch cookie.Name {
+					case login.AccessTokenCookieName:
+						accessTokenCookie = cookie
+					case login.RefreshTokenCookieName:
+						refreshTokenCookie = cookie
+					}
+				}
 
-				// Assert
-				assert.Equal(t, tc.expectedStatus, rr.Code)
-			})
-		}
-	})
+				require.NotNil(t, accessTokenCookie)
+				require.NotNil(t, refreshTokenCookie)
+				assert.Equal(t, "", accessTokenCookie.Value)
+				assert.Equal(t, "", refreshTokenCookie.Value)
+			},
+		},
+		{
+			name: "malformed JWT token",
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+				return createRequest(t, "not.a.valid.jwt.token")
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					RefreshTokens(gomock.Any(), "not.a.valid.jwt.token").
+					Return(&domains.TokensDTO{}, customerrors.ErrInvalidJWT)
+			},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+				assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidJWT.Error())
+			},
+		},
+	}
 
-	t.Run("very long refresh token", func(t *testing.T) {
-		t.Parallel()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := refresh_tokens.Handler(mockUseCase, cookiesConfig)
+			mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
+			tt.setupMock(mockUseCase)
 
-		// Создаем очень длинный токен (4096 символов)
-		longToken := ""
+			cc := cookiesConfig
+			if tt.cookiesConfig != nil {
+				cc = *tt.cookiesConfig
+			}
 
-		var longTokenSb495 strings.Builder
-		for range 4096 {
-			longTokenSb495.WriteString("a")
-		}
+			handler := refresh_tokens.Handler(mockUseCase, cc)
 
-		longToken += longTokenSb495.String()
+			req := tt.setupRequest(t)
+			rr := httptest.NewRecorder()
 
-		expectedTokens := createTestTokens()
+			handler.ServeHTTP(rr, req)
 
-		mockUseCase.EXPECT().
-			RefreshTokens(gomock.Any(), longToken).
-			Return(&expectedTokens, nil)
+			assert.Equal(t, tt.expectedStatus, rr.Code)
 
-		req := createRequest(t, longToken)
-		rr := httptest.NewRecorder()
+			if tt.checkResponse != nil {
+				tt.checkResponse(t, rr)
+			}
+		})
+	}
 
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-	})
+	// Тесты, которые не укладываются в табличный формат
 
 	t.Run("concurrent refresh requests", func(t *testing.T) {
 		t.Parallel()
 
-		// Arrange
 		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
 		handler := refresh_tokens.Handler(mockUseCase, cookiesConfig)
 
 		const numRequests = 10
 
-		// Настраиваем мок на конкурентные вызовы
 		for i := range numRequests {
 			token := "token_" + strconv.Itoa(i)
 			expectedTokens := domains.TokensDTO{
@@ -547,7 +685,6 @@ func TestHandler(t *testing.T) {
 
 		done := make(chan bool, numRequests)
 
-		// Act - запускаем concurrent запросы
 		for i := range numRequests {
 			go func(idx int) {
 				token := "token_" + strconv.Itoa(idx)
@@ -557,7 +694,6 @@ func TestHandler(t *testing.T) {
 
 				assert.Equal(t, http.StatusNoContent, rr.Code)
 
-				// Проверяем, что установлены правильные куки
 				c := rr.Result().Cookies()
 				assert.Len(t, c, 2)
 
@@ -584,83 +720,8 @@ func TestHandler(t *testing.T) {
 			}(i)
 		}
 
-		// Ждем завершения всех горутин
 		for range numRequests {
 			<-done
 		}
-	})
-
-	t.Run("empty tokens from use case", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := refresh_tokens.Handler(mockUseCase, cookiesConfig)
-
-		expectedTokens := domains.TokensDTO{
-			AccessToken:  "", // Пустые токены
-			RefreshToken: "",
-		}
-
-		mockUseCase.EXPECT().
-			RefreshTokens(gomock.Any(), validToken).
-			Return(&expectedTokens, nil)
-
-		req := createRequest(t, validToken)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert - должен установить пустые куки
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-
-		c := rr.Result().Cookies()
-		assert.Len(t, c, 2)
-
-		var (
-			accessTokenCookie  *http.Cookie
-			refreshTokenCookie *http.Cookie
-		)
-
-		for _, cookie := range c {
-			switch cookie.Name {
-			case login.AccessTokenCookieName:
-				accessTokenCookie = cookie
-			case login.RefreshTokenCookieName:
-				refreshTokenCookie = cookie
-			}
-		}
-
-		require.NotNil(t, accessTokenCookie)
-		require.NotNil(t, refreshTokenCookie)
-		assert.Equal(t, "", accessTokenCookie.Value)
-		assert.Equal(t, "", refreshTokenCookie.Value)
-	})
-
-	t.Run("malformed JWT token", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := refresh_tokens.Handler(mockUseCase, cookiesConfig)
-
-		malformedToken := "not.a.valid.jwt.token"
-
-		mockUseCase.EXPECT().
-			RefreshTokens(gomock.Any(), malformedToken).
-			Return(&domains.TokensDTO{}, customerrors.ErrInvalidJWT)
-
-		req := createRequest(t, malformedToken)
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrInvalidJWT.Error())
 	})
 }

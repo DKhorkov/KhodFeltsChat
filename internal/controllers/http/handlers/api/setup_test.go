@@ -11,6 +11,7 @@ import (
 	mockusecases "github.com/DKhorkov/kfc/mocks/usecases"
 	"github.com/DKhorkov/libs/logging/mocks"
 	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -35,92 +36,43 @@ func setupAPIRouter(t *testing.T) *mux.Router {
 	return apiMux
 }
 
-func TestSetupHandlers_GetRoutesRegistered(t *testing.T) {
+func TestSetupHandlers_RoutesRegistered(t *testing.T) {
 	t.Parallel()
 
 	apiMux := setupAPIRouter(t)
 
-	routes := []string{
-		"/users",
-		"/users/me",
-		"/users/1",
-		"/ws",
-		"/chats",
-		"/chats/1/messages",
-		"/users/email/verify/test-token",
+	tests := []struct {
+		name   string
+		method string
+		path   string
+	}{
+		{"GET /users", http.MethodGet, "/users"},
+		{"GET /users/me", http.MethodGet, "/users/me"},
+		{"GET /users/1", http.MethodGet, "/users/1"},
+		{"GET /ws", http.MethodGet, "/ws"},
+		{"GET /chats", http.MethodGet, "/chats"},
+		{"GET /chats/1/messages", http.MethodGet, "/chats/1/messages"},
+		{"GET /users/email/verify/test-token", http.MethodGet, "/users/email/verify/test-token"},
+		{"POST /users", http.MethodPost, "/users"},
+		{"POST /sessions", http.MethodPost, "/sessions"},
+		{"POST /users/password/change", http.MethodPost, "/users/password/change"},
+		{"POST /users/email/verify", http.MethodPost, "/users/email/verify"},
+		{"POST /users/password/forget/test-token", http.MethodPost, "/users/password/forget/test-token"},
+		{"POST /users/password/forget", http.MethodPost, "/users/password/forget"},
+		{"POST /chats", http.MethodPost, "/chats"},
+		{"PUT /users/me", http.MethodPut, "/users/me"},
+		{"PUT /sessions", http.MethodPut, "/sessions"},
+		{"DELETE /sessions", http.MethodDelete, "/sessions"},
 	}
 
-	for _, path := range routes {
-		req := httptest.NewRequest(http.MethodGet, path, http.NoBody)
-		match := mux.RouteMatch{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-		if !apiMux.Match(req, &match) {
-			t.Errorf("Expected GET %s to be registered", path)
-		}
-	}
-}
-
-func TestSetupHandlers_PostRoutesRegistered(t *testing.T) {
-	t.Parallel()
-
-	apiMux := setupAPIRouter(t)
-
-	routes := []string{
-		"/users",
-		"/sessions",
-		"/users/password/change",
-		"/users/email/verify",
-		"/users/password/forget/test-token",
-		"/users/password/forget",
-		"/chats",
-	}
-
-	for _, path := range routes {
-		req := httptest.NewRequest(http.MethodPost, path, http.NoBody)
-		match := mux.RouteMatch{}
-
-		if !apiMux.Match(req, &match) {
-			t.Errorf("Expected POST %s to be registered", path)
-		}
-	}
-}
-
-func TestSetupHandlers_PutRoutesRegistered(t *testing.T) {
-	t.Parallel()
-
-	apiMux := setupAPIRouter(t)
-
-	routes := []string{
-		"/users/me",
-		"/sessions",
-	}
-
-	for _, path := range routes {
-		req := httptest.NewRequest(http.MethodPut, path, http.NoBody)
-		match := mux.RouteMatch{}
-
-		if !apiMux.Match(req, &match) {
-			t.Errorf("Expected PUT %s to be registered", path)
-		}
-	}
-}
-
-func TestSetupHandlers_DeleteRoutesRegistered(t *testing.T) {
-	t.Parallel()
-
-	apiMux := setupAPIRouter(t)
-
-	routes := []string{
-		"/sessions",
-	}
-
-	for _, path := range routes {
-		req := httptest.NewRequest(http.MethodDelete, path, http.NoBody)
-		match := mux.RouteMatch{}
-
-		if !apiMux.Match(req, &match) {
-			t.Errorf("Expected DELETE %s to be registered", path)
-		}
+			req := httptest.NewRequest(tt.method, tt.path, http.NoBody)
+			match := mux.RouteMatch{}
+			assert.True(t, apiMux.Match(req, &match), "Expected %s %s to be registered", tt.method, tt.path)
+		})
 	}
 }
 
@@ -134,7 +86,5 @@ func TestSetupHandlers_UnregisteredRoute(t *testing.T) {
 
 	apiMux.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusNotFound {
-		t.Errorf("Expected status %d for unregistered route, got %d", http.StatusNotFound, rr.Code)
-	}
+	assert.Equal(t, http.StatusNotFound, rr.Code, "Expected status %d for unregistered route, got %d", http.StatusNotFound, rr.Code)
 }

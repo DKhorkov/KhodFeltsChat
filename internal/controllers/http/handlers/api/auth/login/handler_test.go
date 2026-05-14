@@ -71,550 +71,775 @@ func TestHandler(t *testing.T) {
 		}
 	}
 
-	t.Run("successful login with email", func(t *testing.T) {
-		t.Parallel()
+	// Вспомогательная функция для проверки, что куки не установлены
+	checkNoCookies := func(t *testing.T, rr *httptest.ResponseRecorder) {
+		t.Helper()
 
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		dto := createLoginDTO()
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		expectedTokens := createTestTokens()
-
-		mockUseCase.EXPECT().
-			LoginUser(gomock.Any(), dto).
-			Return(&expectedTokens, nil)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-		assert.Empty(t, rr.Body.String())
-
-		// Проверяем, что установлены правильные куки
 		c := rr.Result().Cookies()
-		assert.Len(t, c, 2)
+		assert.Empty(t, c)
+	}
 
-		// Находим access token cookie
-		var (
-			accessTokenCookie  *http.Cookie
-			refreshTokenCookie *http.Cookie
-		)
+	// Вспомогательная функция для проверки Content-Type при ошибках
+	checkErrorContentType := func(t *testing.T, rr *httptest.ResponseRecorder) {
+		t.Helper()
 
-		for _, cookie := range c {
-			switch cookie.Name {
-			case login.AccessTokenCookieName:
-				accessTokenCookie = cookie
-			case login.RefreshTokenCookieName:
-				refreshTokenCookie = cookie
+		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
+	}
+
+	// Вспомогательная функция для проверки кук при успешном логине
+	checkSuccessfulCookies := func(
+		expectedTokens domains.TokensDTO,
+		cookiesCfg config.CookiesConfig,
+	) func(t *testing.T, rr *httptest.ResponseRecorder) {
+		return func(t *testing.T, rr *httptest.ResponseRecorder) {
+			t.Helper()
+
+			assert.Empty(t, rr.Body.String())
+
+			c := rr.Result().Cookies()
+			assert.Len(t, c, 2)
+
+			var (
+				accessTokenCookie  *http.Cookie
+				refreshTokenCookie *http.Cookie
+			)
+
+			for _, cookie := range c {
+				switch cookie.Name {
+				case login.AccessTokenCookieName:
+					accessTokenCookie = cookie
+				case login.RefreshTokenCookieName:
+					refreshTokenCookie = cookie
+				}
 			}
+
+			require.NotNil(t, accessTokenCookie)
+			require.NotNil(t, refreshTokenCookie)
+
+			// Проверяем значения токенов
+			assert.Equal(t, expectedTokens.AccessToken, accessTokenCookie.Value)
+			assert.Equal(t, expectedTokens.RefreshToken, refreshTokenCookie.Value)
+
+			// Проверяем настройки access token cookie
+			assert.Equal(t, cookiesCfg.AccessToken.Path, accessTokenCookie.Path)
+			assert.Equal(t, cookiesCfg.AccessToken.Domain, accessTokenCookie.Domain)
+			assert.Equal(t, cookiesCfg.AccessToken.MaxAge, accessTokenCookie.MaxAge)
+			assert.Equal(t, cookiesCfg.AccessToken.Secure, accessTokenCookie.Secure)
+			assert.Equal(t, cookiesCfg.AccessToken.HTTPOnly, accessTokenCookie.HttpOnly)
+			assert.Equal(t, int(cookiesCfg.AccessToken.SameSite), int(accessTokenCookie.SameSite))
+
+			// Проверяем настройки refresh token cookie
+			assert.Equal(t, cookiesCfg.RefreshToken.Path, refreshTokenCookie.Path)
+			assert.Equal(t, cookiesCfg.RefreshToken.Domain, refreshTokenCookie.Domain)
+			assert.Equal(t, cookiesCfg.RefreshToken.MaxAge, refreshTokenCookie.MaxAge)
+			assert.Equal(t, cookiesCfg.RefreshToken.Secure, refreshTokenCookie.Secure)
+			assert.Equal(t, cookiesCfg.RefreshToken.HTTPOnly, refreshTokenCookie.HttpOnly)
+			assert.Equal(t, int(cookiesCfg.RefreshToken.SameSite), int(refreshTokenCookie.SameSite))
 		}
-
-		require.NotNil(t, accessTokenCookie)
-		require.NotNil(t, refreshTokenCookie)
-
-		// Проверяем значения токенов
-		assert.Equal(t, expectedTokens.AccessToken, accessTokenCookie.Value)
-		assert.Equal(t, expectedTokens.RefreshToken, refreshTokenCookie.Value)
-
-		// Проверяем настройки access token cookie
-		assert.Equal(t, cookiesConfig.AccessToken.Path, accessTokenCookie.Path)
-		assert.Equal(t, cookiesConfig.AccessToken.Domain, accessTokenCookie.Domain)
-		assert.Equal(t, cookiesConfig.AccessToken.MaxAge, accessTokenCookie.MaxAge)
-		assert.Equal(t, cookiesConfig.AccessToken.Secure, accessTokenCookie.Secure)
-		assert.Equal(t, cookiesConfig.AccessToken.HTTPOnly, accessTokenCookie.HttpOnly)
-		assert.Equal(t, int(cookiesConfig.AccessToken.SameSite), int(accessTokenCookie.SameSite))
-
-		// Проверяем настройки refresh token cookie
-		assert.Equal(t, cookiesConfig.RefreshToken.Path, refreshTokenCookie.Path)
-		assert.Equal(t, cookiesConfig.RefreshToken.Domain, refreshTokenCookie.Domain)
-		assert.Equal(t, cookiesConfig.RefreshToken.MaxAge, refreshTokenCookie.MaxAge)
-		assert.Equal(t, cookiesConfig.RefreshToken.Secure, refreshTokenCookie.Secure)
-		assert.Equal(t, cookiesConfig.RefreshToken.HTTPOnly, refreshTokenCookie.HttpOnly)
-		assert.Equal(t, int(cookiesConfig.RefreshToken.SameSite), int(refreshTokenCookie.SameSite))
-	})
-
-	t.Run("bad request - empty request body", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		// Пустое тело запроса
-		req := createRequest(t, bytes.NewReader([]byte{}))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-
-		// Проверяем, что куки не установлены
-		c := rr.Result().Cookies()
-		assert.Empty(t, c)
-	})
-
-	t.Run("bad request - invalid JSON", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		// Невалидный JSON
-		invalidJSON := `{"login": "test@example.com", "password": invalid}`
-		req := createRequest(t, bytes.NewReader([]byte(invalidJSON)))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Contains(t, rr.Body.String(), "invalid character")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-
-		// Проверяем, что куки не установлены
-		c := rr.Result().Cookies()
-		assert.Empty(t, c)
-	})
-
-	t.Run("bad request - missing required fields", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		testCases := []struct {
-			name string
-			json string
-		}{
-			{
-				name: "missing login",
-				json: `{"password": "password123"}`,
-			},
-			{
-				name: "missing password",
-				json: `{"login": "test@example.com"}`,
-			},
-			{
-				name: "empty object",
-				json: `{}`,
-			},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				// DTO будет создан с пустыми полями, валидация произойдет в use case
-				var dto domains.LoginDTO
-
-				err := json.Unmarshal([]byte(tc.json), &dto)
-				require.NoError(t, err, "JSON should unmarshal even with missing fields")
-
-				mockUseCase.EXPECT().
-					LoginUser(gomock.Any(), dto).
-					Return(&domains.TokensDTO{}, customerrors.ErrValidationFailed)
-
-				req := createRequest(t, bytes.NewReader([]byte(tc.json)))
-				rr := httptest.NewRecorder()
-
-				// Act
-				handler.ServeHTTP(rr, req)
-
-				// Assert
-				assert.Equal(t, http.StatusBadRequest, rr.Code)
-				assert.Contains(t, rr.Body.String(), customerrors.ErrValidationFailed.Error())
-				assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-
-				// Проверяем, что куки не установлены
-				c := rr.Result().Cookies()
-				assert.Empty(t, c)
-			})
-		}
-	})
-
-	t.Run("bad request - validation failed", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		dto := domains.LoginDTO{
-			Login:    "invalid-email", // Невалидный логин
-			Password: "123",           // Слишком короткий пароль
-		}
-
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			LoginUser(gomock.Any(), dto).
-			Return(&domains.TokensDTO{}, customerrors.ErrValidationFailed)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrValidationFailed.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-
-		// Проверяем, что куки не установлены
-		c := rr.Result().Cookies()
-		assert.Empty(t, c)
-	})
-
-	t.Run("not found - user not found", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		dto := createLoginDTO()
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			LoginUser(gomock.Any(), dto).
-			Return(&domains.TokensDTO{}, customerrors.ErrUserNotFound)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNotFound, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-
-		// Проверяем, что куки не установлены
-		c := rr.Result().Cookies()
-		assert.Empty(t, c)
-	})
-
-	t.Run("forbidden - email not confirmed", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		dto := createLoginDTO()
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			LoginUser(gomock.Any(), dto).
-			Return(&domains.TokensDTO{}, customerrors.ErrEmailNotConfirmed)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusForbidden, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrEmailNotConfirmed.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-
-		// Проверяем, что куки не установлены
-		c := rr.Result().Cookies()
-		assert.Empty(t, c)
-	})
-
-	t.Run("unauthorized - wrong password", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		dto := createLoginDTO()
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			LoginUser(gomock.Any(), dto).
-			Return(&domains.TokensDTO{}, customerrors.ErrWrongPassword)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusUnauthorized, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrWrongPassword.Error())
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-
-		// Проверяем, что куки не установлены
-		c := rr.Result().Cookies()
-		assert.Empty(t, c)
-	})
-
-	t.Run("internal server error - use case error", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		dto := createLoginDTO()
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			LoginUser(gomock.Any(), dto).
-			Return(&domains.TokensDTO{}, errors.New("database connection failed"))
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusInternalServerError, rr.Code)
-		assert.Contains(t, rr.Body.String(), "database connection failed")
-		assert.Equal(t, "text/plain; charset=utf-8", rr.Header().Get("Content-Type"))
-
-		// Проверяем, что куки не установлены
-		c := rr.Result().Cookies()
-		assert.Empty(t, c)
-	})
-
-	t.Run("login with different cookie configurations", func(t *testing.T) {
-		t.Parallel()
-
-		testCases := []struct {
-			name          string
-			cookiesConfig config.CookiesConfig
-		}{
-			{
-				name: "secure cookies",
-				cookiesConfig: config.CookiesConfig{
-					AccessToken: cookies.Config{
-						Path:     "/api",
-						Domain:   "secure.example.com",
-						MaxAge:   300,
-						Secure:   true,
-						HTTPOnly: true,
-						SameSite: http.SameSiteStrictMode,
-					},
-					RefreshToken: cookies.Config{
-						Path:     "/api",
-						Domain:   "secure.example.com",
-						MaxAge:   2592000, // 30 дней
-						Secure:   true,
-						HTTPOnly: true,
-						SameSite: http.SameSiteStrictMode,
-					},
-				},
-			},
-			{
-				name: "development cookies (non-secure)",
-				cookiesConfig: config.CookiesConfig{
-					AccessToken: cookies.Config{
-						Path:     "/",
-						Domain:   "localhost",
-						MaxAge:   900,
-						Secure:   false,
-						HTTPOnly: true,
-						SameSite: http.SameSiteLaxMode,
-					},
-					RefreshToken: cookies.Config{
-						Path:     "/",
-						Domain:   "localhost",
-						MaxAge:   604800,
-						Secure:   false,
-						HTTPOnly: true,
-						SameSite: http.SameSiteLaxMode,
-					},
-				},
-			},
-			{
-				name: "session cookies (no MaxAge)",
-				cookiesConfig: config.CookiesConfig{
-					AccessToken: cookies.Config{
-						Path:     "/",
-						Domain:   "example.com",
-						MaxAge:   0, // Session cookie
-						Secure:   true,
-						HTTPOnly: true,
-						SameSite: http.SameSiteNoneMode,
-					},
-					RefreshToken: cookies.Config{
-						Path:     "/",
-						Domain:   "example.com",
-						MaxAge:   0, // Session cookie
-						Secure:   true,
-						HTTPOnly: true,
-						SameSite: http.SameSiteNoneMode,
-					},
-				},
-			},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				// Arrange
-				mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-				handler := login.Handler(mockUseCase, tc.cookiesConfig)
+	}
+
+	defaultCookiesConfig := createCookiesConfig()
+
+	tests := []struct {
+		name           string
+		cookiesConfig  config.CookiesConfig
+		setupRequest   func(t *testing.T) *http.Request
+		setupMock      func(m *mockusecases.MockAuthUseCases)
+		expectedStatus int
+		checkResponse  func(t *testing.T, rr *httptest.ResponseRecorder)
+	}{
+		{
+			name:          "successful login with email",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
 				dto := createLoginDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
 
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				expectedTokens := createTestTokens()
-
-				mockUseCase.EXPECT().
-					LoginUser(gomock.Any(), dto).
+				m.EXPECT().
+					LoginUser(gomock.Any(), createLoginDTO()).
 					Return(&expectedTokens, nil)
-
-				req := createRequest(t, bytes.NewReader(requestBody))
-				rr := httptest.NewRecorder()
-
-				// Act
-				handler.ServeHTTP(rr, req)
-
-				// Assert
-				assert.Equal(t, http.StatusNoContent, rr.Code)
-
-				// Проверяем куки
-				c := rr.Result().Cookies()
-				assert.Len(t, c, 2)
-
-				var (
-					accessTokenCookie  *http.Cookie
-					refreshTokenCookie *http.Cookie
-				)
-
-				for _, cookie := range c {
-					switch cookie.Name {
-					case login.AccessTokenCookieName:
-						accessTokenCookie = cookie
-					case login.RefreshTokenCookieName:
-						refreshTokenCookie = cookie
-					}
-				}
-
-				require.NotNil(t, accessTokenCookie)
-				require.NotNil(t, refreshTokenCookie)
-
-				// Проверяем настройки
-				assert.Equal(t, tc.cookiesConfig.AccessToken.Path, accessTokenCookie.Path)
-				assert.Equal(t, tc.cookiesConfig.AccessToken.Domain, accessTokenCookie.Domain)
-				assert.Equal(t, tc.cookiesConfig.AccessToken.MaxAge, accessTokenCookie.MaxAge)
-				assert.Equal(t, tc.cookiesConfig.AccessToken.Secure, accessTokenCookie.Secure)
-				assert.Equal(t, tc.cookiesConfig.AccessToken.HTTPOnly, accessTokenCookie.HttpOnly)
-				assert.Equal(
-					t,
-					int(tc.cookiesConfig.AccessToken.SameSite),
-					int(accessTokenCookie.SameSite),
-				)
-
-				assert.Equal(t, tc.cookiesConfig.RefreshToken.Path, refreshTokenCookie.Path)
-				assert.Equal(t, tc.cookiesConfig.RefreshToken.Domain, refreshTokenCookie.Domain)
-				assert.Equal(t, tc.cookiesConfig.RefreshToken.MaxAge, refreshTokenCookie.MaxAge)
-				assert.Equal(t, tc.cookiesConfig.RefreshToken.Secure, refreshTokenCookie.Secure)
-				assert.Equal(t, tc.cookiesConfig.RefreshToken.HTTPOnly, refreshTokenCookie.HttpOnly)
-				assert.Equal(
-					t,
-					int(tc.cookiesConfig.RefreshToken.SameSite),
-					int(refreshTokenCookie.SameSite),
-				)
-			})
-		}
-	})
-
-	t.Run("login with different login formats", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		testCases := []struct {
-			name  string
-			login string
-		}{
-			{
-				name:  "simple email",
-				login: "user@example.com",
 			},
-			{
-				name:  "email with plus",
-				login: "user+tag@example.com",
-			},
-			{
-				name:  "username",
-				login: "testuser",
-			},
-		}
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  checkSuccessfulCookies(createTestTokens(), defaultCookiesConfig),
+		},
+		{
+			name:          "bad request - empty request body",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
+				return createRequest(t, bytes.NewReader([]byte{}))
+			},
+			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				checkErrorContentType(t, rr)
+				checkNoCookies(t, rr)
+			},
+		},
+		{
+			name:          "bad request - invalid JSON",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				invalidJSON := `{"login": "test@example.com", "password": invalid}`
+
+				return createRequest(t, bytes.NewReader([]byte(invalidJSON)))
+			},
+			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				assert.Contains(t, rr.Body.String(), "invalid character")
+				checkErrorContentType(t, rr)
+				checkNoCookies(t, rr)
+			},
+		},
+		{
+			name:          "bad request - missing login",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, bytes.NewReader([]byte(`{"password": "password123"}`)))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{Password: "password123"}).
+					Return(&domains.TokensDTO{}, customerrors.ErrValidationFailed)
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				assert.Contains(t, rr.Body.String(), customerrors.ErrValidationFailed.Error())
+				checkErrorContentType(t, rr)
+				checkNoCookies(t, rr)
+			},
+		},
+		{
+			name:          "bad request - missing password",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, bytes.NewReader([]byte(`{"login": "test@example.com"}`)))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{Login: "test@example.com"}).
+					Return(&domains.TokensDTO{}, customerrors.ErrValidationFailed)
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				assert.Contains(t, rr.Body.String(), customerrors.ErrValidationFailed.Error())
+				checkErrorContentType(t, rr)
+				checkNoCookies(t, rr)
+			},
+		},
+		{
+			name:          "bad request - empty object",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				return createRequest(t, bytes.NewReader([]byte(`{}`)))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{}).
+					Return(&domains.TokensDTO{}, customerrors.ErrValidationFailed)
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				assert.Contains(t, rr.Body.String(), customerrors.ErrValidationFailed.Error())
+				checkErrorContentType(t, rr)
+				checkNoCookies(t, rr)
+			},
+		},
+		{
+			name:          "bad request - validation failed",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
 				dto := domains.LoginDTO{
-					Login:    tc.login,
-					Password: "SecurePassword123!",
+					Login:    "invalid-email",
+					Password: "123",
 				}
 
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
 
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{
+						Login:    "invalid-email",
+						Password: "123",
+					}).
+					Return(&domains.TokensDTO{}, customerrors.ErrValidationFailed)
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				assert.Contains(t, rr.Body.String(), customerrors.ErrValidationFailed.Error())
+				checkErrorContentType(t, rr)
+				checkNoCookies(t, rr)
+			},
+		},
+		{
+			name:          "not found - user not found",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				requestBody, err := json.Marshal(createLoginDTO())
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					LoginUser(gomock.Any(), createLoginDTO()).
+					Return(&domains.TokensDTO{}, customerrors.ErrUserNotFound)
+			},
+			expectedStatus: http.StatusNotFound,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				assert.Contains(t, rr.Body.String(), customerrors.ErrUserNotFound.Error())
+				checkErrorContentType(t, rr)
+				checkNoCookies(t, rr)
+			},
+		},
+		{
+			name:          "forbidden - email not confirmed",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				requestBody, err := json.Marshal(createLoginDTO())
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					LoginUser(gomock.Any(), createLoginDTO()).
+					Return(&domains.TokensDTO{}, customerrors.ErrEmailNotConfirmed)
+			},
+			expectedStatus: http.StatusForbidden,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				assert.Contains(t, rr.Body.String(), customerrors.ErrEmailNotConfirmed.Error())
+				checkErrorContentType(t, rr)
+				checkNoCookies(t, rr)
+			},
+		},
+		{
+			name:          "unauthorized - wrong password",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				requestBody, err := json.Marshal(createLoginDTO())
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					LoginUser(gomock.Any(), createLoginDTO()).
+					Return(&domains.TokensDTO{}, customerrors.ErrWrongPassword)
+			},
+			expectedStatus: http.StatusUnauthorized,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				assert.Contains(t, rr.Body.String(), customerrors.ErrWrongPassword.Error())
+				checkErrorContentType(t, rr)
+				checkNoCookies(t, rr)
+			},
+		},
+		{
+			name:          "internal server error - use case error",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				requestBody, err := json.Marshal(createLoginDTO())
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					LoginUser(gomock.Any(), createLoginDTO()).
+					Return(&domains.TokensDTO{}, errors.New("database connection failed"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				assert.Contains(t, rr.Body.String(), "database connection failed")
+				checkErrorContentType(t, rr)
+				checkNoCookies(t, rr)
+			},
+		},
+		{
+			name: "login with secure cookie configuration",
+			cookiesConfig: config.CookiesConfig{
+				AccessToken: cookies.Config{
+					Path:     "/api",
+					Domain:   "secure.example.com",
+					MaxAge:   300,
+					Secure:   true,
+					HTTPOnly: true,
+					SameSite: http.SameSiteStrictMode,
+				},
+				RefreshToken: cookies.Config{
+					Path:     "/api",
+					Domain:   "secure.example.com",
+					MaxAge:   2592000, // 30 дней
+					Secure:   true,
+					HTTPOnly: true,
+					SameSite: http.SameSiteStrictMode,
+				},
+			},
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				requestBody, err := json.Marshal(createLoginDTO())
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				expectedTokens := createTestTokens()
-
-				mockUseCase.EXPECT().
-					LoginUser(gomock.Any(), dto).
+				m.EXPECT().
+					LoginUser(gomock.Any(), createLoginDTO()).
 					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse: checkSuccessfulCookies(createTestTokens(), config.CookiesConfig{
+				AccessToken: cookies.Config{
+					Path:     "/api",
+					Domain:   "secure.example.com",
+					MaxAge:   300,
+					Secure:   true,
+					HTTPOnly: true,
+					SameSite: http.SameSiteStrictMode,
+				},
+				RefreshToken: cookies.Config{
+					Path:     "/api",
+					Domain:   "secure.example.com",
+					MaxAge:   2592000,
+					Secure:   true,
+					HTTPOnly: true,
+					SameSite: http.SameSiteStrictMode,
+				},
+			}),
+		},
+		{
+			name: "login with development cookie configuration (non-secure)",
+			cookiesConfig: config.CookiesConfig{
+				AccessToken: cookies.Config{
+					Path:     "/",
+					Domain:   "localhost",
+					MaxAge:   900,
+					Secure:   false,
+					HTTPOnly: true,
+					SameSite: http.SameSiteLaxMode,
+				},
+				RefreshToken: cookies.Config{
+					Path:     "/",
+					Domain:   "localhost",
+					MaxAge:   604800,
+					Secure:   false,
+					HTTPOnly: true,
+					SameSite: http.SameSiteLaxMode,
+				},
+			},
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-				req := createRequest(t, bytes.NewReader(requestBody))
-				rr := httptest.NewRecorder()
+				requestBody, err := json.Marshal(createLoginDTO())
+				require.NoError(t, err)
 
-				// Act
-				handler.ServeHTTP(rr, req)
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					LoginUser(gomock.Any(), createLoginDTO()).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse: checkSuccessfulCookies(createTestTokens(), config.CookiesConfig{
+				AccessToken: cookies.Config{
+					Path:     "/",
+					Domain:   "localhost",
+					MaxAge:   900,
+					Secure:   false,
+					HTTPOnly: true,
+					SameSite: http.SameSiteLaxMode,
+				},
+				RefreshToken: cookies.Config{
+					Path:     "/",
+					Domain:   "localhost",
+					MaxAge:   604800,
+					Secure:   false,
+					HTTPOnly: true,
+					SameSite: http.SameSiteLaxMode,
+				},
+			}),
+		},
+		{
+			name: "login with session cookie configuration (no MaxAge)",
+			cookiesConfig: config.CookiesConfig{
+				AccessToken: cookies.Config{
+					Path:     "/",
+					Domain:   "example.com",
+					MaxAge:   0, // Session cookie
+					Secure:   true,
+					HTTPOnly: true,
+					SameSite: http.SameSiteNoneMode,
+				},
+				RefreshToken: cookies.Config{
+					Path:     "/",
+					Domain:   "example.com",
+					MaxAge:   0, // Session cookie
+					Secure:   true,
+					HTTPOnly: true,
+					SameSite: http.SameSiteNoneMode,
+				},
+			},
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
 
-				// Assert
-				assert.Equal(t, http.StatusNoContent, rr.Code)
-			})
-		}
-	})
+				requestBody, err := json.Marshal(createLoginDTO())
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					LoginUser(gomock.Any(), createLoginDTO()).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse: checkSuccessfulCookies(createTestTokens(), config.CookiesConfig{
+				AccessToken: cookies.Config{
+					Path:     "/",
+					Domain:   "example.com",
+					MaxAge:   0,
+					Secure:   true,
+					HTTPOnly: true,
+					SameSite: http.SameSiteNoneMode,
+				},
+				RefreshToken: cookies.Config{
+					Path:     "/",
+					Domain:   "example.com",
+					MaxAge:   0,
+					Secure:   true,
+					HTTPOnly: true,
+					SameSite: http.SameSiteNoneMode,
+				},
+			}),
+		},
+		{
+			name:          "login with simple email format",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				dto := domains.LoginDTO{Login: "user@example.com", Password: "SecurePassword123!"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{Login: "user@example.com", Password: "SecurePassword123!"}).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name:          "login with email containing plus",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				dto := domains.LoginDTO{Login: "user+tag@example.com", Password: "SecurePassword123!"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{Login: "user+tag@example.com", Password: "SecurePassword123!"}).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name:          "login with username format",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				dto := domains.LoginDTO{Login: "testuser", Password: "SecurePassword123!"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{Login: "testuser", Password: "SecurePassword123!"}).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name:          "login with extra fields in JSON",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				jsonWithExtraFields := `{
+				"login": "test@example.com",
+				"password": "SecurePassword123!",
+				"extraField": "should be ignored",
+				"anotherExtra": 123,
+				"rememberMe": true
+			}`
+
+				return createRequest(t, bytes.NewReader([]byte(jsonWithExtraFields)))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{
+						Login:    "test@example.com",
+						Password: "SecurePassword123!",
+					}).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name:          "login with null values",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				jsonWithNull := `{
+				"login": null,
+				"password": "SecurePassword123!"
+			}`
+
+				return createRequest(t, bytes.NewReader([]byte(jsonWithNull)))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{
+						Login:    "",
+						Password: "SecurePassword123!",
+					}).
+					Return(&domains.TokensDTO{}, customerrors.ErrValidationFailed)
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				assert.Contains(t, rr.Body.String(), customerrors.ErrValidationFailed.Error())
+			},
+		},
+		{
+			name:          "login with empty strings",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				dto := domains.LoginDTO{Login: "", Password: ""}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{Login: "", Password: ""}).
+					Return(&domains.TokensDTO{}, customerrors.ErrValidationFailed)
+			},
+			expectedStatus: http.StatusBadRequest,
+			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
+				t.Helper()
+
+				assert.Contains(t, rr.Body.String(), customerrors.ErrValidationFailed.Error())
+			},
+		},
+		{
+			name:          "empty tokens from use case",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				requestBody, err := json.Marshal(createLoginDTO())
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := domains.TokensDTO{AccessToken: "", RefreshToken: ""}
+				m.EXPECT().
+					LoginUser(gomock.Any(), createLoginDTO()).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse: checkSuccessfulCookies(
+				domains.TokensDTO{AccessToken: "", RefreshToken: ""},
+				defaultCookiesConfig,
+			),
+		},
+		{
+			name:          "login with lowercase email (case-sensitive)",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				dto := domains.LoginDTO{Login: "user@example.com", Password: "SecurePassword123!"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{Login: "user@example.com", Password: "SecurePassword123!"}).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name:          "login with uppercase email (case-sensitive)",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				dto := domains.LoginDTO{Login: "USER@EXAMPLE.COM", Password: "SecurePassword123!"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{Login: "USER@EXAMPLE.COM", Password: "SecurePassword123!"}).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name:          "login with mixed case email (case-sensitive)",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				dto := domains.LoginDTO{Login: "UsEr@ExAmPlE.CoM", Password: "SecurePassword123!"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{Login: "UsEr@ExAmPlE.CoM", Password: "SecurePassword123!"}).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+		{
+			name:          "login with email containing special characters",
+			cookiesConfig: defaultCookiesConfig,
+			setupRequest: func(t *testing.T) *http.Request {
+				t.Helper()
+
+				dto := domains.LoginDTO{Login: "user.name+tag@example.com", Password: "SecurePassword123!"}
+				requestBody, err := json.Marshal(dto)
+				require.NoError(t, err)
+
+				return createRequest(t, bytes.NewReader(requestBody))
+			},
+			setupMock: func(m *mockusecases.MockAuthUseCases) {
+				expectedTokens := createTestTokens()
+				m.EXPECT().
+					LoginUser(gomock.Any(), domains.LoginDTO{Login: "user.name+tag@example.com", Password: "SecurePassword123!"}).
+					Return(&expectedTokens, nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			checkResponse:  nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
+			tt.setupMock(mockUseCase)
+			handler := login.Handler(mockUseCase, tt.cookiesConfig)
+			req := tt.setupRequest(t)
+			rr := httptest.NewRecorder()
+
+			handler.ServeHTTP(rr, req)
+
+			assert.Equal(t, tt.expectedStatus, rr.Code)
+
+			if tt.checkResponse != nil {
+				tt.checkResponse(t, rr)
+			}
+		})
+	}
+
+	// Тесты, которые не вписываются в табличный формат
 
 	t.Run("concurrent login requests", func(t *testing.T) {
 		t.Parallel()
@@ -692,166 +917,6 @@ func TestHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("login with extra fields in JSON", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		// JSON с дополнительными полями, которых нет в DTO
-		jsonWithExtraFields := `{
-			"login": "test@example.com",
-			"password": "SecurePassword123!",
-			"extraField": "should be ignored",
-			"anotherExtra": 123,
-			"rememberMe": true
-		}`
-
-		expectedTokens := createTestTokens()
-
-		// Ожидаем, что только определенные поля будут в DTO
-		expectedDTO := domains.LoginDTO{
-			Login:    "test@example.com",
-			Password: "SecurePassword123!",
-		}
-
-		mockUseCase.EXPECT().
-			LoginUser(gomock.Any(), expectedDTO).
-			Return(&expectedTokens, nil)
-
-		req := createRequest(t, bytes.NewReader([]byte(jsonWithExtraFields)))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-	})
-
-	t.Run("login with null values", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		// JSON с null значениями
-		jsonWithNull := `{
-			"login": null,
-			"password": "SecurePassword123!"
-		}`
-
-		// При десериализации null в string станет пустой строкой
-		var dto domains.LoginDTO
-
-		err := json.Unmarshal([]byte(jsonWithNull), &dto)
-		require.NoError(t, err)
-		assert.Equal(t, "", dto.Login)
-
-		mockUseCase.EXPECT().
-			LoginUser(gomock.Any(), dto).
-			Return(&domains.TokensDTO{}, customerrors.ErrValidationFailed)
-
-		req := createRequest(t, bytes.NewReader([]byte(jsonWithNull)))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert - должна быть ошибка валидации
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrValidationFailed.Error())
-	})
-
-	t.Run("login with empty strings", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		dto := domains.LoginDTO{
-			Login:    "", // Пустой логин
-			Password: "", // Пустой пароль
-		}
-
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		mockUseCase.EXPECT().
-			LoginUser(gomock.Any(), dto).
-			Return(&domains.TokensDTO{}, customerrors.ErrValidationFailed)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-		assert.Contains(t, rr.Body.String(), customerrors.ErrValidationFailed.Error())
-	})
-
-	t.Run("empty tokens from use case", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		dto := createLoginDTO()
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		// Use case возвращает пустые токены (пограничный случай)
-		expectedTokens := domains.TokensDTO{
-			AccessToken:  "", // Пустые токены
-			RefreshToken: "",
-		}
-
-		mockUseCase.EXPECT().
-			LoginUser(gomock.Any(), dto).
-			Return(&expectedTokens, nil)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert - должен установить пустые куки
-		assert.Equal(t, http.StatusNoContent, rr.Code)
-
-		c := rr.Result().Cookies()
-		assert.Len(t, c, 2)
-
-		var (
-			accessTokenCookie  *http.Cookie
-			refreshTokenCookie *http.Cookie
-		)
-
-		for _, cookie := range c {
-			switch cookie.Name {
-			case login.AccessTokenCookieName:
-				accessTokenCookie = cookie
-			case login.RefreshTokenCookieName:
-				refreshTokenCookie = cookie
-			}
-		}
-
-		require.NotNil(t, accessTokenCookie)
-		require.NotNil(t, refreshTokenCookie)
-		assert.Equal(t, "", accessTokenCookie.Value)
-		assert.Equal(t, "", refreshTokenCookie.Value)
-	})
-
 	t.Run("rate limiting scenarios", func(t *testing.T) {
 		t.Parallel()
 
@@ -891,95 +956,5 @@ func TestHandler(t *testing.T) {
 			c := rr.Result().Cookies()
 			assert.Empty(t, c)
 		}
-	})
-
-	t.Run("login with case-sensitive login", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		testCases := []struct {
-			name  string
-			login string
-		}{
-			{
-				name:  "lowercase email",
-				login: "user@example.com",
-			},
-			{
-				name:  "uppercase email",
-				login: "USER@EXAMPLE.COM",
-			},
-			{
-				name:  "mixed case email",
-				login: "UsEr@ExAmPlE.CoM",
-			},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				dto := domains.LoginDTO{
-					Login:    tc.login,
-					Password: "SecurePassword123!",
-				}
-
-				requestBody, err := json.Marshal(dto)
-				require.NoError(t, err)
-
-				expectedTokens := createTestTokens()
-
-				// В зависимости от реализации, email может быть case-insensitive
-				mockUseCase.EXPECT().
-					LoginUser(gomock.Any(), dto).
-					Return(&expectedTokens, nil)
-
-				req := createRequest(t, bytes.NewReader(requestBody))
-				rr := httptest.NewRecorder()
-
-				// Act
-				handler.ServeHTTP(rr, req)
-
-				// Assert - если use case нормализует email, то успешно
-				assert.Equal(t, http.StatusNoContent, rr.Code)
-			})
-		}
-	})
-
-	t.Run("login with email containing special characters", func(t *testing.T) {
-		t.Parallel()
-
-		// Arrange
-		mockUseCase := mockusecases.NewMockAuthUseCases(ctrl)
-		cookiesConfig := createCookiesConfig()
-		handler := login.Handler(mockUseCase, cookiesConfig)
-
-		// Email с специальными символами до @ (обычно допустимы)
-		dto := domains.LoginDTO{
-			Login:    "user.name+tag@example.com",
-			Password: "SecurePassword123!",
-		}
-
-		requestBody, err := json.Marshal(dto)
-		require.NoError(t, err)
-
-		expectedTokens := createTestTokens()
-
-		mockUseCase.EXPECT().
-			LoginUser(gomock.Any(), dto).
-			Return(&expectedTokens, nil)
-
-		req := createRequest(t, bytes.NewReader(requestBody))
-		rr := httptest.NewRecorder()
-
-		// Act
-		handler.ServeHTTP(rr, req)
-
-		// Assert
-		assert.Equal(t, http.StatusNoContent, rr.Code)
 	})
 }
