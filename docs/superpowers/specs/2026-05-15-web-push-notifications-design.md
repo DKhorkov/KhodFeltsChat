@@ -42,7 +42,7 @@ CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions(user_id);
 
 ## API (тег: web-pushes)
 
-### `GET /api/push/vapid-key`
+### `GET /api/web-push/vapid-key`
 
 Возвращает публичный VAPID ключ для фронтенда.
 
@@ -53,7 +53,7 @@ CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions(user_id);
 }
 ```
 
-### `POST /api/push/subscribe`
+### `POST /api/web-push/subscribe`
 
 Создаёт push-подписку для текущего пользователя.
 
@@ -62,7 +62,7 @@ CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions(user_id);
 {
   "endpoint": "https://fcm.googleapis.com/...",
   "keys": {
-    "p256dh": "BNcRd...",
+    "encryptionKey": "BNcRd...",
     "auth": "tBHI..."
   }
 }
@@ -75,7 +75,7 @@ CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions(user_id);
 }
 ```
 
-### `DELETE /api/push/subscribe/{id}`
+### `DELETE /api/web-push/subscribe/{id}`
 
 Удаляет push-подписку по ID.
 
@@ -230,7 +230,7 @@ self.addEventListener('notificationclick', (event) => {
 "Включить уведомления" / "Отключить уведомления":
 
 - **Включить** — запускает флоу подписки (шаги 3-5 выше)
-- **Отключить** — вызывает `subscription.unsubscribe()` + `DELETE /api/push/subscribe/{id}` + очищает `localStorage`
+- **Отключить** — вызывает `subscription.unsubscribe()` + `DELETE /api/web-push/subscribe/{id}` + очищает `localStorage`
 
 ## Зависимости
 

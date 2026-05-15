@@ -960,7 +960,7 @@ async function initPushNotifications() {
 
 async function subscribeToPush(registration) {
     try {
-        const resp = await fetchWithAuth('/api/push/vapid-key');
+        const resp = await fetchWithAuth('/api/web-push/vapid-key');
         if (!resp.ok) return;
 
         const { publicKey } = await resp.json();
@@ -978,7 +978,7 @@ async function subscribeToPush(registration) {
 
 async function sendSubscriptionToServer(subscription) {
     try {
-        const resp = await fetchWithAuth('/api/push/subscribe', {
+        const resp = await fetchWithAuth('/api/web-push/subscribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

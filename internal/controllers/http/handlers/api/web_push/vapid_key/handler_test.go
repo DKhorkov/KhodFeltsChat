@@ -22,7 +22,7 @@ func TestHandler(t *testing.T) {
 		publicKey := "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8p8V953hA"
 		handler := vapidkey.Handler(publicKey)
 
-		req := httptest.NewRequest(http.MethodGet, "/api/push/vapid-key", http.NoBody)
+		req := httptest.NewRequest(http.MethodGet, "/api/web-push/vapid-key", http.NoBody)
 		rr := httptest.NewRecorder()
 
 		// Act

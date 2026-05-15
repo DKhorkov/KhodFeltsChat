@@ -31,7 +31,7 @@ func TestHandler(t *testing.T) {
 		data, err := json.Marshal(body)
 		require.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodPost, "/api/push/subscribe", bytes.NewReader(data))
+		req := httptest.NewRequest(http.MethodPost, "/api/web-push/subscribe", bytes.NewReader(data))
 		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 
 		return req.WithContext(ctx)
@@ -101,7 +101,7 @@ func TestHandler(t *testing.T) {
 		mockUseCase := mockusecases.NewMockWebPushSubscriptionsUseCases(ctrl)
 		handler := subscribe.Handler(mockUseCase)
 
-		req := httptest.NewRequest(http.MethodPost, "/api/push/subscribe", http.NoBody)
+		req := httptest.NewRequest(http.MethodPost, "/api/web-push/subscribe", http.NoBody)
 		rr := httptest.NewRecorder()
 
 		// Act
@@ -121,7 +121,7 @@ func TestHandler(t *testing.T) {
 		userID := uint64(123)
 
 		req := httptest.NewRequest(
-			http.MethodPost, "/api/push/subscribe", bytes.NewReader([]byte("invalid json")),
+			http.MethodPost, "/api/web-push/subscribe", bytes.NewReader([]byte("invalid json")),
 		)
 		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 		req = req.WithContext(ctx)

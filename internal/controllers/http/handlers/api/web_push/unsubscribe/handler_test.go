@@ -27,7 +27,7 @@ func TestHandler(t *testing.T) {
 
 		req := httptest.NewRequest(
 			http.MethodDelete,
-			"/api/push/subscriptions/"+strconv.FormatUint(subscriptionID, 10),
+			"/api/web-push/subscribe/"+strconv.FormatUint(subscriptionID, 10),
 			http.NoBody,
 		)
 		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
@@ -70,7 +70,7 @@ func TestHandler(t *testing.T) {
 		mockUseCase := mockusecases.NewMockWebPushSubscriptionsUseCases(ctrl)
 		handler := unsubscribe.Handler(mockUseCase)
 
-		req := httptest.NewRequest(http.MethodDelete, "/api/push/subscriptions/1", http.NoBody)
+		req := httptest.NewRequest(http.MethodDelete, "/api/web-push/subscribe/1", http.NoBody)
 		rr := httptest.NewRecorder()
 
 		// Act
@@ -91,7 +91,7 @@ func TestHandler(t *testing.T) {
 
 		req := httptest.NewRequest(
 			http.MethodDelete,
-			"/api/push/subscriptions/invalid",
+			"/api/web-push/subscribe/invalid",
 			http.NoBody,
 		)
 		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)

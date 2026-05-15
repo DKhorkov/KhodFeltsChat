@@ -62,14 +62,19 @@ async function updatePushToggleUI(toggleEl) {
         return;
     }
 
-    const registration = await navigator.serviceWorker.getRegistration('/web/sw.js');
-    if (!registration) {
-        label.textContent = 'Отключены';
-        return;
-    }
+    try {
+        const registration = await navigator.serviceWorker.getRegistration('/web/sw.js');
+        if (!registration) {
+            label.textContent = 'Отключены';
+            return;
+        }
 
-    const subscription = await registration.pushManager.getSubscription();
-    label.textContent = subscription ? 'Включены' : 'Отключены';
+        const subscription = await registration.pushManager.getSubscription();
+        label.textContent = subscription ? 'Включены' : 'Отключены';
+    } catch (err) {
+        console.log('Push toggle UI update error:', err);
+        label.textContent = 'Отключены';
+    }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -336,7 +341,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (subId) {
                     try {
-                        await fetchWithAuth('/api/push/subscribe/' + subId, { method: 'DELETE' });
+                        await fetchWithAuth('/api/web-push/subscribe/' + subId, { method: 'DELETE' });
                     } catch (err) {
                         console.log('Unsubscribe error:', err);
                     }
