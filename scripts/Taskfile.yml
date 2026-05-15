@@ -81,31 +81,38 @@ tasks:
     desc: "Build docker container for production."
     aliases:
       - build_prod
-    cmd: sudo docker-compose -f ../build/package/prod/docker-compose.yml build
+    dir: ../
+    cmd: sudo docker-compose -f build/package/prod/docker-compose.yml build
 
   docker_run_prod:
     desc: "Launch docker container for production."
     aliases:
       - run_prod
-    cmd: sudo docker-compose -f ../build/package/prod/docker-compose.yml up -d
+    dir: ../
+    cmd: sudo docker-compose -f build/package/prod/docker-compose.yml up -d
 
   docker_build_local:
     desc: "Build docker container for local launch."
     aliases:
       - build_local
-    cmd: sudo docker-compose -f ../build/package/local/docker-compose.yml build
+    dir: ../
+    cmd: sudo docker-compose -f build/package/local/docker-compose.yml build
 
   docker_run_local:
     desc: "Launch docker container for local launch."
     aliases:
       - run_local
-    cmd: sudo docker-compose -f ../build/package/local/docker-compose.yml up -d
+    dir: ../
+    cmd: sudo docker-compose -f build/package/local/docker-compose.yml up -d
 
   docker_stop:
-    desc: "Stop all docker containers."
+    desc: "Stop docker containers of this project."
     aliases:
       - stop
-    cmd: sudo docker stop $(sudo docker ps -a -q)
+    dir: ../
+    cmds:
+      - sudo docker-compose -f build/package/prod/docker-compose.yml down
+      - sudo docker-compose -f build/package/local/docker-compose.yml down
 
   docker_clean:
     desc: "Clean docker containers, images and volumes."
