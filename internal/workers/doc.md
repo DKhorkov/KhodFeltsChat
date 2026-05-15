@@ -14,12 +14,12 @@
 ### handlers/builders/forget_password/
 Аналогичный паттерн для `ForgetPasswordNotificationDTO`.
 
-### handlers/builders/push_notification/
+### handlers/builders/web_push_notification/
 `Builder.MessageHandler(ctx)` возвращает `nats.MsgHandler`:
-1. Десериализация `PushNotificationDTO{UserID, MessageID}`
+1. Десериализация `WebPushNotificationDTO{UserID, MessageID}`
 2. Получение текста сообщения через `messagesUseCases.GetMessageByID`
-3. Получение всех push-подписок пользователя через `pushSubscriptionsUseCases.GetPushSubscriptionsByUserID`
-4. Отправка push-уведомления на каждую подписку через `pushSubscriptionsUseCases.SendPushNotification`
+3. Получение всех push-подписок пользователя через `webPushSubscriptionsUseCases.GetWebPushSubscriptionsByUserID`
+4. Отправка push-уведомления на каждую подписку через `webPushSubscriptionsUseCases.SendWebPushNotification`
 
 ### handlers/builders/tracing_decorator/
 `Decorator` оборачивает любой `MessageHandlerBuilder`:
@@ -29,13 +29,13 @@
 
 ```
 NATS Message (email)       → Builder.MessageHandler → Notifications UseCases → EmailsRepository → SMTP
-NATS Message (push)        → Builder.MessageHandler → MessagesUseCases + PushSubscriptionsUseCases → Web Push API
+NATS Message (push)        → Builder.MessageHandler → MessagesUseCases + WebPushSubscriptionsUseCases → Web Push API
 ```
 
 ## Зависимости
 
 - `interfaces.NotificationsUseCases`
 - `interfaces.MessagesUseCases`
-- `interfaces.PushSubscriptionsUseCases`
+- `interfaces.WebPushSubscriptionsUseCases`
 - `interfaces.MessageHandlerBuilder` (для декоратора)
 - OpenTelemetry SDK

@@ -8,7 +8,7 @@ type ForgetPasswordNotificationDTO struct {
 	UserID uint64 `json:"userId"`
 }
 
-type PushNotificationDTO struct {
+type WebPushNotificationDTO struct {
 	UserID    uint64 `json:"userId"`
 	MessageID uint64 `json:"messageId"`
 }

@@ -46,7 +46,7 @@ func New(
 	chatsUseCases interfaces.ChatsUseCases,
 	messagesUseCases interfaces.MessagesUseCases,
 	settingsUseCases interfaces.SettingsUseCases,
-	pushSubscriptionsUseCases interfaces.PushSubscriptionsUseCases,
+	webPushSubscriptionsUseCases interfaces.WebPushSubscriptionsUseCases,
 	logger logging.Logger,
 	traceProvider tracing.Provider,
 	upgrader interfaces.Upgrader,
@@ -135,7 +135,7 @@ func New(
 				},
 				{
 					Path: regexp.MustCompile(
-						`^` + handlers.APIPrefix + api.PushVAPIDKeyURL + `$`,
+						`^` + handlers.APIPrefix + api.WebPushVAPIDKeyURL + `$`,
 					),
 					Methods: []string{http.MethodGet},
 				},
@@ -157,7 +157,7 @@ func New(
 		chatsUseCases,
 		messagesUseCases,
 		settingsUseCases,
-		pushSubscriptionsUseCases,
+		webPushSubscriptionsUseCases,
 		logger,
 		upgrader,
 		natsPublisher,

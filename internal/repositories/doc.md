@@ -24,7 +24,7 @@
 | `chats`              | `chats`, `chats_members`             | Чаты и участники                       |
 | `messages`           | `messages`, `messages_statuses`      | Сообщения и статусы прочтения          |
 | `emails`             | —                                    | Отправка email через SMTP (gomail)     |
-| `push_subscriptions` | `push_subscriptions`                 | CRUD push-подписок на уведомления      |
+| `web_push_subscriptions` | `push_subscriptions`                 | CRUD push-подписок на уведомления      |
 
 ## Зависимости
 

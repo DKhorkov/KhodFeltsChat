@@ -14,26 +14,29 @@ import (
 	chatsrepository "github.com/DKhorkov/kfc/internal/repositories/chats"
 	emailsrepository "github.com/DKhorkov/kfc/internal/repositories/emails"
 	messagesrepository "github.com/DKhorkov/kfc/internal/repositories/messages"
-	pushsubscriptionsrepository "github.com/DKhorkov/kfc/internal/repositories/push_subscriptions"
 	settingsrepository "github.com/DKhorkov/kfc/internal/repositories/settings"
 	usersrepository "github.com/DKhorkov/kfc/internal/repositories/users"
+	webpushsubscriptionsrepository "github.com/DKhorkov/kfc/inte
 	authservice "github.com/DKhorkov/kfc/internal/services/auth"
 	chatsservice "github.com/DKhorkov/kfc/internal/services/chats"
 	messagesservice "github.com/DKhorkov/kfc/internal/services/messages"
 	notificationsservice "github.com/DKhorkov/kfc/internal/services/notifications"
-	pushsubscriptionsservice "github.com/DKhorkov/kfc/internal/services/push_subscriptions"
 	settingsservice "github.com/DKhorkov/kfc/internal/services/settings"
 	usersservice "github.com/DKhorkov/kfc/internal/services/users"
+om/DKhorkov/kfc/internal/services/users
 	"github.com/DKhorkov/kfc/internal/uow"
 	authusecases "github.com/DKhorkov/kfc/internal/usecases/auth"
 	chatsusecases "github.com/DKhorkov/kfc/internal/usecases/chats"
 	messagesusecases "github.com/DKhorkov/kfc/internal/usecases/messages"
 	notificaionsusecases "github.com/DKhorkov/kfc/internal/usecases/notifications"
-	pushsubscriptionsusecases "github.com/DKhorkov/kfc/internal/usecases/push_subscriptions"
 	settingsusecases "github.com/DKhorkov/kfc/internal/usecases/settings"
 	usersusecases "github.com/DKhorkov/kfc/internal/usecases/users"
+kfc/internal/usecases/settings"
+	usersusecases "github.com/DKhorkov/kfc/internal/usecases/users"
 	forgetpasswordmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/forget_password"
-	pushnotificationmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/push_notification"
+	webpushnotificationmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/web_push_notification"
+gdecorator "github.com/DKhorkov/kfc/internal/workers/handlers/builders/tracing_decorator"
+	verifyemailmessagehandlerb
 	messagehandlerbuildertracingdecorator "github.com/DKhorkov/kfc/internal/workers/handlers/builders/tracing_decorator"
 	verifyemailmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/verify_email"
 	"github.com/DKhorkov/libs/cache"
@@ -291,26 +294,26 @@ func main() {
 		),
 	)
 
-	pushSubscriptionsService := pushsubscriptionsservice.NewTraceDecorator(
+	webPushSubscriptionsService := webpushsubscriptionsservice.NewTraceDecorator(
 		traceProvider,
-		cfg.Tracing.Spans.Services.PushSubscriptions,
-		pushsubscriptionsservice.New(
+		cfg.Tracing.Spans.Services.WebPushSubscriptions,
+		webpushsubscriptionsservice.New(
 			unitOfWork,
-			func(tx postgresql.Transaction) interfaces.PushSubscriptionsRepository {
-				return pushsubscriptionsrepository.NewTraceDecorator(
+			func(tx postgresql.Transaction) interfaces.WebPushSubscriptionsRepository {
+				return webpushsubscriptionsrepository.NewTraceDecorator(
 					traceProvider,
-					cfg.Tracing.Spans.Repositories.PushSubscriptions,
-					pushsubscriptionsrepository.New(tx),
+					cfg.Tracing.Spans.Repositories.WebPushSubscriptions,
+					webpushsubscriptionsrepository.New(tx),
 				)
 			},
 		),
 	)
 
-	pushSubscriptionsUseCases := pushsubscriptionsusecases.NewTraceDecorator(
+	webPushSubscriptionsUseCases := webpushsubscriptionsusecases.NewTraceDecorator(
 		traceProvider,
-		cfg.Tracing.Spans.UseCases.PushSubscriptions,
-		pushsubscriptionsusecases.New(
-			pushSubscriptionsService,
+		cfg.Tracing.Spans.UseCases.WebPushSubscriptions,
+		webpushsubscriptionsusecases.New(
+			webPushSubscriptionsService,
 			cfg.WebPush,
 			logger,
 		),
@@ -392,18 +395,18 @@ func main() {
 		}
 	}()
 
-	pushNotificationWorker, err := customnats.NewConsumer(
+	webPushNotificationWorker, err := customnats.NewConsumer(
 		cfg.NATS.ClientURL,
-		cfg.NATS.Subjects.PushNotification,
+		cfg.NATS.Subjects.WebPushNotification,
 		customnats.WithGoroutinesPoolSize(cfg.NATS.GoroutinesPoolSize),
 		customnats.WithMessageChannelBufferSize(cfg.NATS.MessageChannelBufferSize),
-		customnats.WithNatsOptions(nats.Name(cfg.NATS.Workers.PushNotification.Name)),
+		customnats.WithNatsOptions(nats.Name(cfg.NATS.Workers.WebPushNotification.Name)),
 		customnats.WithMessageHandler(
 			messagehandlerbuildertracingdecorator.New(
 				traceProvider,
-				cfg.Tracing.Spans.Handlers.PushNotification,
-				pushnotificationmessagehandlerbuilder.New(
-					pushSubscriptionsUseCases,
+				cfg.Tracing.Spans.Handlers.WebPushNotification,
+				webpushnotificationmessagehandlerbuilder.New(
+					webPushSubscriptionsUseCases,
 					messagesUseCases,
 					logger,
 				),
@@ -414,17 +417,17 @@ func main() {
 		panic(err)
 	}
 
-	if err = pushNotificationWorker.Run(); err != nil {
+	if err = webPushNotificationWorker.Run(); err != nil {
 		panic(err)
 	}
 
 	defer func() {
-		if err = pushNotificationWorker.Stop(); err != nil {
+		if err = webPushNotificationWorker.Stop(); err != nil {
 			logging.LogError(
 				logger,
 				fmt.Sprintf(
 					"Error shutting down %q worker",
-					cfg.NATS.Workers.PushNotification.Name,
+					cfg.NATS.Workers.WebPushNotification.Name,
 				),
 				err,
 			)
@@ -446,7 +449,7 @@ func main() {
 		chatsUseCases,
 		messagesUseCases,
 		settingsUseCases,
-		pushSubscriptionsUseCases,
+		webPushSubscriptionsUseCases,
 		logger,
 		traceProvider,
 		upgrader,

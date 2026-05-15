@@ -7,7 +7,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/domains"
 )
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/users_service.go -package=mockservices -exclude_interfaces=AuthService,ChatsService,MessagesService,NotificationsService,SettingsService,PushSubscriptionsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/users_service.go -package=mockservices -exclude_interfaces=AuthService,ChatsService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService
 type UsersService interface {
 	GetUserByID(ctx context.Context, id uint64) (*domains.User, error)
 	GetUsers(
@@ -20,7 +20,7 @@ type UsersService interface {
 	UpdateUser(ctx context.Context, userProfileData domains.UpdateUserDTO) (*domains.User, error)
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/auth_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,NotificationsService,SettingsService,PushSubscriptionsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/auth_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService
 type AuthService interface {
 	RegisterUser(ctx context.Context, userData domains.RegisterDTO) (*domains.User, error)
 	CreateRefreshToken(
@@ -38,7 +38,7 @@ type AuthService interface {
 	SendVerifyEmailMessage(ctx context.Context, email string) error
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/chats_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,MessagesService,NotificationsService,SettingsService,PushSubscriptionsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/chats_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService
 type ChatsService interface {
 	GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error)
 	GetUserChats(
@@ -50,7 +50,7 @@ type ChatsService interface {
 	PrivateChatExists(ctx context.Context, members []domains.User) (bool, error)
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/messages_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,ChatsService,NotificationsService,SettingsService,PushSubscriptionsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/messages_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,ChatsService,NotificationsService,SettingsService,WebPushSubscriptionsService
 type MessagesService interface {
 	SaveMessage(ctx context.Context, message domains.Message) (*domains.Message, error)
 	GetChatMessages(
@@ -62,20 +62,20 @@ type MessagesService interface {
 	GetMessageByID(ctx context.Context, userID uint64, messageID uint64) (*domains.Message, error)
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/notifications_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,AuthService,SettingsService,PushSubscriptionsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/notifications_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,AuthService,SettingsService,WebPushSubscriptionsService
 type NotificationsService interface {
 	EmailsRepository
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/settings_service.go -package=mockservices -exclude_interfaces=AuthService,UsersService,ChatsService,MessagesService,NotificationsService,PushSubscriptionsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/settings_service.go -package=mockservices -exclude_interfaces=AuthService,UsersService,ChatsService,MessagesService,NotificationsService,WebPushSubscriptionsService
 type SettingsService interface {
 	GetSettingsByUserID(ctx context.Context, userID uint64) (*domains.Settings, error)
 	UpdateSettings(ctx context.Context, settings domains.Settings) (*domains.Settings, error)
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/push_subscriptions_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,ChatsService,MessagesService,NotificationsService,SettingsService
-type PushSubscriptionsService interface {
-	CreatePushSubscription(ctx context.Context, subscription domains.PushSubscription) (*domains.PushSubscription, error)
-	GetPushSubscriptionsByUserID(ctx context.Context, userID uint64) ([]domains.PushSubscription, error)
-	DeletePushSubscription(ctx context.Context, id uint64) error
+//go:generate mockgen -source=services.go -destination=../../mocks/services/web_push_subscriptions_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,ChatsService,MessagesService,NotificationsService,SettingsService
+type WebPushSubscriptionsService interface {
+	CreateWebPushSubscription(ctx context.Context, subscription domains.WebPushSubscription) (*domains.WebPushSubscription, error)
+	GetWebPushSubscriptionsByUserID(ctx context.Context, userID uint64) ([]domains.WebPushSubscription, error)
+	DeleteWebPushSubscription(ctx context.Context, id uint64) error
 }

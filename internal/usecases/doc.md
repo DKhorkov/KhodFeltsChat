@@ -22,7 +22,7 @@
 | `messages`      | Сохранение и получение сообщений                        |
 | `notifications`        | Отправка email-уведомлений через NATS                   |
 | `settings`             | Получение и обновление пользовательских настроек        |
-| `push_subscriptions`   | Push-подписки и отправка Web Push уведомлений           |
+| `web_push_subscriptions`   | Push-подписки и отправка Web Push уведомлений           |
 
 ## Зависимости
 

@@ -13,7 +13,7 @@ Goose SQL миграции для PostgreSQL.
 | `20260106113434_chats.sql` | Таблицы `chats` и `chats_members` |
 | `20260330171139_message_is_read.sql` | Таблица `messages_statuses` (статусы прочтения сообщений) |
 | `20260513000000_settings.sql` | Таблица `settings` (пользовательские настройки) |
-| `20260515000000_push_subscriptions.sql` | Таблица `push_subscriptions` (endpoint, encryption_key, auth, user_id) |
+| `20260515000000_web_push_subscriptions.sql` | Таблица `push_subscriptions` (endpoint, encryption_key, auth, user_id) |
 
 ## Команды
 

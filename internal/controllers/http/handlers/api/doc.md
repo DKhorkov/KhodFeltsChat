@@ -59,15 +59,15 @@ HTTP-обработчики REST API, сгруппированные по пре
 - Аутентифицирует пользователя, обновляет соединение до WebSocket.
 - Читает входящие JSON-сообщения в цикле.
 - Рассылает сообщения всем онлайн-участникам чата.
-- Публикует `PushNotificationDTO` в NATS для офлайн-участников чата.
+- Публикует `WebPushNotificationDTO` в NATS для офлайн-участников чата.
 
-## Push (Web Push Notifications)
+## Web Push (Web Push Notifications)
 
-| Обработчик  | Метод  | Путь                              |
-|-------------|--------|-----------------------------------|
-| subscribe   | POST   | /api/push/subscribe               |
-| unsubscribe | DELETE | /api/push/subscribe/{id}          |
-| vapid_key   | GET    | /api/push/vapid-key               |
+| Обработчик  | Метод  | Путь                                  |
+|-------------|--------|---------------------------------------|
+| subscribe   | POST   | /api/web_push/subscribe               |
+| unsubscribe | DELETE | /api/web_push/subscribe/{id}          |
+| vapid_key   | GET    | /api/web_push/vapid-key               |
 
 ## Зависимости
 

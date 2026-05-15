@@ -12,4 +12,4 @@
 | `messages/` | `MapMessage`, `MapMessages` — конвертация Message |
 | `settings/` | `MapSettings` — конвертация Settings |
 | `users/` | `MapUser`, `MapUsers` — конвертация User |
-| `push_subscriptions/` | `MapCreateResponse` — конвертация PushSubscription → CreatePushSubscriptionResponse (возвращает ID созданной подписки) |
+| `web_push_subscriptions/` | `MapCreateResponse` — конвертация WebPushSubscription → CreateWebPushSubscriptionResponse (возвращает ID созданной подписки) |

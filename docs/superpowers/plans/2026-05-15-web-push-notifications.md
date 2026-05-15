@@ -49,7 +49,7 @@ git commit -m "добавлена зависимость webpush-go для Web P
 ### Task 2: Database migration — push_subscriptions table
 
 **Files:**
-- Create: `migrations/20260515000000_push_subscriptions.sql`
+- Create: `migrations/20260515000000_web_push_subscriptions.sql`
 
 - [ ] **Step 1: Create migration file**
 
@@ -79,7 +79,7 @@ task migrate-up
 - [ ] **Step 3: Commit**
 
 ```bash
-git add migrations/20260515000000_push_subscriptions.sql
+git add migrations/20260515000000_web_push_subscriptions.sql
 git commit -m "добавлена миграция для таблицы push_subscriptions"
 ```
 

@@ -57,11 +57,11 @@ Sentinel-ошибки для каждого домена. Позволяют в�
 |---|---|
 | `ErrLimitExceeded` | Превышен лимит попыток (rate limiting) |
 
-### push_subscriptions.go — push-подписки
+### web_push_subscriptions.go — push-подписки
 
 | Ошибка | Описание |
 |---|---|
-| `ErrPushSubscriptionNotFound` | Push-подписка не найдена |
+| `ErrWebPushSubscriptionNotFound` | Push-подписка не найдена |
 
 ## Зависимости
 

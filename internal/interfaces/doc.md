@@ -16,20 +16,20 @@
 - **MessagesRepository** — сообщения, статусы прочтения
 - **EmailsRepository** — SMTP отправка
 - **SettingsRepository** — настройки пользователя (CRUD)
-- **PushSubscriptionsRepository** — подписки на push-уведомления (CRUD, удаление по endpoint)
+- **WebPushSubscriptionsRepository** — подписки на push-уведомления (CRUD, удаление по endpoint)
 
 ### Services
 - **UsersService**, **AuthService**, **ChatsService**, **MessagesService** — бизнес-логика
 - **NotificationsService** (embeds EmailsRepository) — уведомления
 - **SettingsService** — настройки пользователя
-- **PushSubscriptionsService** — управление push-подписками
+- **WebPushSubscriptionsService** — управление push-подписками
 
 ### Use Cases
 - **UsersUseCases**, **AuthUseCases**, **ChatsUseCases** — верхний уровень
 - **MessagesUseCases** (embeds MessagesService) — сообщения + save через WS
 - **NotificationsUseCases** — уведомления по email
 - **SettingsUseCases** — настройки пользователя
-- **PushSubscriptionsUseCases** — push-подписки + отправка push-уведомлений
+- **WebPushSubscriptionsUseCases** — push-подписки + отправка push-уведомлений
 
 ### Workers
 - **MessageHandler** — `func(msg *nats.Msg)` — обработчик NATS сообщений

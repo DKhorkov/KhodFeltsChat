@@ -195,7 +195,7 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 
 			value, exists := h.connections.Load(member.ID)
 			if !exists {
-				h.publishPushNotification(ctx, member.ID, savedMessage.ID)
+				h.publishWebPushNotification(ctx, member.ID, savedMessage.ID)
 
 				continue
 			}
@@ -240,8 +240,8 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 	}
 }
 
-func (h *Handler) publishPushNotification(ctx context.Context, userID, messageID uint64) {
-	pushDTO := domains.PushNotificationDTO{
+func (h *Handler) publishWebPushNotification(ctx context.Context, userID, messageID uint64) {
+	pushDTO := domains.WebPushNotificationDTO{
 		UserID:    userID,
 		MessageID: messageID,
 	}
@@ -258,7 +258,7 @@ func (h *Handler) publishPushNotification(ctx context.Context, userID, messageID
 		return
 	}
 
-	if err = h.natsPublisher.Publish(h.natsConfig.Subjects.PushNotification, content); err != nil {
+	if err = h.natsPublisher.Publish(h.natsConfig.Subjects.WebPushNotification, content); err != nil {
 		logging.LogErrorContext(
 			ctx,
 			h.logger,

@@ -22,7 +22,7 @@ WS handler публикует **по одному NATS-событию на ка�
 
 ## Схема БД
 
-Миграция `20260515000000_push_subscriptions.sql`:
+Миграция `20260515000000_web_push_subscriptions.sql`:
 
 ```sql
 CREATE TABLE push_subscriptions (

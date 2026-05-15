@@ -170,9 +170,9 @@ func New() Config {
 				loadenv.GetEnvAsInt("NATS_CLIENT_PORT", 4222),
 			),
 			Subjects: NATSSubjects{
-				VerifyEmail:      loadenv.GetEnv("NATS_VERIFY_EMAIL_SUBJECT", "verify-email"),
-				ForgetPassword:   loadenv.GetEnv("NATS_FORGET_PASSWORD_SUBJECT", "forget-password"),
-				PushNotification: loadenv.GetEnv("NATS_PUSH_NOTIFICATION_SUBJECT", "push-notification"),
+				VerifyEmail:         loadenv.GetEnv("NATS_VERIFY_EMAIL_SUBJECT", "verify-email"),
+				ForgetPassword:      loadenv.GetEnv("NATS_FORGET_PASSWORD_SUBJECT", "forget-password"),
+				WebPushNotification: loadenv.GetEnv("NATS_PUSH_NOTIFICATION_SUBJECT", "web-push-notification"),
 			},
 			Publisher: NATSPublisher{
 				Name: loadenv.GetEnv("NATS_PUBLISHER_NAME", "kfc-publisher"),
@@ -189,7 +189,7 @@ func New() Config {
 						"forget-password-worker",
 					),
 				},
-				PushNotification: NATSWorker{
+				WebPushNotification: NATSWorker{
 					Name: loadenv.GetEnv(
 						"NATS_PUSH_NOTIFICATION_WORKER_NAME",
 						"push-notification-worker",
@@ -483,8 +483,8 @@ func New() Config {
 							},
 						},
 					},
-					PushSubscriptions: tracing.SpanConfig{
-						Name: "PushSubscriptions repository",
+					WebPushSubscriptions: tracing.SpanConfig{
+						Name: "WebPushSubscriptions repository",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(
@@ -495,7 +495,7 @@ func New() Config {
 						},
 						Events: tracing.SpanEventsConfig{
 							Start: tracing.SpanEventConfig{
-								Name: "Calling PushSubscriptions Repository",
+								Name: "Calling WebPushSubscriptions Repository",
 								Opts: []trace.EventOption{
 									trace.WithAttributes(
 										attribute.String(
@@ -506,7 +506,7 @@ func New() Config {
 								},
 							},
 							End: tracing.SpanEventConfig{
-								Name: "Received response from PushSubscriptions Repository",
+								Name: "Received response from WebPushSubscriptions Repository",
 								Opts: []trace.EventOption{
 									trace.WithAttributes(
 										attribute.String(
@@ -730,8 +730,8 @@ func New() Config {
 							},
 						},
 					},
-					PushSubscriptions: tracing.SpanConfig{
-						Name: "PushSubscriptions service",
+					WebPushSubscriptions: tracing.SpanConfig{
+						Name: "WebPushSubscriptions service",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(
@@ -742,7 +742,7 @@ func New() Config {
 						},
 						Events: tracing.SpanEventsConfig{
 							Start: tracing.SpanEventConfig{
-								Name: "Calling PushSubscriptions service",
+								Name: "Calling WebPushSubscriptions service",
 								Opts: []trace.EventOption{
 									trace.WithAttributes(
 										attribute.String(
@@ -753,7 +753,7 @@ func New() Config {
 								},
 							},
 							End: tracing.SpanEventConfig{
-								Name: "Received response from PushSubscriptions service",
+								Name: "Received response from WebPushSubscriptions service",
 								Opts: []trace.EventOption{
 									trace.WithAttributes(
 										attribute.String(
@@ -977,8 +977,8 @@ func New() Config {
 							},
 						},
 					},
-					PushSubscriptions: tracing.SpanConfig{
-						Name: "PushSubscriptions useCases",
+					WebPushSubscriptions: tracing.SpanConfig{
+						Name: "WebPushSubscriptions useCases",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(
@@ -989,7 +989,7 @@ func New() Config {
 						},
 						Events: tracing.SpanEventsConfig{
 							Start: tracing.SpanEventConfig{
-								Name: "Calling PushSubscriptions useCases",
+								Name: "Calling WebPushSubscriptions useCases",
 								Opts: []trace.EventOption{
 									trace.WithAttributes(
 										attribute.String(
@@ -1000,7 +1000,7 @@ func New() Config {
 								},
 							},
 							End: tracing.SpanEventConfig{
-								Name: "Received response from PushSubscriptions useCases",
+								Name: "Received response from WebPushSubscriptions useCases",
 								Opts: []trace.EventOption{
 									trace.WithAttributes(
 										attribute.String(
@@ -1084,8 +1084,8 @@ func New() Config {
 							},
 						},
 					},
-					PushNotification: tracing.SpanConfig{
-						Name: "PushNotification worker handler",
+					WebPushNotification: tracing.SpanConfig{
+						Name: "WebPushNotification worker handler",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(
@@ -1171,39 +1171,39 @@ type DocsConfig struct {
 }
 
 type SpanRepositories struct {
-	Auth     tracing.SpanConfig
-	Users    tracing.SpanConfig
-	Emails   tracing.SpanConfig
-	Chats             tracing.SpanConfig
-	Messages          tracing.SpanConfig
-	Settings          tracing.SpanConfig
-	PushSubscriptions tracing.SpanConfig
+	Auth                 tracing.SpanConfig
+	Users                tracing.SpanConfig
+	Emails               tracing.SpanConfig
+	Chats                tracing.SpanConfig
+	Messages             tracing.SpanConfig
+	Settings             tracing.SpanConfig
+	WebPushSubscriptions tracing.SpanConfig
 }
 
 type SpanServices struct {
-	Auth          tracing.SpanConfig
-	Users         tracing.SpanConfig
-	Chats         tracing.SpanConfig
-	Messages      tracing.SpanConfig
-	Notifications     tracing.SpanConfig
-	Settings          tracing.SpanConfig
-	PushSubscriptions tracing.SpanConfig
+	Auth                 tracing.SpanConfig
+	Users                tracing.SpanConfig
+	Chats                tracing.SpanConfig
+	Messages             tracing.SpanConfig
+	Notifications        tracing.SpanConfig
+	Settings             tracing.SpanConfig
+	WebPushSubscriptions tracing.SpanConfig
 }
 
 type SpanUseCases struct {
-	Auth          tracing.SpanConfig
-	Users         tracing.SpanConfig
-	Chats         tracing.SpanConfig
-	Messages      tracing.SpanConfig
-	Notifications     tracing.SpanConfig
-	Settings          tracing.SpanConfig
-	PushSubscriptions tracing.SpanConfig
+	Auth                 tracing.SpanConfig
+	Users                tracing.SpanConfig
+	Chats                tracing.SpanConfig
+	Messages             tracing.SpanConfig
+	Notifications        tracing.SpanConfig
+	Settings             tracing.SpanConfig
+	WebPushSubscriptions tracing.SpanConfig
 }
 
 type SpanHandlers struct {
-	VerifyEmail      tracing.SpanConfig
-	ForgetPassword   tracing.SpanConfig
-	PushNotification tracing.SpanConfig
+	VerifyEmail         tracing.SpanConfig
+	ForgetPassword      tracing.SpanConfig
+	WebPushNotification tracing.SpanConfig
 }
 
 type SpansConfig struct {
@@ -1239,18 +1239,18 @@ type NATSConfig struct {
 }
 
 type NATSSubjects struct {
-	VerifyEmail      string
-	ForgetPassword   string
-	PushNotification string
+	VerifyEmail         string
+	ForgetPassword      string
+	WebPushNotification string
 }
 
 type NATSPublisher struct {
 	Name string
 }
 type NATSWorkers struct {
-	VerifyEmail      NATSWorker
-	ForgetPassword   NATSWorker
-	PushNotification NATSWorker
+	VerifyEmail         NATSWorker
+	ForgetPassword      NATSWorker
+	WebPushNotification NATSWorker
 }
 
 type NATSWorker struct {
