@@ -1,0 +1,448 @@
+package push_subscriptions_test
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/DKhorkov/kfc/internal/domains"
+	"github.com/DKhorkov/kfc/internal/interfaces"
+	pushsubscriptions "github.com/DKhorkov/kfc/internal/repositories/push_subscriptions"
+	mockrepositories "github.com/DKhorkov/kfc/mocks/repositories"
+	"github.com/DKhorkov/libs/tracing"
+	mocktracing "github.com/DKhorkov/libs/tracing/mocks"
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/mock/gomock"
+)
+
+func TestNewTraceDecorator(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		traceProvider tracing.Provider
+		spanConfig    tracing.SpanConfig
+		base          interfaces.PushSubscriptionsRepository
+	}{
+		{
+			name:          "create trace decorator with valid params",
+			traceProvider: mocktracing.NewMockProvider(gomock.NewController(t)),
+			spanConfig: tracing.SpanConfig{
+				Name: "test-span",
+				Opts: []trace.SpanStartOption{},
+				Events: tracing.SpanEventsConfig{
+					Start: tracing.SpanEventConfig{
+						Name: "start",
+						Opts: []trace.EventOption{},
+					},
+					End: tracing.SpanEventConfig{
+						Name: "end",
+						Opts: []trace.EventOption{},
+					},
+				},
+			},
+			base: mockrepositories.NewMockPushSubscriptionsRepository(gomock.NewController(t)),
+		},
+		{
+			name:          "create trace decorator with nil base",
+			traceProvider: mocktracing.NewMockProvider(gomock.NewController(t)),
+			spanConfig:    tracing.SpanConfig{},
+			base:          nil,
+		},
+		{
+			name:          "create trace decorator with nil provider",
+			traceProvider: nil,
+			spanConfig:    tracing.SpanConfig{},
+			base:          mockrepositories.NewMockPushSubscriptionsRepository(gomock.NewController(t)),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			decorator := pushsubscriptions.NewTraceDecorator(tt.traceProvider, tt.spanConfig, tt.base)
+
+			assert.NotNil(t, decorator)
+		})
+	}
+}
+
+func TestTraceDecorator_CreatePushSubscription(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		subscription   domains.PushSubscription
+		setupMocks     func(*mocktracing.MockProvider, *mockrepositories.MockPushSubscriptionsRepository, *mocktracing.MockSpan)
+		expectedID     uint64
+		expectedError  error
+	}{
+		{
+			name: "successful create push subscription with tracing",
+			subscription: domains.PushSubscription{
+				UserID:   1,
+				Endpoint: "https://fcm.googleapis.com/fcm/send/test",
+				P256dh:   "test-p256dh",
+				Auth:     "test-auth",
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockrepositories.MockPushSubscriptionsRepository,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					CreatePushSubscription(gomock.Any(), domains.PushSubscription{
+						UserID:   1,
+						Endpoint: "https://fcm.googleapis.com/fcm/send/test",
+						P256dh:   "test-p256dh",
+						Auth:     "test-auth",
+					}).
+					Return(uint64(1), nil)
+			},
+			expectedID:    1,
+			expectedError: nil,
+		},
+		{
+			name: "create push subscription error with tracing",
+			subscription: domains.PushSubscription{
+				UserID:   1,
+				Endpoint: "https://fcm.googleapis.com/fcm/send/test",
+				P256dh:   "test-p256dh",
+				Auth:     "test-auth",
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockrepositories.MockPushSubscriptionsRepository,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					CreatePushSubscription(gomock.Any(), gomock.Any()).
+					Return(uint64(0), errors.New("database error"))
+			},
+			expectedID:    0,
+			expectedError: errors.New("database error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockrepositories.NewMockPushSubscriptionsRepository(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			tt.setupMocks(mockProvider, mockBase, mockSpan)
+
+			decorator := pushsubscriptions.NewTraceDecorator(
+				mockProvider,
+				tracing.SpanConfig{
+					Events: tracing.SpanEventsConfig{
+						Start: tracing.SpanEventConfig{Name: "start"},
+						End:   tracing.SpanEventConfig{Name: "end"},
+					},
+				},
+				mockBase,
+			)
+
+			id, err := decorator.CreatePushSubscription(context.Background(), tt.subscription)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.expectedID, id)
+		})
+	}
+}
+
+func TestTraceDecorator_GetPushSubscriptionsByUserID(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+
+	tests := []struct {
+		name                  string
+		userID                uint64
+		setupMocks            func(*mocktracing.MockProvider, *mockrepositories.MockPushSubscriptionsRepository, *mocktracing.MockSpan)
+		expectedSubscriptions []domains.PushSubscription
+		expectedError         error
+	}{
+		{
+			name:   "successful get push subscriptions with tracing",
+			userID: 1,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockrepositories.MockPushSubscriptionsRepository,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					GetPushSubscriptionsByUserID(gomock.Any(), uint64(1)).
+					Return([]domains.PushSubscription{
+						{
+							ID:        1,
+							UserID:    1,
+							Endpoint:  "https://fcm.googleapis.com/fcm/send/test",
+							P256dh:    "test-p256dh",
+							Auth:      "test-auth",
+							CreatedAt: now,
+						},
+					}, nil)
+			},
+			expectedSubscriptions: []domains.PushSubscription{
+				{
+					ID:        1,
+					UserID:    1,
+					Endpoint:  "https://fcm.googleapis.com/fcm/send/test",
+					P256dh:    "test-p256dh",
+					Auth:      "test-auth",
+					CreatedAt: now,
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name:   "get push subscriptions error with tracing",
+			userID: 999,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockrepositories.MockPushSubscriptionsRepository,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					GetPushSubscriptionsByUserID(gomock.Any(), uint64(999)).
+					Return(nil, errors.New("not found"))
+			},
+			expectedSubscriptions: nil,
+			expectedError:         errors.New("not found"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockrepositories.NewMockPushSubscriptionsRepository(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			tt.setupMocks(mockProvider, mockBase, mockSpan)
+
+			decorator := pushsubscriptions.NewTraceDecorator(
+				mockProvider,
+				tracing.SpanConfig{
+					Events: tracing.SpanEventsConfig{
+						Start: tracing.SpanEventConfig{Name: "start"},
+						End:   tracing.SpanEventConfig{Name: "end"},
+					},
+				},
+				mockBase,
+			)
+
+			result, err := decorator.GetPushSubscriptionsByUserID(context.Background(), tt.userID)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.expectedSubscriptions, result)
+		})
+	}
+}
+
+func TestTraceDecorator_DeletePushSubscription(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		id            uint64
+		setupMocks    func(*mocktracing.MockProvider, *mockrepositories.MockPushSubscriptionsRepository, *mocktracing.MockSpan)
+		expectedError error
+	}{
+		{
+			name: "successful delete push subscription with tracing",
+			id:   1,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockrepositories.MockPushSubscriptionsRepository,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					DeletePushSubscription(gomock.Any(), uint64(1)).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "delete push subscription error with tracing",
+			id:   1,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockrepositories.MockPushSubscriptionsRepository,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					DeletePushSubscription(gomock.Any(), gomock.Any()).
+					Return(errors.New("database error"))
+			},
+			expectedError: errors.New("database error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockrepositories.NewMockPushSubscriptionsRepository(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			tt.setupMocks(mockProvider, mockBase, mockSpan)
+
+			decorator := pushsubscriptions.NewTraceDecorator(
+				mockProvider,
+				tracing.SpanConfig{
+					Events: tracing.SpanEventsConfig{
+						Start: tracing.SpanEventConfig{Name: "start"},
+						End:   tracing.SpanEventConfig{Name: "end"},
+					},
+				},
+				mockBase,
+			)
+
+			err := decorator.DeletePushSubscription(context.Background(), tt.id)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestTraceDecorator_DeletePushSubscriptionByEndpoint(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		endpoint      string
+		setupMocks    func(*mocktracing.MockProvider, *mockrepositories.MockPushSubscriptionsRepository, *mocktracing.MockSpan)
+		expectedError error
+	}{
+		{
+			name:     "successful delete push subscription by endpoint with tracing",
+			endpoint: "https://fcm.googleapis.com/fcm/send/test",
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockrepositories.MockPushSubscriptionsRepository,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					DeletePushSubscriptionByEndpoint(gomock.Any(), "https://fcm.googleapis.com/fcm/send/test").
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:     "delete push subscription by endpoint error with tracing",
+			endpoint: "https://fcm.googleapis.com/fcm/send/test",
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockrepositories.MockPushSubscriptionsRepository,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					DeletePushSubscriptionByEndpoint(gomock.Any(), gomock.Any()).
+					Return(errors.New("database error"))
+			},
+			expectedError: errors.New("database error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockrepositories.NewMockPushSubscriptionsRepository(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			tt.setupMocks(mockProvider, mockBase, mockSpan)
+
+			decorator := pushsubscriptions.NewTraceDecorator(
+				mockProvider,
+				tracing.SpanConfig{
+					Events: tracing.SpanEventsConfig{
+						Start: tracing.SpanEventConfig{Name: "start"},
+						End:   tracing.SpanEventConfig{Name: "end"},
+					},
+				},
+				mockBase,
+			)
+
+			err := decorator.DeletePushSubscriptionByEndpoint(context.Background(), tt.endpoint)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
