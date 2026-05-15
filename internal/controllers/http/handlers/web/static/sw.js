@@ -19,6 +19,8 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
+    const chatId = event.notification.data && event.notification.data.chatId;
+
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
             for (const client of windowClients) {
@@ -27,7 +29,9 @@ self.addEventListener('notificationclick', (event) => {
                 }
             }
 
-            return clients.openWindow('/web/chat');
+            const url = chatId ? '/web/chat?chatId=' + chatId : '/web/chat';
+
+            return clients.openWindow(url);
         })
     );
 });

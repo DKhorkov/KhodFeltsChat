@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await loadChats();
     connectWebSocket();
-    initPushNotifications();
+    await initPushNotifications();
 
     setupSendMessage();
     setupEmojiPicker();
@@ -34,6 +34,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupMemberProfileModal();
     setupGroupChatModal();
     setupEscapeHandler();
+
+    // Открытие чата из push-уведомления (по query-параметру):
+    const params = new URLSearchParams(window.location.search);
+    const pushChatId = params.get('chatId');
+    if (pushChatId) {
+        await openChatById(Number(pushChatId));
+        history.replaceState(null, '', window.location.pathname);
+    }
 
     // Периодическое обновление списка чатов:
     setInterval(loadChats, CHAT_LIST_POLL_INTERVAL_MS);
@@ -195,6 +203,19 @@ function getChatTitle(chat) {
 function getOtherMember(chat) {
     if (chat.type !== 'private' || !chat.members) return null;
     return chat.members.find(m => m.id !== currentUser.id) || null;
+}
+
+async function openChatById(chatId) {
+    try {
+        const resp = await fetchWithAuth('/api/chats');
+        if (!resp.ok) return;
+
+        const chats = await resp.json();
+        const chat = chats.find(c => c.id === chatId);
+        if (chat) await selectChat(chat);
+    } catch (err) {
+        console.log('Open chat by ID error:', err);
+    }
 }
 
 // ═══════════════════════════════════════
