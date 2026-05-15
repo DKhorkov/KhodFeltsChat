@@ -45,7 +45,13 @@ func TestSetupHandlers_RoutesRegistered(t *testing.T) {
 
 			req := httptest.NewRequest(tt.method, tt.path, http.NoBody)
 			match := mux.RouteMatch{}
-			assert.True(t, webMux.Match(req, &match), "Expected %s %s to be registered", tt.method, tt.path)
+			assert.True(
+				t,
+				webMux.Match(req, &match),
+				"Expected %s %s to be registered",
+				tt.method,
+				tt.path,
+			)
 		})
 	}
 }

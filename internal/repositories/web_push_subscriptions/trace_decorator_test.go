@@ -55,7 +55,9 @@ func TestNewTraceDecorator(t *testing.T) {
 			name:          "create trace decorator with nil provider",
 			traceProvider: nil,
 			spanConfig:    tracing.SpanConfig{},
-			base:          mockrepositories.NewMockWebPushSubscriptionsRepository(gomock.NewController(t)),
+			base: mockrepositories.NewMockWebPushSubscriptionsRepository(
+				gomock.NewController(t),
+			),
 		},
 	}
 
@@ -63,7 +65,11 @@ func TestNewTraceDecorator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			decorator := pushsubscriptions.NewTraceDecorator(tt.traceProvider, tt.spanConfig, tt.base)
+			decorator := pushsubscriptions.NewTraceDecorator(
+				tt.traceProvider,
+				tt.spanConfig,
+				tt.base,
+			)
 
 			assert.NotNil(t, decorator)
 		})
@@ -267,7 +273,10 @@ func TestTraceDecorator_GetWebPushSubscriptionsByUserID(t *testing.T) {
 				mockBase,
 			)
 
-			result, err := decorator.GetWebPushSubscriptionsByUserID(context.Background(), tt.userID)
+			result, err := decorator.GetWebPushSubscriptionsByUserID(
+				context.Background(),
+				tt.userID,
+			)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

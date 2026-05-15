@@ -258,7 +258,10 @@ func (h *Handler) publishWebPushNotification(ctx context.Context, userID, messag
 		return
 	}
 
-	if err = h.natsPublisher.Publish(h.natsConfig.Subjects.WebPushNotification, content); err != nil {
+	if err = h.natsPublisher.Publish(
+		h.natsConfig.Subjects.WebPushNotification,
+		content,
+	); err != nil {
 		logging.LogErrorContext(
 			ctx,
 			h.logger,

@@ -182,7 +182,12 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return createRequest(t, bytes.NewReader([]byte(`{"email": "test@example.com", "password": "password123"}`)))
+				return createRequest(
+					t,
+					bytes.NewReader(
+						[]byte(`{"email": "test@example.com", "password": "password123"}`),
+					),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				dto := domains.RegisterDTO{
@@ -206,7 +211,10 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return createRequest(t, bytes.NewReader([]byte(`{"username": "testuser", "password": "password123"}`)))
+				return createRequest(
+					t,
+					bytes.NewReader([]byte(`{"username": "testuser", "password": "password123"}`)),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				dto := domains.RegisterDTO{
@@ -230,7 +238,12 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return createRequest(t, bytes.NewReader([]byte(`{"username": "testuser", "email": "test@example.com"}`)))
+				return createRequest(
+					t,
+					bytes.NewReader(
+						[]byte(`{"username": "testuser", "email": "test@example.com"}`),
+					),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				dto := domains.RegisterDTO{

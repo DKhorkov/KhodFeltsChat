@@ -24,7 +24,8 @@ func Handler(vapidPublicKey string) http.HandlerFunc {
 		w.Header().Set(common.ContentTypeHeaderName, common.ApplicationJSONContentType)
 		w.WriteHeader(http.StatusOK)
 
-		if err := json.NewEncoder(w).Encode(schemas.VAPIDKeyResponse{PublicKey: vapidPublicKey}); err != nil {
+		if err := json.NewEncoder(w).
+			Encode(schemas.VAPIDKeyResponse{PublicKey: vapidPublicKey}); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return

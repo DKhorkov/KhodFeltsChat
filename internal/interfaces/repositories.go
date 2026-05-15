@@ -87,7 +87,13 @@ type SettingsRepository interface {
 
 //go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/web_push_subscriptions_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,UsersRepository,EmailsRepository,MessagesRepository,ChatsRepository,SettingsRepository
 type WebPushSubscriptionsRepository interface {
-	CreateWebPushSubscription(ctx context.Context, subscription domains.WebPushSubscription) (uint64, error)
-	GetWebPushSubscriptionsByUserID(ctx context.Context, userID uint64) ([]domains.WebPushSubscription, error)
+	CreateWebPushSubscription(
+		ctx context.Context,
+		subscription domains.WebPushSubscription,
+	) (uint64, error)
+	GetWebPushSubscriptionsByUserID(
+		ctx context.Context,
+		userID uint64,
+	) ([]domains.WebPushSubscription, error)
 	DeleteWebPushSubscription(ctx context.Context, id uint64) error
 }

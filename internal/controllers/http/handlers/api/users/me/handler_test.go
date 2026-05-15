@@ -95,6 +95,7 @@ func TestHandler(t *testing.T) {
 				)
 
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 
@@ -122,6 +123,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 
@@ -147,7 +149,12 @@ func TestHandler(t *testing.T) {
 			name: "unauthorized - invalid userID type in context",
 			setupRequest: func(_ *testing.T) *http.Request {
 				req := httptest.NewRequest(http.MethodGet, "/me", http.NoBody)
-				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, "not-a-number")
+				ctx := contextlib.WithValue(
+					req.Context(),
+					authmiddleware.UserIDContextKey,
+					"not-a-number",
+				)
+
 				return req.WithContext(ctx)
 			},
 			setupMock:      func(_ *mockusecases.MockUsersUseCases) {},
@@ -209,6 +216,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, "user5", response["username"])
@@ -235,6 +243,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, longUsername, response["username"])
@@ -258,6 +267,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, "simple@example.com", response["email"])
@@ -280,6 +290,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, "user.name@example.com", response["email"])
@@ -302,6 +313,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, "user_name@example.co.uk", response["email"])
@@ -324,6 +336,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, "user+tag@example.com", response["email"])
@@ -346,6 +359,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, "123456@example.com", response["email"])
@@ -388,6 +402,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 

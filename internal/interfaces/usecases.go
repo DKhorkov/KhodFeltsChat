@@ -60,8 +60,18 @@ type SettingsUseCases interface {
 
 //go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/web_push_subscriptions_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases
 type WebPushSubscriptionsUseCases interface {
-	CreateWebPushSubscription(ctx context.Context, subscription domains.WebPushSubscription) (*domains.WebPushSubscription, error)
-	GetWebPushSubscriptionsByUserID(ctx context.Context, userID uint64) ([]domains.WebPushSubscription, error)
+	CreateWebPushSubscription(
+		ctx context.Context,
+		subscription domains.WebPushSubscription,
+	) (*domains.WebPushSubscription, error)
+	GetWebPushSubscriptionsByUserID(
+		ctx context.Context,
+		userID uint64,
+	) ([]domains.WebPushSubscription, error)
 	DeleteWebPushSubscription(ctx context.Context, id uint64) error
-	SendWebPushNotification(ctx context.Context, subscription domains.WebPushSubscription, message domains.Message) error
+	SendWebPushNotification(
+		ctx context.Context,
+		subscription domains.WebPushSubscription,
+		message domains.Message,
+	) error
 }

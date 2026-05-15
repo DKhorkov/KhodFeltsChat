@@ -6,7 +6,7 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/default"
+	default_handler "github.com/DKhorkov/kfc/internal/controllers/http/handlers/default"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/docs"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/not_allowed"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web"

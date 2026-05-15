@@ -25,7 +25,11 @@ func TestHandler(t *testing.T) {
 	createRequest := func(t *testing.T, userID uint64, subscriptionID uint64) *http.Request {
 		t.Helper()
 
-		req := httptest.NewRequest(http.MethodDelete, "/api/push/subscriptions/"+strconv.FormatUint(subscriptionID, 10), http.NoBody)
+		req := httptest.NewRequest(
+			http.MethodDelete,
+			"/api/push/subscriptions/"+strconv.FormatUint(subscriptionID, 10),
+			http.NoBody,
+		)
 		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 
 		vars := map[string]string{
@@ -85,7 +89,11 @@ func TestHandler(t *testing.T) {
 
 		userID := uint64(123)
 
-		req := httptest.NewRequest(http.MethodDelete, "/api/push/subscriptions/invalid", http.NoBody)
+		req := httptest.NewRequest(
+			http.MethodDelete,
+			"/api/push/subscriptions/invalid",
+			http.NoBody,
+		)
 		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 
 		vars := map[string]string{

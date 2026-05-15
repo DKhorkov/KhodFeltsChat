@@ -5,7 +5,9 @@ import (
 	"github.com/DKhorkov/kfc/internal/domains"
 )
 
-func MapCreateResponse(subscription domains.WebPushSubscription) schemas.CreateWebPushSubscriptionResponse {
+func MapCreateResponse(
+	subscription domains.WebPushSubscription,
+) schemas.CreateWebPushSubscriptionResponse {
 	return schemas.CreateWebPushSubscriptionResponse{
 		ID: subscription.ID,
 	}

@@ -24,7 +24,7 @@ const (
 	validToken       = "valid_token"
 )
 
-// Вспомогательная функция для создания запроса
+// Вспомогательная функция для создания запроса.
 func createForgetPasswordRequest(t *testing.T, token string, requestBody io.Reader) *http.Request {
 	t.Helper()
 
@@ -39,7 +39,7 @@ func createForgetPasswordRequest(t *testing.T, token string, requestBody io.Read
 	return req
 }
 
-// Вспомогательная функция для создания ForgetPasswordDTO
+// Вспомогательная функция для создания ForgetPasswordDTO.
 func createForgetPasswordDTO() domains.ForgetPasswordDTO {
 	return domains.ForgetPasswordDTO{
 		NewPassword: "NewSecurePassword123!",
@@ -62,14 +62,22 @@ func TestHandler(t *testing.T) {
 			name: "successful password reset",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createForgetPasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
-				return createForgetPasswordRequest(t, "valid_reset_token_123", bytes.NewReader(requestBody))
+
+				return createForgetPasswordRequest(
+					t,
+					"valid_reset_token_123",
+					bytes.NewReader(requestBody),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				dto := createForgetPasswordDTO()
-				m.EXPECT().ForgetPassword(gomock.Any(), "valid_reset_token_123", dto.NewPassword).Return(nil)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), "valid_reset_token_123", dto.NewPassword).
+					Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -81,6 +89,7 @@ func TestHandler(t *testing.T) {
 			name: "bad request - empty request body",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createForgetPasswordRequest(t, validToken, bytes.NewReader([]byte{}))
 			},
 			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
@@ -94,8 +103,14 @@ func TestHandler(t *testing.T) {
 			name: "bad request - invalid JSON",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				invalidJSON := `{"newPassword": invalid}`
-				return createForgetPasswordRequest(t, validToken, bytes.NewReader([]byte(invalidJSON)))
+
+				return createForgetPasswordRequest(
+					t,
+					validToken,
+					bytes.NewReader([]byte(invalidJSON)),
+				)
 			},
 			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
 			expectedStatus: http.StatusBadRequest,
@@ -109,10 +124,17 @@ func TestHandler(t *testing.T) {
 			name: "bad request - missing required field",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
-				return createForgetPasswordRequest(t, validToken, bytes.NewReader([]byte(missingFieldJSON)))
+
+				return createForgetPasswordRequest(
+					t,
+					validToken,
+					bytes.NewReader([]byte(missingFieldJSON)),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().ForgetPassword(gomock.Any(), validToken, "").Return(customerrors.ErrValidationFailed)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), validToken, "").
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -125,13 +147,17 @@ func TestHandler(t *testing.T) {
 			name: "bad request - validation failed",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.ForgetPasswordDTO{NewPassword: "123"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createForgetPasswordRequest(t, validToken, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().ForgetPassword(gomock.Any(), validToken, "123").Return(customerrors.ErrValidationFailed)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), validToken, "123").
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -144,14 +170,22 @@ func TestHandler(t *testing.T) {
 			name: "unauthorized - invalid JWT token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createForgetPasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
-				return createForgetPasswordRequest(t, "invalid_jwt_token", bytes.NewReader(requestBody))
+
+				return createForgetPasswordRequest(
+					t,
+					"invalid_jwt_token",
+					bytes.NewReader(requestBody),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				dto := createForgetPasswordDTO()
-				m.EXPECT().ForgetPassword(gomock.Any(), "invalid_jwt_token", dto.NewPassword).Return(customerrors.ErrInvalidJWT)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), "invalid_jwt_token", dto.NewPassword).
+					Return(customerrors.ErrInvalidJWT)
 			},
 			expectedStatus: http.StatusUnauthorized,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -164,14 +198,22 @@ func TestHandler(t *testing.T) {
 			name: "not found - user not found",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createForgetPasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
-				return createForgetPasswordRequest(t, "valid_token_for_nonexistent_user", bytes.NewReader(requestBody))
+
+				return createForgetPasswordRequest(
+					t,
+					"valid_token_for_nonexistent_user",
+					bytes.NewReader(requestBody),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				dto := createForgetPasswordDTO()
-				m.EXPECT().ForgetPassword(gomock.Any(), "valid_token_for_nonexistent_user", dto.NewPassword).Return(customerrors.ErrUserNotFound)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), "valid_token_for_nonexistent_user", dto.NewPassword).
+					Return(customerrors.ErrUserNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -184,14 +226,18 @@ func TestHandler(t *testing.T) {
 			name: "internal server error - use case error",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createForgetPasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createForgetPasswordRequest(t, validToken, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				dto := createForgetPasswordDTO()
-				m.EXPECT().ForgetPassword(gomock.Any(), validToken, dto.NewPassword).Return(errors.New("database connection failed"))
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), validToken, dto.NewPassword).
+					Return(errors.New("database connection failed"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -204,13 +250,17 @@ func TestHandler(t *testing.T) {
 			name: "different password strengths - strong password",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.ForgetPasswordDTO{NewPassword: "NewSecurePassword123!"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createForgetPasswordRequest(t, validToken, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().ForgetPassword(gomock.Any(), validToken, "NewSecurePassword123!").Return(nil)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), validToken, "NewSecurePassword123!").
+					Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
 		},
@@ -218,13 +268,17 @@ func TestHandler(t *testing.T) {
 			name: "different password strengths - very strong password",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.ForgetPasswordDTO{NewPassword: "V3ry$tr0ngN3wP@ssw0rd!2024"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createForgetPasswordRequest(t, validToken, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().ForgetPassword(gomock.Any(), validToken, "V3ry$tr0ngN3wP@ssw0rd!2024").Return(nil)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), validToken, "V3ry$tr0ngN3wP@ssw0rd!2024").
+					Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
 		},
@@ -232,13 +286,17 @@ func TestHandler(t *testing.T) {
 			name: "different password strengths - weak password",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.ForgetPasswordDTO{NewPassword: "123"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createForgetPasswordRequest(t, validToken, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().ForgetPassword(gomock.Any(), validToken, "123").Return(customerrors.ErrValidationFailed)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), validToken, "123").
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -250,13 +308,17 @@ func TestHandler(t *testing.T) {
 			name: "different password strengths - common password",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.ForgetPasswordDTO{NewPassword: "password"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createForgetPasswordRequest(t, validToken, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().ForgetPassword(gomock.Any(), validToken, "password").Return(customerrors.ErrValidationFailed)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), validToken, "password").
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -268,13 +330,17 @@ func TestHandler(t *testing.T) {
 			name: "different password strengths - empty password",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.ForgetPasswordDTO{NewPassword: ""}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createForgetPasswordRequest(t, validToken, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().ForgetPassword(gomock.Any(), validToken, "").Return(customerrors.ErrValidationFailed)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), validToken, "").
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -286,16 +352,24 @@ func TestHandler(t *testing.T) {
 			name: "JSON with extra fields",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				jsonWithExtraFields := `{
 					"newPassword": "NewSecurePassword123!",
 					"extraField": "should be ignored",
 					"anotherExtra": 123,
 					"confirmPassword": "NewSecurePassword123!"
 				}`
-				return createForgetPasswordRequest(t, validToken, bytes.NewReader([]byte(jsonWithExtraFields)))
+
+				return createForgetPasswordRequest(
+					t,
+					validToken,
+					bytes.NewReader([]byte(jsonWithExtraFields)),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().ForgetPassword(gomock.Any(), validToken, "NewSecurePassword123!").Return(nil)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), validToken, "NewSecurePassword123!").
+					Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
 		},
@@ -303,10 +377,17 @@ func TestHandler(t *testing.T) {
 			name: "null password in JSON",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
-				return createForgetPasswordRequest(t, validToken, bytes.NewReader([]byte(`{"newPassword": null}`)))
+
+				return createForgetPasswordRequest(
+					t,
+					validToken,
+					bytes.NewReader([]byte(`{"newPassword": null}`)),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().ForgetPassword(gomock.Any(), validToken, "").Return(customerrors.ErrValidationFailed)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), validToken, "").
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -318,14 +399,18 @@ func TestHandler(t *testing.T) {
 			name: "expired token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createForgetPasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createForgetPasswordRequest(t, "expired_token", bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				dto := createForgetPasswordDTO()
-				m.EXPECT().ForgetPassword(gomock.Any(), "expired_token", dto.NewPassword).Return(customerrors.ErrInvalidJWT)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), "expired_token", dto.NewPassword).
+					Return(customerrors.ErrInvalidJWT)
 			},
 			expectedStatus: http.StatusUnauthorized,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -337,14 +422,22 @@ func TestHandler(t *testing.T) {
 			name: "malformed JWT token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createForgetPasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
-				return createForgetPasswordRequest(t, "not.a.valid.jwt.token", bytes.NewReader(requestBody))
+
+				return createForgetPasswordRequest(
+					t,
+					"not.a.valid.jwt.token",
+					bytes.NewReader(requestBody),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				dto := createForgetPasswordDTO()
-				m.EXPECT().ForgetPassword(gomock.Any(), "not.a.valid.jwt.token", dto.NewPassword).Return(customerrors.ErrInvalidJWT)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), "not.a.valid.jwt.token", dto.NewPassword).
+					Return(customerrors.ErrInvalidJWT)
 			},
 			expectedStatus: http.StatusUnauthorized,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -356,13 +449,17 @@ func TestHandler(t *testing.T) {
 			name: "same password as old password",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.ForgetPasswordDTO{NewPassword: "SameAsOldPassword123!"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createForgetPasswordRequest(t, validToken, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().ForgetPassword(gomock.Any(), validToken, "SameAsOldPassword123!").Return(customerrors.ErrValidationFailed)
+				m.EXPECT().
+					ForgetPassword(gomock.Any(), validToken, "SameAsOldPassword123!").
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -374,9 +471,11 @@ func TestHandler(t *testing.T) {
 			name: "status code 204 No Content on success",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createForgetPasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createForgetPasswordRequest(t, validToken, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -386,7 +485,12 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
-				assert.NotEqual(t, http.StatusOK, rr.Code, "Should return 204 No Content, not 200 OK")
+				assert.NotEqual(
+					t,
+					http.StatusOK,
+					rr.Code,
+					"Should return 204 No Content, not 200 OK",
+				)
 				assert.Empty(t, rr.Body.String())
 			},
 		},

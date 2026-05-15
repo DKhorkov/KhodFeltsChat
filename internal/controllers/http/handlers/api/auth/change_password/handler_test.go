@@ -20,7 +20,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// Вспомогательная функция для создания запроса
+// Вспомогательная функция для создания запроса.
 func createChangePasswordRequest(t *testing.T, userID uint64, requestBody io.Reader) *http.Request {
 	t.Helper()
 
@@ -30,7 +30,7 @@ func createChangePasswordRequest(t *testing.T, userID uint64, requestBody io.Rea
 	return req.WithContext(ctx)
 }
 
-// Вспомогательная функция для создания ChangePasswordDTO
+// Вспомогательная функция для создания ChangePasswordDTO.
 func createChangePasswordDTO() domains.ChangePasswordDTO {
 	return domains.ChangePasswordDTO{
 		OldPassword: "OldSecurePassword123!",
@@ -54,9 +54,11 @@ func TestHandler(t *testing.T) {
 			name: "successful password change",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createChangePasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -74,10 +76,16 @@ func TestHandler(t *testing.T) {
 			name: "unauthorized - no userID in context",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createChangePasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
-				return httptest.NewRequest(http.MethodPost, "/change-password", bytes.NewReader(requestBody))
+
+				return httptest.NewRequest(
+					http.MethodPost,
+					"/change-password",
+					bytes.NewReader(requestBody),
+				)
 			},
 			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
 			expectedStatus: http.StatusUnauthorized,
@@ -91,11 +99,22 @@ func TestHandler(t *testing.T) {
 			name: "unauthorized - invalid userID type in context",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createChangePasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
-				req := httptest.NewRequest(http.MethodPost, "/change-password", bytes.NewReader(requestBody))
-				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, "not-a-number")
+
+				req := httptest.NewRequest(
+					http.MethodPost,
+					"/change-password",
+					bytes.NewReader(requestBody),
+				)
+				ctx := contextlib.WithValue(
+					req.Context(),
+					authmiddleware.UserIDContextKey,
+					"not-a-number",
+				)
+
 				return req.WithContext(ctx)
 			},
 			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
@@ -110,6 +129,7 @@ func TestHandler(t *testing.T) {
 			name: "bad request - empty request body",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader([]byte{}))
 			},
 			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
@@ -123,7 +143,9 @@ func TestHandler(t *testing.T) {
 			name: "bad request - invalid JSON",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				invalidJSON := `{"oldPassword": "old", "newPassword": invalid}`
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader([]byte(invalidJSON)))
 			},
 			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
@@ -138,13 +160,21 @@ func TestHandler(t *testing.T) {
 			name: "bad request - missing oldPassword",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
-				return createChangePasswordRequest(t, 123, bytes.NewReader([]byte(`{"newPassword": "NewPassword123!"}`)))
+
+				return createChangePasswordRequest(
+					t,
+					123,
+					bytes.NewReader([]byte(`{"newPassword": "NewPassword123!"}`)),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				var dto domains.ChangePasswordDTO
+
 				_ = json.Unmarshal([]byte(`{"newPassword": "NewPassword123!"}`), &dto)
 				dto.UserID = 123
-				m.EXPECT().ChangePassword(gomock.Any(), dto).Return(customerrors.ErrValidationFailed)
+				m.EXPECT().
+					ChangePassword(gomock.Any(), dto).
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -157,13 +187,21 @@ func TestHandler(t *testing.T) {
 			name: "bad request - missing newPassword",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
-				return createChangePasswordRequest(t, 123, bytes.NewReader([]byte(`{"oldPassword": "OldPassword123!"}`)))
+
+				return createChangePasswordRequest(
+					t,
+					123,
+					bytes.NewReader([]byte(`{"oldPassword": "OldPassword123!"}`)),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				var dto domains.ChangePasswordDTO
+
 				_ = json.Unmarshal([]byte(`{"oldPassword": "OldPassword123!"}`), &dto)
 				dto.UserID = 123
-				m.EXPECT().ChangePassword(gomock.Any(), dto).Return(customerrors.ErrValidationFailed)
+				m.EXPECT().
+					ChangePassword(gomock.Any(), dto).
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -176,13 +214,17 @@ func TestHandler(t *testing.T) {
 			name: "bad request - empty object",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader([]byte(`{}`)))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				var dto domains.ChangePasswordDTO
+
 				_ = json.Unmarshal([]byte(`{}`), &dto)
 				dto.UserID = 123
-				m.EXPECT().ChangePassword(gomock.Any(), dto).Return(customerrors.ErrValidationFailed)
+				m.EXPECT().
+					ChangePassword(gomock.Any(), dto).
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -195,14 +237,22 @@ func TestHandler(t *testing.T) {
 			name: "bad request - validation failed",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.ChangePasswordDTO{OldPassword: "old", NewPassword: "123"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				dto := domains.ChangePasswordDTO{UserID: 123, OldPassword: "old", NewPassword: "123"}
-				m.EXPECT().ChangePassword(gomock.Any(), dto).Return(customerrors.ErrValidationFailed)
+				dto := domains.ChangePasswordDTO{
+					UserID:      123,
+					OldPassword: "old",
+					NewPassword: "123",
+				}
+				m.EXPECT().
+					ChangePassword(gomock.Any(), dto).
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -215,9 +265,11 @@ func TestHandler(t *testing.T) {
 			name: "bad request - wrong old password",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createChangePasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -236,9 +288,11 @@ func TestHandler(t *testing.T) {
 			name: "not found - user not found",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createChangePasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 999, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -257,15 +311,19 @@ func TestHandler(t *testing.T) {
 			name: "internal server error - use case error",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createChangePasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				dto := createChangePasswordDTO()
 				dto.UserID = 123
-				m.EXPECT().ChangePassword(gomock.Any(), dto).Return(errors.New("database connection failed"))
+				m.EXPECT().
+					ChangePassword(gomock.Any(), dto).
+					Return(errors.New("database connection failed"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -278,13 +336,22 @@ func TestHandler(t *testing.T) {
 			name: "different password strengths - strong password",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
-				dto := domains.ChangePasswordDTO{OldPassword: "OldPassword123!", NewPassword: "NewSecurePassword123!"}
+
+				dto := domains.ChangePasswordDTO{
+					OldPassword: "OldPassword123!",
+					NewPassword: "NewSecurePassword123!",
+				}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				dto := domains.ChangePasswordDTO{UserID: 123, OldPassword: "OldPassword123!", NewPassword: "NewSecurePassword123!"}
+				dto := domains.ChangePasswordDTO{
+					UserID:      123,
+					OldPassword: "OldPassword123!",
+					NewPassword: "NewSecurePassword123!",
+				}
 				m.EXPECT().ChangePassword(gomock.Any(), dto).Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
@@ -293,13 +360,22 @@ func TestHandler(t *testing.T) {
 			name: "different password strengths - very strong password",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
-				dto := domains.ChangePasswordDTO{OldPassword: "OldPassword123!", NewPassword: "V3ry$tr0ngN3wP@ssw0rd!2024"}
+
+				dto := domains.ChangePasswordDTO{
+					OldPassword: "OldPassword123!",
+					NewPassword: "V3ry$tr0ngN3wP@ssw0rd!2024",
+				}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				dto := domains.ChangePasswordDTO{UserID: 123, OldPassword: "OldPassword123!", NewPassword: "V3ry$tr0ngN3wP@ssw0rd!2024"}
+				dto := domains.ChangePasswordDTO{
+					UserID:      123,
+					OldPassword: "OldPassword123!",
+					NewPassword: "V3ry$tr0ngN3wP@ssw0rd!2024",
+				}
 				m.EXPECT().ChangePassword(gomock.Any(), dto).Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
@@ -308,14 +384,22 @@ func TestHandler(t *testing.T) {
 			name: "different password strengths - weak password",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.ChangePasswordDTO{OldPassword: "OldPassword123!", NewPassword: "123"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				dto := domains.ChangePasswordDTO{UserID: 123, OldPassword: "OldPassword123!", NewPassword: "123"}
-				m.EXPECT().ChangePassword(gomock.Any(), dto).Return(customerrors.ErrValidationFailed)
+				dto := domains.ChangePasswordDTO{
+					UserID:      123,
+					OldPassword: "OldPassword123!",
+					NewPassword: "123",
+				}
+				m.EXPECT().
+					ChangePassword(gomock.Any(), dto).
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -323,14 +407,25 @@ func TestHandler(t *testing.T) {
 			name: "different password strengths - common password",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
-				dto := domains.ChangePasswordDTO{OldPassword: "OldPassword123!", NewPassword: "password"}
+
+				dto := domains.ChangePasswordDTO{
+					OldPassword: "OldPassword123!",
+					NewPassword: "password",
+				}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				dto := domains.ChangePasswordDTO{UserID: 123, OldPassword: "OldPassword123!", NewPassword: "password"}
-				m.EXPECT().ChangePassword(gomock.Any(), dto).Return(customerrors.ErrValidationFailed)
+				dto := domains.ChangePasswordDTO{
+					UserID:      123,
+					OldPassword: "OldPassword123!",
+					NewPassword: "password",
+				}
+				m.EXPECT().
+					ChangePassword(gomock.Any(), dto).
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -338,14 +433,25 @@ func TestHandler(t *testing.T) {
 			name: "different password strengths - same as old password",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
-				dto := domains.ChangePasswordDTO{OldPassword: "OldPassword123!", NewPassword: "OldPassword123!"}
+
+				dto := domains.ChangePasswordDTO{
+					OldPassword: "OldPassword123!",
+					NewPassword: "OldPassword123!",
+				}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				dto := domains.ChangePasswordDTO{UserID: 123, OldPassword: "OldPassword123!", NewPassword: "OldPassword123!"}
-				m.EXPECT().ChangePassword(gomock.Any(), dto).Return(customerrors.ErrValidationFailed)
+				dto := domains.ChangePasswordDTO{
+					UserID:      123,
+					OldPassword: "OldPassword123!",
+					NewPassword: "OldPassword123!",
+				}
+				m.EXPECT().
+					ChangePassword(gomock.Any(), dto).
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -353,6 +459,7 @@ func TestHandler(t *testing.T) {
 			name: "JSON with extra fields",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				jsonWithExtraFields := `{
 					"oldPassword": "OldPassword123!",
 					"newPassword": "NewPassword123!",
@@ -360,10 +467,19 @@ func TestHandler(t *testing.T) {
 					"anotherExtra": 123,
 					"confirmPassword": "NewPassword123!"
 				}`
-				return createChangePasswordRequest(t, 123, bytes.NewReader([]byte(jsonWithExtraFields)))
+
+				return createChangePasswordRequest(
+					t,
+					123,
+					bytes.NewReader([]byte(jsonWithExtraFields)),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				dto := domains.ChangePasswordDTO{UserID: 123, OldPassword: "OldPassword123!", NewPassword: "NewPassword123!"}
+				dto := domains.ChangePasswordDTO{
+					UserID:      123,
+					OldPassword: "OldPassword123!",
+					NewPassword: "NewPassword123!",
+				}
 				m.EXPECT().ChangePassword(gomock.Any(), dto).Return(nil)
 			},
 			expectedStatus: http.StatusNoContent,
@@ -372,12 +488,16 @@ func TestHandler(t *testing.T) {
 			name: "null values in JSON",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				jsonWithNull := `{"oldPassword": null, "newPassword": null}`
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader([]byte(jsonWithNull)))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				dto := domains.ChangePasswordDTO{UserID: 123, OldPassword: "", NewPassword: ""}
-				m.EXPECT().ChangePassword(gomock.Any(), dto).Return(customerrors.ErrValidationFailed)
+				m.EXPECT().
+					ChangePassword(gomock.Any(), dto).
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -389,14 +509,18 @@ func TestHandler(t *testing.T) {
 			name: "empty strings for passwords",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.ChangePasswordDTO{OldPassword: "", NewPassword: ""}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				dto := domains.ChangePasswordDTO{UserID: 123, OldPassword: "", NewPassword: ""}
-				m.EXPECT().ChangePassword(gomock.Any(), dto).Return(customerrors.ErrValidationFailed)
+				m.EXPECT().
+					ChangePassword(gomock.Any(), dto).
+					Return(customerrors.ErrValidationFailed)
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -408,9 +532,11 @@ func TestHandler(t *testing.T) {
 			name: "zero user ID",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createChangePasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 0, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -424,10 +550,16 @@ func TestHandler(t *testing.T) {
 			name: "very large user ID",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createChangePasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
-				return createChangePasswordRequest(t, 18446744073709551615, bytes.NewReader(requestBody))
+
+				return createChangePasswordRequest(
+					t,
+					18446744073709551615,
+					bytes.NewReader(requestBody),
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				dto := createChangePasswordDTO()
@@ -440,9 +572,11 @@ func TestHandler(t *testing.T) {
 			name: "status code 204 No Content on success",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := createChangePasswordDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -453,7 +587,12 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
-				assert.NotEqual(t, http.StatusOK, rr.Code, "Should return 204 No Content, not 200 OK")
+				assert.NotEqual(
+					t,
+					http.StatusOK,
+					rr.Code,
+					"Should return 204 No Content, not 200 OK",
+				)
 				assert.Empty(t, rr.Body.String())
 			},
 		},
@@ -461,6 +600,7 @@ func TestHandler(t *testing.T) {
 			name: "user changes password for another user (should not be possible)",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.ChangePasswordDTO{
 					UserID:      456, // Другой пользователь
 					OldPassword: "OldPassword123!",
@@ -468,6 +608,7 @@ func TestHandler(t *testing.T) {
 				}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createChangePasswordRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {

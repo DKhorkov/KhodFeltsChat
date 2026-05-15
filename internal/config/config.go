@@ -170,9 +170,15 @@ func New() Config {
 				loadenv.GetEnvAsInt("NATS_CLIENT_PORT", 4222),
 			),
 			Subjects: NATSSubjects{
-				VerifyEmail:         loadenv.GetEnv("NATS_VERIFY_EMAIL_SUBJECT", "verify-email"),
-				ForgetPassword:      loadenv.GetEnv("NATS_FORGET_PASSWORD_SUBJECT", "forget-password"),
-				WebPushNotification: loadenv.GetEnv("NATS_PUSH_NOTIFICATION_SUBJECT", "web-push-notification"),
+				VerifyEmail: loadenv.GetEnv("NATS_VERIFY_EMAIL_SUBJECT", "verify-email"),
+				ForgetPassword: loadenv.GetEnv(
+					"NATS_FORGET_PASSWORD_SUBJECT",
+					"forget-password",
+				),
+				WebPushNotification: loadenv.GetEnv(
+					"NATS_PUSH_NOTIFICATION_SUBJECT",
+					"web-push-notification",
+				),
 			},
 			Publisher: NATSPublisher{
 				Name: loadenv.GetEnv("NATS_PUBLISHER_NAME", "kfc-publisher"),

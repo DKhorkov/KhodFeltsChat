@@ -61,7 +61,11 @@ func TestSetupHandlers_RoutesRegistered(t *testing.T) {
 		{"POST /sessions", http.MethodPost, "/sessions"},
 		{"POST /users/password/change", http.MethodPost, "/users/password/change"},
 		{"POST /users/email/verify", http.MethodPost, "/users/email/verify"},
-		{"POST /users/password/forget/test-token", http.MethodPost, "/users/password/forget/test-token"},
+		{
+			"POST /users/password/forget/test-token",
+			http.MethodPost,
+			"/users/password/forget/test-token",
+		},
 		{"POST /users/password/forget", http.MethodPost, "/users/password/forget"},
 		{"POST /chats", http.MethodPost, "/chats"},
 		{"PUT /users/me", http.MethodPut, "/users/me"},
@@ -69,9 +73,9 @@ func TestSetupHandlers_RoutesRegistered(t *testing.T) {
 		{"DELETE /sessions", http.MethodDelete, "/sessions"},
 		{"GET /users/me/settings", http.MethodGet, "/users/me/settings"},
 		{"PUT /users/me/settings", http.MethodPut, "/users/me/settings"},
-		{"GET /push/vapid-key", http.MethodGet, "/push/vapid-key"},
-		{"POST /push/subscribe", http.MethodPost, "/push/subscribe"},
-		{"DELETE /push/subscribe/1", http.MethodDelete, "/push/subscribe/1"},
+		{"GET /web-push/vapid-key", http.MethodGet, "/web-push/vapid-key"},
+		{"POST /web-push/subscribe", http.MethodPost, "/web-push/subscribe"},
+		{"DELETE /web-push/subscribe/1", http.MethodDelete, "/web-push/subscribe/1"},
 	}
 
 	for _, tt := range tests {
@@ -80,7 +84,13 @@ func TestSetupHandlers_RoutesRegistered(t *testing.T) {
 
 			req := httptest.NewRequest(tt.method, tt.path, http.NoBody)
 			match := mux.RouteMatch{}
-			assert.True(t, apiMux.Match(req, &match), "Expected %s %s to be registered", tt.method, tt.path)
+			assert.True(
+				t,
+				apiMux.Match(req, &match),
+				"Expected %s %s to be registered",
+				tt.method,
+				tt.path,
+			)
 		})
 	}
 }
@@ -95,5 +105,12 @@ func TestSetupHandlers_UnregisteredRoute(t *testing.T) {
 
 	apiMux.ServeHTTP(rr, req)
 
-	assert.Equal(t, http.StatusNotFound, rr.Code, "Expected status %d for unregistered route, got %d", http.StatusNotFound, rr.Code)
+	assert.Equal(
+		t,
+		http.StatusNotFound,
+		rr.Code,
+		"Expected status %d for unregistered route, got %d",
+		http.StatusNotFound,
+		rr.Code,
+	)
 }

@@ -255,7 +255,11 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				req := httptest.NewRequest(http.MethodGet, "/chats?limit=invalid&offset=0", http.NoBody)
+				req := httptest.NewRequest(
+					http.MethodGet,
+					"/chats?limit=invalid&offset=0",
+					http.NoBody,
+				)
 				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 
 				return req.WithContext(ctx)
@@ -281,7 +285,11 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				req := httptest.NewRequest(http.MethodGet, "/chats?limit=10&offset=invalid", http.NoBody)
+				req := httptest.NewRequest(
+					http.MethodGet,
+					"/chats?limit=10&offset=invalid",
+					http.NoBody,
+				)
 				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 
 				return req.WithContext(ctx)

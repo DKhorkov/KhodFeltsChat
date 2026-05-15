@@ -357,6 +357,8 @@ linters:
           - exhaustruct
           - funlen
           - maintidx
+          - gocyclo
+          - cyclop
 
       - path: internal/domains/chat.go
         linters:
@@ -386,6 +388,14 @@ linters:
 
       - path: internal/services/chats/service.go
         line: "82"
+        linters:
+          - exhaustruct
+
+      - path: internal/controllers/http/handlers/api/web_push/subscribe/handler.go
+        linters:
+          - exhaustruct
+
+      - path: internal/usecases/web_push_subscriptions/usecases.go
         linters:
           - exhaustruct
 
