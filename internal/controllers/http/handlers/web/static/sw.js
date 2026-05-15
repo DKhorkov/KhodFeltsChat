@@ -4,6 +4,10 @@ self.addEventListener('push', (event) => {
     const title = data.title || 'Новое сообщение';
     const options = {
         body: data.body || '',
+        icon: '/web/static/assets/icon.png',
+        badge: '/web/static/assets/icon.png',
+        timestamp: data.timestamp || Date.now(),
+        vibrate: [200, 100, 200],
         data: {
             chatId: data.chatId,
         },

@@ -55,9 +55,10 @@ func (u *UseCases) SendWebPushNotification(
 	message domains.Message,
 ) error {
 	payload, err := json.Marshal(map[string]any{
-		"title":  message.Sender.Username,
-		"body":   message.Text,
-		"chatId": message.ChatID,
+		"title":     message.Sender.Username,
+		"body":      message.Text,
+		"chatId":    message.ChatID,
+		"timestamp": message.CreatedAt.UnixMilli(),
 	})
 	if err != nil {
 		return fmt.Errorf("marshal push notification payload: %w", err)
