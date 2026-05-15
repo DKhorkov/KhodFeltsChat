@@ -103,13 +103,6 @@ type PushSubscription struct {
     Auth      string
     CreatedAt time.Time
 }
-
-type CreatePushSubscriptionDTO struct {
-    UserID   uint64
-    Endpoint string
-    P256dh   string
-    Auth     string
-}
 ```
 
 ## Интерфейсы
@@ -118,7 +111,7 @@ type CreatePushSubscriptionDTO struct {
 
 ```go
 type PushSubscriptionsRepository interface {
-    CreatePushSubscription(ctx context.Context, dto domains.CreatePushSubscriptionDTO) (uint64, error)
+    CreatePushSubscription(ctx context.Context, subscription domains.PushSubscription) (uint64, error)
     GetPushSubscriptionsByUserID(ctx context.Context, userID uint64) ([]domains.PushSubscription, error)
     DeletePushSubscription(ctx context.Context, id uint64) error
 }
@@ -136,7 +129,7 @@ type PushSubscriptionsService interface {
 
 ```go
 type PushSubscriptionsUseCases interface {
-    CreatePushSubscription(ctx context.Context, dto domains.CreatePushSubscriptionDTO) (*domains.PushSubscription, error)
+    CreatePushSubscription(ctx context.Context, subscription domains.PushSubscription) (*domains.PushSubscription, error)
     GetPushSubscriptionsByUserID(ctx context.Context, userID uint64) ([]domains.PushSubscription, error)
     DeletePushSubscription(ctx context.Context, id uint64) error
     SendPushNotification(ctx context.Context, subscription domains.PushSubscription, message domains.Message) error
