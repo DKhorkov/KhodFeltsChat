@@ -85,7 +85,7 @@ func TestTraceDecorator_CreatePushSubscription(t *testing.T) {
 			subscription: domains.PushSubscription{
 				UserID:   1,
 				Endpoint: "https://fcm.googleapis.com/fcm/send/test",
-				P256dh:   "test-p256dh",
+				EncryptionKey:   "test-p256dh",
 				Auth:     "test-auth",
 			},
 			setupMocks: func(
@@ -103,7 +103,7 @@ func TestTraceDecorator_CreatePushSubscription(t *testing.T) {
 					CreatePushSubscription(gomock.Any(), domains.PushSubscription{
 						UserID:   1,
 						Endpoint: "https://fcm.googleapis.com/fcm/send/test",
-						P256dh:   "test-p256dh",
+						EncryptionKey:   "test-p256dh",
 						Auth:     "test-auth",
 					}).
 					Return(uint64(1), nil)
@@ -116,7 +116,7 @@ func TestTraceDecorator_CreatePushSubscription(t *testing.T) {
 			subscription: domains.PushSubscription{
 				UserID:   1,
 				Endpoint: "https://fcm.googleapis.com/fcm/send/test",
-				P256dh:   "test-p256dh",
+				EncryptionKey:   "test-p256dh",
 				Auth:     "test-auth",
 			},
 			setupMocks: func(
@@ -206,7 +206,7 @@ func TestTraceDecorator_GetPushSubscriptionsByUserID(t *testing.T) {
 							ID:        1,
 							UserID:    1,
 							Endpoint:  "https://fcm.googleapis.com/fcm/send/test",
-							P256dh:    "test-p256dh",
+							EncryptionKey:    "test-p256dh",
 							Auth:      "test-auth",
 							CreatedAt: now,
 						},
@@ -217,7 +217,7 @@ func TestTraceDecorator_GetPushSubscriptionsByUserID(t *testing.T) {
 					ID:        1,
 					UserID:    1,
 					Endpoint:  "https://fcm.googleapis.com/fcm/send/test",
-					P256dh:    "test-p256dh",
+					EncryptionKey:    "test-p256dh",
 					Auth:      "test-auth",
 					CreatedAt: now,
 				},
@@ -353,89 +353,6 @@ func TestTraceDecorator_DeletePushSubscription(t *testing.T) {
 			)
 
 			err := decorator.DeletePushSubscription(context.Background(), tt.id)
-
-			if tt.expectedError != nil {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.expectedError.Error())
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestTraceDecorator_DeletePushSubscriptionByEndpoint(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name          string
-		endpoint      string
-		setupMocks    func(*mocktracing.MockProvider, *mockrepositories.MockPushSubscriptionsRepository, *mocktracing.MockSpan)
-		expectedError error
-	}{
-		{
-			name:     "successful delete push subscription by endpoint with tracing",
-			endpoint: "https://fcm.googleapis.com/fcm/send/test",
-			setupMocks: func(
-				mockProvider *mocktracing.MockProvider,
-				mockBase *mockrepositories.MockPushSubscriptionsRepository,
-				mockSpan *mocktracing.MockSpan,
-			) {
-				mockProvider.EXPECT().
-					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
-						return ctx, mockSpan
-					})
-
-				mockBase.EXPECT().
-					DeletePushSubscriptionByEndpoint(gomock.Any(), "https://fcm.googleapis.com/fcm/send/test").
-					Return(nil)
-			},
-			expectedError: nil,
-		},
-		{
-			name:     "delete push subscription by endpoint error with tracing",
-			endpoint: "https://fcm.googleapis.com/fcm/send/test",
-			setupMocks: func(
-				mockProvider *mocktracing.MockProvider,
-				mockBase *mockrepositories.MockPushSubscriptionsRepository,
-				mockSpan *mocktracing.MockSpan,
-			) {
-				mockProvider.EXPECT().
-					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(context.Background(), mockSpan)
-
-				mockBase.EXPECT().
-					DeletePushSubscriptionByEndpoint(gomock.Any(), gomock.Any()).
-					Return(errors.New("database error"))
-			},
-			expectedError: errors.New("database error"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			ctrl := gomock.NewController(t)
-			mockProvider := mocktracing.NewMockProvider(ctrl)
-			mockBase := mockrepositories.NewMockPushSubscriptionsRepository(ctrl)
-			mockSpan := mocktracing.NewMockSpan()
-
-			tt.setupMocks(mockProvider, mockBase, mockSpan)
-
-			decorator := pushsubscriptions.NewTraceDecorator(
-				mockProvider,
-				tracing.SpanConfig{
-					Events: tracing.SpanEventsConfig{
-						Start: tracing.SpanEventConfig{Name: "start"},
-						End:   tracing.SpanEventConfig{Name: "end"},
-					},
-				},
-				mockBase,
-			)
-
-			err := decorator.DeletePushSubscriptionByEndpoint(context.Background(), tt.endpoint)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

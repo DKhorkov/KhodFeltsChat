@@ -57,7 +57,7 @@ func TestService_CreatePushSubscription(t *testing.T) {
 						CreatePushSubscription(gomock.Any(), domains.PushSubscription{
 							UserID:   10,
 							Endpoint: "https://example.com/push",
-							P256dh:   "key1",
+							EncryptionKey:   "key1",
 							Auth:     "auth1",
 						}).
 						Return(uint64(1), nil)
@@ -69,7 +69,7 @@ func TestService_CreatePushSubscription(t *testing.T) {
 								ID:        1,
 								UserID:    10,
 								Endpoint:  "https://example.com/push",
-								P256dh:    "key1",
+								EncryptionKey:    "key1",
 								Auth:      "auth1",
 								CreatedAt: now,
 							},
@@ -81,7 +81,7 @@ func TestService_CreatePushSubscription(t *testing.T) {
 				subscription: domains.PushSubscription{
 					UserID:   10,
 					Endpoint: "https://example.com/push",
-					P256dh:   "key1",
+					EncryptionKey:   "key1",
 					Auth:     "auth1",
 				},
 			},
@@ -89,7 +89,7 @@ func TestService_CreatePushSubscription(t *testing.T) {
 				ID:        1,
 				UserID:    10,
 				Endpoint:  "https://example.com/push",
-				P256dh:    "key1",
+				EncryptionKey:    "key1",
 				Auth:      "auth1",
 				CreatedAt: now,
 			},
@@ -118,7 +118,7 @@ func TestService_CreatePushSubscription(t *testing.T) {
 				subscription: domains.PushSubscription{
 					UserID:   10,
 					Endpoint: "https://example.com/push",
-					P256dh:   "key1",
+					EncryptionKey:   "key1",
 					Auth:     "auth1",
 				},
 			},
@@ -153,7 +153,7 @@ func TestService_CreatePushSubscription(t *testing.T) {
 				subscription: domains.PushSubscription{
 					UserID:   10,
 					Endpoint: "https://example.com/push",
-					P256dh:   "key1",
+					EncryptionKey:   "key1",
 					Auth:     "auth1",
 				},
 			},
@@ -185,7 +185,7 @@ func TestService_CreatePushSubscription(t *testing.T) {
 								ID:        1,
 								UserID:    10,
 								Endpoint:  "https://example.com/push",
-								P256dh:    "key1",
+								EncryptionKey:    "key1",
 								Auth:      "auth1",
 								CreatedAt: now,
 							},
@@ -197,7 +197,7 @@ func TestService_CreatePushSubscription(t *testing.T) {
 				subscription: domains.PushSubscription{
 					UserID:   10,
 					Endpoint: "https://example.com/push",
-					P256dh:   "key1",
+					EncryptionKey:   "key1",
 					Auth:     "auth1",
 				},
 			},
@@ -292,7 +292,7 @@ func TestService_GetPushSubscriptionsByUserID(t *testing.T) {
 								ID:        1,
 								UserID:    10,
 								Endpoint:  "https://example.com/push",
-								P256dh:    "key1",
+								EncryptionKey:    "key1",
 								Auth:      "auth1",
 								CreatedAt: now,
 							},
@@ -308,7 +308,7 @@ func TestService_GetPushSubscriptionsByUserID(t *testing.T) {
 					ID:        1,
 					UserID:    10,
 					Endpoint:  "https://example.com/push",
-					P256dh:    "key1",
+					EncryptionKey:    "key1",
 					Auth:      "auth1",
 					CreatedAt: now,
 				},
@@ -482,118 +482,6 @@ func TestService_DeletePushSubscription(t *testing.T) {
 
 			// Act
 			err := s.DeletePushSubscription(tt.args.ctx, tt.args.id)
-
-			// Assert
-			if tt.wantErr {
-				assert.Error(t, err)
-
-				if tt.err != nil {
-					assert.Contains(t, err.Error(), tt.err.Error())
-				}
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestService_DeletePushSubscriptionByEndpoint(t *testing.T) {
-	t.Parallel()
-
-	type fields struct {
-		mockUOW                          func(*mockuow.MockUnitOfWork)
-		mockPushSubscriptionsRepository func(*mockrepositories.MockPushSubscriptionsRepository)
-	}
-
-	type args struct {
-		ctx      context.Context
-		endpoint string
-	}
-
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-		err     error
-	}{
-		{
-			name: "successfully delete push subscription by endpoint",
-			fields: fields{
-				mockUOW: func(uow *mockuow.MockUnitOfWork) {
-					uow.EXPECT().
-						Do(gomock.Any(), gomock.Any()).
-						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
-							tx := &struct{ pg.Transaction }{}
-
-							return fn(ctx, tx)
-						})
-				},
-				mockPushSubscriptionsRepository: func(r *mockrepositories.MockPushSubscriptionsRepository) {
-					r.EXPECT().
-						DeletePushSubscriptionByEndpoint(gomock.Any(), "https://example.com/push").
-						Return(nil)
-				},
-			},
-			args: args{
-				ctx:      context.Background(),
-				endpoint: "https://example.com/push",
-			},
-			wantErr: false,
-		},
-		{
-			name: "error deleting push subscription by endpoint",
-			fields: fields{
-				mockUOW: func(uow *mockuow.MockUnitOfWork) {
-					uow.EXPECT().
-						Do(gomock.Any(), gomock.Any()).
-						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
-							tx := &struct{ pg.Transaction }{}
-
-							return fn(ctx, tx)
-						})
-				},
-				mockPushSubscriptionsRepository: func(r *mockrepositories.MockPushSubscriptionsRepository) {
-					r.EXPECT().
-						DeletePushSubscriptionByEndpoint(gomock.Any(), "https://example.com/push").
-						Return(errors.New("database error"))
-				},
-			},
-			args: args{
-				ctx:      context.Background(),
-				endpoint: "https://example.com/push",
-			},
-			wantErr: true,
-			err:     errors.New("database error"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			// Arrange
-			ctrl := gomock.NewController(t)
-
-			mockUOW := mockuow.NewMockUnitOfWork(ctrl)
-			mockRepo := mockrepositories.NewMockPushSubscriptionsRepository(ctrl)
-
-			if tt.fields.mockUOW != nil {
-				tt.fields.mockUOW(mockUOW)
-			}
-
-			if tt.fields.mockPushSubscriptionsRepository != nil {
-				tt.fields.mockPushSubscriptionsRepository(mockRepo)
-			}
-
-			newRepoFunc := func(_ pg.Transaction) interfaces.PushSubscriptionsRepository {
-				return mockRepo
-			}
-
-			s := service.New(mockUOW, newRepoFunc)
-
-			// Act
-			err := s.DeletePushSubscriptionByEndpoint(tt.args.ctx, tt.args.endpoint)
 
 			// Assert
 			if tt.wantErr {

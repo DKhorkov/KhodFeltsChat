@@ -70,20 +70,6 @@ func (mr *MockPushSubscriptionsUseCasesMockRecorder) DeletePushSubscription(ctx,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePushSubscription", reflect.TypeOf((*MockPushSubscriptionsUseCases)(nil).DeletePushSubscription), ctx, id)
 }
 
-// DeletePushSubscriptionByEndpoint mocks base method.
-func (m *MockPushSubscriptionsUseCases) DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeletePushSubscriptionByEndpoint", ctx, endpoint)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeletePushSubscriptionByEndpoint indicates an expected call of DeletePushSubscriptionByEndpoint.
-func (mr *MockPushSubscriptionsUseCasesMockRecorder) DeletePushSubscriptionByEndpoint(ctx, endpoint any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePushSubscriptionByEndpoint", reflect.TypeOf((*MockPushSubscriptionsUseCases)(nil).DeletePushSubscriptionByEndpoint), ctx, endpoint)
-}
-
 // GetPushSubscriptionsByUserID mocks base method.
 func (m *MockPushSubscriptionsUseCases) GetPushSubscriptionsByUserID(ctx context.Context, userID uint64) ([]domains.PushSubscription, error) {
 	m.ctrl.T.Helper()

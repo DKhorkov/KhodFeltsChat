@@ -64,16 +64,3 @@ func (d *TraceDecorator) DeletePushSubscription(
 
 	return d.base.DeletePushSubscription(ctx, id)
 }
-
-func (d *TraceDecorator) DeletePushSubscriptionByEndpoint(
-	ctx context.Context,
-	endpoint string,
-) error {
-	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
-	defer span.End()
-
-	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
-	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
-
-	return d.base.DeletePushSubscriptionByEndpoint(ctx, endpoint)
-}

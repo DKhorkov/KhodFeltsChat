@@ -14,11 +14,13 @@ const (
 	idColumnName        = "id"
 	userIDColumnName    = "user_id"
 	endpointColumnName  = "endpoint"
-	p256dhColumnName    = "p256dh"
+	encryptionKeyColumnName = "encryption_key"
 	authColumnName      = "auth"
 	createdAtColumnName = "created_at"
 
 	selectAllColumns = "*"
+
+	returningIDSuffix = "RETURNING id"
 )
 
 type Repository struct {
@@ -38,16 +40,16 @@ func (repo *Repository) CreatePushSubscription(
 		Columns(
 			userIDColumnName,
 			endpointColumnName,
-			p256dhColumnName,
+			encryptionKeyColumnName,
 			authColumnName,
 		).
 		Values(
 			subscription.UserID,
 			subscription.Endpoint,
-			subscription.P256dh,
+			subscription.EncryptionKey,
 			subscription.Auth,
 		).
-		Suffix("RETURNING " + idColumnName).
+		Suffix(returningIDSuffix).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
@@ -107,21 +109,6 @@ func (repo *Repository) DeletePushSubscription(ctx context.Context, id uint64) e
 	stmt, params, err := sq.
 		Delete(pushSubscriptionsTableName).
 		Where(sq.Eq{idColumnName: id}).
-		PlaceholderFormat(sq.Dollar).
-		ToSql()
-	if err != nil {
-		return err
-	}
-
-	_, err = repo.tx.ExecContext(ctx, stmt, params...)
-
-	return err
-}
-
-func (repo *Repository) DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint string) error {
-	stmt, params, err := sq.
-		Delete(pushSubscriptionsTableName).
-		Where(sq.Eq{endpointColumnName: endpoint}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {

@@ -119,7 +119,7 @@ func (s *RepositoryTestSuite) TestCreatePushSubscription_Success() {
 	subscription := domains.PushSubscription{
 		UserID:   2,
 		Endpoint: "https://fcm.googleapis.com/fcm/send/new",
-		P256dh:   "new-p256dh",
+		EncryptionKey:   "new-p256dh",
 		Auth:     "new-auth",
 	}
 
@@ -137,7 +137,7 @@ func (s *RepositoryTestSuite) TestCreatePushSubscription_Success() {
 		if sub.Endpoint == "https://fcm.googleapis.com/fcm/send/new" {
 			found = true
 			s.Equal(uint64(2), sub.UserID)
-			s.Equal("new-p256dh", sub.P256dh)
+			s.Equal("new-p256dh", sub.EncryptionKey)
 			s.Equal("new-auth", sub.Auth)
 			s.NotZero(sub.CreatedAt)
 		}
@@ -155,7 +155,7 @@ func (s *RepositoryTestSuite) TestGetPushSubscriptionsByUserID_Success() {
 		s.Equal(uint64(1), sub.UserID)
 		s.NotZero(sub.ID)
 		s.NotEmpty(sub.Endpoint)
-		s.NotEmpty(sub.P256dh)
+		s.NotEmpty(sub.EncryptionKey)
 		s.NotEmpty(sub.Auth)
 		s.NotZero(sub.CreatedAt)
 	}
@@ -186,23 +186,6 @@ func (s *RepositoryTestSuite) TestDeletePushSubscription_Success() {
 func (s *RepositoryTestSuite) TestDeletePushSubscription_NotFound() {
 	// Удаление несуществующей подписки не возвращает ошибку
 	err := s.repository.DeletePushSubscription(s.ctx, 999)
-	s.NoError(err)
-}
-
-func (s *RepositoryTestSuite) TestDeletePushSubscriptionByEndpoint_Success() {
-	err := s.repository.DeletePushSubscriptionByEndpoint(s.ctx, "https://fcm.googleapis.com/fcm/send/test1")
-	s.NoError(err)
-
-	// Проверяем, что осталась только одна подписка у пользователя 1
-	subscriptions, err := s.repository.GetPushSubscriptionsByUserID(s.ctx, 1)
-	s.NoError(err)
-	s.Len(subscriptions, 1)
-	s.Equal("https://fcm.googleapis.com/fcm/send/test2", subscriptions[0].Endpoint)
-}
-
-func (s *RepositoryTestSuite) TestDeletePushSubscriptionByEndpoint_NotFound() {
-	// Удаление по несуществующему endpoint не возвращает ошибку
-	err := s.repository.DeletePushSubscriptionByEndpoint(s.ctx, "https://nonexistent.endpoint")
 	s.NoError(err)
 }
 
@@ -238,10 +221,10 @@ func (s *RepositoryTestSuite) createTestData() {
 
 	// Создаем тестовые подписки для пользователя 1
 	testSubscriptions := []struct {
-		userID   uint64
-		endpoint string
-		p256dh   string
-		auth     string
+		userID        uint64
+		endpoint      string
+		encryptionKey string
+		auth          string
 	}{
 		{1, "https://fcm.googleapis.com/fcm/send/test1", "p256dh-1", "auth-1"},
 		{1, "https://fcm.googleapis.com/fcm/send/test2", "p256dh-2", "auth-2"},
@@ -250,11 +233,11 @@ func (s *RepositoryTestSuite) createTestData() {
 	for _, ts := range testSubscriptions {
 		_, err := s.tx.ExecContext(
 			s.ctx,
-			`INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, created_at)
+			`INSERT INTO push_subscriptions (user_id, endpoint, encryption_key, auth, created_at)
 			 VALUES ($1, $2, $3, $4, $5)`,
 			ts.userID,
 			ts.endpoint,
-			ts.p256dh,
+			ts.encryptionKey,
 			ts.auth,
 			now,
 		)

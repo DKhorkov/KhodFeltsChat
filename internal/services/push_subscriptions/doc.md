@@ -11,7 +11,6 @@
 | `CreatePushSubscription` | Создание подписки + возврат созданной записи. При отсутствии — `ErrPushSubscriptionNotFound` |
 | `GetPushSubscriptionsByUserID` | Получение всех подписок пользователя по UserID |
 | `DeletePushSubscription` | Удаление подписки по ID |
-| `DeletePushSubscriptionByEndpoint` | Удаление подписки по endpoint URL |
 
 ## Зависимости
 

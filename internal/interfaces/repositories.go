@@ -90,5 +90,4 @@ type PushSubscriptionsRepository interface {
 	CreatePushSubscription(ctx context.Context, subscription domains.PushSubscription) (uint64, error)
 	GetPushSubscriptionsByUserID(ctx context.Context, userID uint64) ([]domains.PushSubscription, error)
 	DeletePushSubscription(ctx context.Context, id uint64) error
-	DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint string) error
 }

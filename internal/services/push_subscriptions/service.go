@@ -107,17 +107,3 @@ func (s *Service) DeletePushSubscription(
 		},
 	)
 }
-
-func (s *Service) DeletePushSubscriptionByEndpoint(
-	ctx context.Context,
-	endpoint string,
-) error {
-	return s.uow.Do(
-		ctx,
-		func(ctx context.Context, tx pg.Transaction) error {
-			repo := s.newPushSubscriptionsRepositoryFunc(tx)
-
-			return repo.DeletePushSubscriptionByEndpoint(ctx, endpoint)
-		},
-	)
-}

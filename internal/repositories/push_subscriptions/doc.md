@@ -7,7 +7,7 @@
 
 ## Таблица
 
-- `push_subscriptions` — подписки на push-уведомления (endpoint, p256dh, auth), связана с `users` через `user_id`
+- `push_subscriptions` — подписки на push-уведомления (endpoint, encryption_key, auth), связана с `users` через `user_id`
 
 ## Ключевые методы
 
@@ -16,7 +16,6 @@
 | `CreatePushSubscription(ctx, subscription)` | Вставляет запись подписки, возвращает ID |
 | `GetPushSubscriptionsByUserID(ctx, userID)` | Возвращает все подписки пользователя по его ID |
 | `DeletePushSubscription(ctx, id)` | Удаляет подписку по ID |
-| `DeletePushSubscriptionByEndpoint(ctx, endpoint)` | Удаляет подписку по endpoint URL |
 
 ## Зависимости
 
