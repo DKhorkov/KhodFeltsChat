@@ -105,6 +105,11 @@ tasks:
     dir: ../
     cmd: sudo docker-compose -f build/package/local/docker-compose.yml up -d
 
+  docker_stop_all:
+    desc: "Stop all docker containers."
+    dir: ../
+    cmd: sudo docker stop $(sudo docker ps -a -q)
+
   docker_stop:
     desc: "Stop docker containers of this project."
     aliases:
