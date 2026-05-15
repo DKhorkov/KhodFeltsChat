@@ -316,6 +316,13 @@ tasks:
     cmds:
       - sudo systemctl stop redis-server
 
+  generate_vapid_keys:
+    desc: "Generate VAPID key pair for Web Push notifications."
+    aliases:
+      - vapid
+    dir: ../
+    cmd: go run scripts/vapidgen.go
+
   generate_open_api_docs:
     aliases:
       - docs

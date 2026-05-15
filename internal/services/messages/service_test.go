@@ -923,3 +923,161 @@ func TestService_GetChatMessages(t *testing.T) {
 		})
 	}
 }
+
+func TestService_GetMessageByID(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		mockUOW                func(*mockuow.MockUnitOfWork)
+		mockChatsRepository    func(*mockrepositories.MockChatsRepository)
+		mockMessagesRepository func(*mockrepositories.MockMessagesRepository)
+	}
+
+	type args struct {
+		ctx       context.Context
+		userID    uint64
+		messageID uint64
+	}
+
+	expectedMessage := &domains.Message{
+		ID:     1,
+		ChatID: 100,
+		Text:   "Hello, world!",
+		Sender: domains.User{ID: 1, Username: "user1"},
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *domains.Message
+		wantErr bool
+		err     error
+	}{
+		{
+			name: "successfully get message by ID",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
+					mr.EXPECT().
+						GetMessageByID(gomock.Any(), uint64(1), uint64(1)).
+						Return(expectedMessage, nil)
+				},
+			},
+			args: args{
+				ctx:       context.Background(),
+				userID:    1,
+				messageID: 1,
+			},
+			want:    expectedMessage,
+			wantErr: false,
+		},
+		{
+			name: "repository error",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
+					mr.EXPECT().
+						GetMessageByID(gomock.Any(), uint64(1), uint64(999)).
+						Return(nil, errors.New("message not found"))
+				},
+			},
+			args: args{
+				ctx:       context.Background(),
+				userID:    1,
+				messageID: 999,
+			},
+			want:    nil,
+			wantErr: true,
+			err:     errors.New("message not found"),
+		},
+		{
+			name: "UoW error",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						Return(errors.New("unit of work error"))
+				},
+			},
+			args: args{
+				ctx:       context.Background(),
+				userID:    1,
+				messageID: 1,
+			},
+			want:    nil,
+			wantErr: true,
+			err:     errors.New("unit of work error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange
+			ctrl := gomock.NewController(t)
+
+			mockUOW := mockuow.NewMockUnitOfWork(ctrl)
+			mockChatsRepo := mockrepositories.NewMockChatsRepository(ctrl)
+			mockMessagesRepo := mockrepositories.NewMockMessagesRepository(ctrl)
+
+			if tt.fields.mockUOW != nil {
+				tt.fields.mockUOW(mockUOW)
+			}
+
+			if tt.fields.mockChatsRepository != nil {
+				tt.fields.mockChatsRepository(mockChatsRepo)
+			}
+
+			if tt.fields.mockMessagesRepository != nil {
+				tt.fields.mockMessagesRepository(mockMessagesRepo)
+			}
+
+			newChatsRepoFunc := func(_ pg.Transaction) interfaces.ChatsRepository {
+				return mockChatsRepo
+			}
+
+			newMessagesRepoFunc := func(_ pg.Transaction) interfaces.MessagesRepository {
+				return mockMessagesRepo
+			}
+
+			s := service.New(
+				mockUOW,
+				newChatsRepoFunc,
+				newMessagesRepoFunc,
+			)
+
+			// Act
+			got, err := s.GetMessageByID(tt.args.ctx, tt.args.userID, tt.args.messageID)
+
+			// Assert
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				if tt.err != nil {
+					assert.Contains(t, err.Error(), tt.err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}

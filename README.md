@@ -170,6 +170,22 @@ To print status of all migrations, use next command:
 task -d scripts migrations_status
 ```
 
+## Web Push Notifications
+
+To enable push notifications for offline users, generate a VAPID key pair:
+
+```shell
+task -d scripts vapid
+```
+
+Add the output to `.env` / `.env.local` / `.env.prod`:
+
+```env
+VAPID_PUBLIC_KEY="<generated public key>"
+VAPID_PRIVATE_KEY="<generated private key>"
+VAPID_CONTACT="mailto:admin@kfc.com"
+```
+
 ## Websockets
 
 To connect via websocket, use next command:

@@ -139,3 +139,29 @@ func (s *Service) GetChatMessages(
 
 	return messages, nil
 }
+
+func (s *Service) GetMessageByID(
+	ctx context.Context,
+	userID uint64,
+	messageID uint64,
+) (*domains.Message, error) {
+	var (
+		message *domains.Message
+		err     error
+	)
+
+	err = s.uow.Do(
+		ctx,
+		func(ctx context.Context, tx pg.Transaction) error {
+			messagesRepository := s.newMessagesRepositoryFunc(tx)
+			message, err = messagesRepository.GetMessageByID(ctx, userID, messageID)
+
+			return err
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return message, nil
+}

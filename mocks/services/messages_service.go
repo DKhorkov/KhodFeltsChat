@@ -56,6 +56,21 @@ func (mr *MockMessagesServiceMockRecorder) GetChatMessages(ctx, userID, chatID, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChatMessages", reflect.TypeOf((*MockMessagesService)(nil).GetChatMessages), ctx, userID, chatID, pagination)
 }
 
+// GetMessageByID mocks base method.
+func (m *MockMessagesService) GetMessageByID(ctx context.Context, userID, messageID uint64) (*domains.Message, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMessageByID", ctx, userID, messageID)
+	ret0, _ := ret[0].(*domains.Message)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMessageByID indicates an expected call of GetMessageByID.
+func (mr *MockMessagesServiceMockRecorder) GetMessageByID(ctx, userID, messageID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMessageByID", reflect.TypeOf((*MockMessagesService)(nil).GetMessageByID), ctx, userID, messageID)
+}
+
 // SaveMessage mocks base method.
 func (m *MockMessagesService) SaveMessage(ctx context.Context, message domains.Message) (*domains.Message, error) {
 	m.ctrl.T.Helper()

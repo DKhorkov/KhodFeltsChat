@@ -43,12 +43,16 @@
 | `SendVerifyEmailMessageDTO` | Email для отправки письма верификации |
 | `SendForgetPasswordMessageDTO` | Email для отправки письма восстановления пароля |
 
+### PushSubscription
+Push-подписка пользователя на Web Push уведомления: `ID`, `UserID`, `Endpoint`, `EncryptionKey`, `Auth`, `CreatedAt`.
+
 ## Notification DTO (для NATS-воркеров)
 
 | Тип | Поля |
 |---|---|
 | `VerifyEmailNotificationDTO` | `UserID uint64` |
 | `ForgetPasswordNotificationDTO` | `UserID uint64` |
+| `PushNotificationDTO` | `UserID uint64`, `MessageID uint64` |
 
 ## Зависимости
 

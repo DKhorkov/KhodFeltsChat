@@ -18,6 +18,7 @@ const (
 	VerifyEmailURL    = "/verify-email/{%s}"
 	ChatURL           = "/chat"
 	StaticURL         = "/static/"
+	ServiceWorkerURL  = "/sw.js"
 
 	StaticFilePath = "internal/controllers/http/handlers" + WebURL + StaticURL
 )
@@ -31,6 +32,13 @@ func SetupHandlers(webMux *mux.Router) {
 		fmt.Sprintf(VerifyEmailURL, verify_email.TokenRouteKey),
 		verify_email.Handler(),
 	)
+
+	// Service Worker (served from /web/ scope):
+	getMux.HandleFunc(ServiceWorkerURL, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		w.Header().Set("Service-Worker-Allowed", "/")
+		http.ServeFile(w, r, StaticFilePath+"sw.js")
+	})
 
 	// Статические файлы (CSS, JS):
 	webMux.PathPrefix(StaticURL).Handler(

@@ -53,6 +53,25 @@ function clearTheme() {
     updateThemeSwitchUI();
 }
 
+async function updatePushToggleUI(toggleEl) {
+    const label = toggleEl.querySelector('.profile-modal__push-status');
+    if (!label) return;
+
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        label.textContent = 'Не поддерживается';
+        return;
+    }
+
+    const registration = await navigator.serviceWorker.getRegistration('/web/sw.js');
+    if (!registration) {
+        label.textContent = 'Отключены';
+        return;
+    }
+
+    const subscription = await registration.pushManager.getSubscription();
+    label.textContent = subscription ? 'Включены' : 'Отключены';
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Обновляем UI переключателя темы (для случая, когда тема применена из localStorage в inline-скрипте)
     updateThemeSwitchUI();
@@ -288,6 +307,64 @@ document.addEventListener('DOMContentLoaded', async () => {
             } catch (err) {
                 showError('Ошибка сети: ' + err.message);
             }
+        });
+    }
+
+    // Push-уведомления
+    const pushToggle = document.getElementById('my-profile-toggle-push');
+    if (pushToggle) {
+        updatePushToggleUI(pushToggle);
+
+        pushToggle.addEventListener('click', async () => {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                showInfo('Push-уведомления не поддерживаются вашим браузером');
+                return;
+            }
+
+            const registration = await navigator.serviceWorker.getRegistration('/web/sw.js');
+            if (!registration) {
+                showInfo('Service Worker не зарегистрирован. Обновите страницу.');
+                return;
+            }
+
+            const subscription = await registration.pushManager.getSubscription();
+
+            if (subscription) {
+                // Отключаем
+                const subId = localStorage.getItem('pushSubscriptionId');
+                await subscription.unsubscribe();
+
+                if (subId) {
+                    try {
+                        await fetchWithAuth('/api/push/subscribe/' + subId, { method: 'DELETE' });
+                    } catch (err) {
+                        console.log('Unsubscribe error:', err);
+                    }
+
+                    localStorage.removeItem('pushSubscriptionId');
+                }
+
+                showInfo('Push-уведомления отключены');
+            } else {
+                // Включаем
+                if (Notification.permission === 'denied') {
+                    showInfo('Уведомления заблокированы в настройках браузера');
+                    updatePushToggleUI(pushToggle);
+                    return;
+                }
+
+                try {
+                    if (typeof subscribeToPush === 'function') {
+                        await subscribeToPush(registration);
+                    }
+
+                    showInfo('Push-уведомления включены');
+                } catch (err) {
+                    showError('Не удалось включить уведомления: ' + err.message);
+                }
+            }
+
+            updatePushToggleUI(pushToggle);
         });
     }
 

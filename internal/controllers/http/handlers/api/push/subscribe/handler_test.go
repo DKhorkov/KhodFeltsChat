@@ -120,7 +120,9 @@ func TestHandler(t *testing.T) {
 
 		userID := uint64(123)
 
-		req := httptest.NewRequest(http.MethodPost, "/api/push/subscribe", bytes.NewReader([]byte("invalid json")))
+		req := httptest.NewRequest(
+			http.MethodPost, "/api/push/subscribe", bytes.NewReader([]byte("invalid json")),
+		)
 		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 		req = req.WithContext(ctx)
 		rr := httptest.NewRecorder()

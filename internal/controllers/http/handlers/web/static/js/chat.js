@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await loadChats();
     connectWebSocket();
+    initPushNotifications();
 
     setupSendMessage();
     setupEmojiPicker();
@@ -921,4 +922,92 @@ function showToast(senderName, text, chatId) {
     setTimeout(() => {
         if (toast.parentNode) toast.remove();
     }, 3000);
+}
+
+// ═══════════════════════════════════════
+// Web Push уведомления
+// ═══════════════════════════════════════
+async function initPushNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.register('/web/sw.js');
+
+        const existingSubscription = await registration.pushManager.getSubscription();
+        if (existingSubscription) {
+            await sendSubscriptionToServer(existingSubscription);
+            return;
+        }
+
+        if (Notification.permission === 'denied') {
+            return;
+        }
+
+        if (Notification.permission === 'default') {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                return;
+            }
+        }
+
+        await subscribeToPush(registration);
+    } catch (err) {
+        console.log('Push init error:', err);
+    }
+}
+
+async function subscribeToPush(registration) {
+    try {
+        const resp = await fetchWithAuth('/api/push/vapid-key');
+        if (!resp.ok) return;
+
+        const { publicKey } = await resp.json();
+
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey),
+        });
+
+        await sendSubscriptionToServer(subscription);
+    } catch (err) {
+        console.log('Push subscribe error:', err);
+    }
+}
+
+async function sendSubscriptionToServer(subscription) {
+    try {
+        const resp = await fetchWithAuth('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                endpoint: subscription.endpoint,
+                keys: {
+                    encryptionKey: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
+                    auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
+                },
+            }),
+        });
+
+        if (resp.ok) {
+            const data = await resp.json();
+            localStorage.setItem('pushSubscriptionId', data.id);
+        }
+    } catch (err) {
+        console.log('Send subscription error:', err);
+    }
+}
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+
+    return outputArray;
 }

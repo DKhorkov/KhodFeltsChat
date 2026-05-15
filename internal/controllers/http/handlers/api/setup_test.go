@@ -24,13 +24,17 @@ func setupAPIRouter(t *testing.T) *mux.Router {
 	api.SetupHandlers(
 		apiMux,
 		config.CookiesConfig{},
+		config.NATSConfig{},
 		mockusecases.NewMockUsersUseCases(ctrl),
 		mockusecases.NewMockAuthUseCases(ctrl),
 		mockusecases.NewMockChatsUseCases(ctrl),
 		mockusecases.NewMockMessagesUseCases(ctrl),
 		mockusecases.NewMockSettingsUseCases(ctrl),
+		mockusecases.NewMockPushSubscriptionsUseCases(ctrl),
 		mocks.NewMockLogger(ctrl),
 		mockupgrader.NewMockUpgrader(ctrl),
+		nil,
+		"",
 	)
 
 	return apiMux
@@ -63,6 +67,11 @@ func TestSetupHandlers_RoutesRegistered(t *testing.T) {
 		{"PUT /users/me", http.MethodPut, "/users/me"},
 		{"PUT /sessions", http.MethodPut, "/sessions"},
 		{"DELETE /sessions", http.MethodDelete, "/sessions"},
+		{"GET /users/me/settings", http.MethodGet, "/users/me/settings"},
+		{"PUT /users/me/settings", http.MethodPut, "/users/me/settings"},
+		{"GET /push/vapid-key", http.MethodGet, "/push/vapid-key"},
+		{"POST /push/subscribe", http.MethodPost, "/push/subscribe"},
+		{"DELETE /push/subscribe/1", http.MethodDelete, "/push/subscribe/1"},
 	}
 
 	for _, tt := range tests {

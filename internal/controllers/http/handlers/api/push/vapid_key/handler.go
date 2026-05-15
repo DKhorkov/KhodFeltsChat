@@ -20,7 +20,7 @@ import (
 
 // Handler returns the VAPID public key.
 func Handler(vapidPublicKey string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set(common.ContentTypeHeaderName, common.ApplicationJSONContentType)
 		w.WriteHeader(http.StatusOK)
 

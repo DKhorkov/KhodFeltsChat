@@ -23,6 +23,7 @@ middleware, регистрирует обработчики и управляе�
 - `GET /api/users/email/verify/{token}` — подтверждение email.
 - `POST /api/users/password/forget/{token}`, `POST /api/users/email/verify`,
   `POST /api/users/password/forget` — сброс/восстановление пароля.
+- `GET /api/push/vapid-key` — публичный VAPID-ключ для регистрации push-подписок.
 
 ## Graceful Shutdown
 

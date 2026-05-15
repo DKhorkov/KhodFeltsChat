@@ -14,12 +14,14 @@ import (
 	chatsrepository "github.com/DKhorkov/kfc/internal/repositories/chats"
 	emailsrepository "github.com/DKhorkov/kfc/internal/repositories/emails"
 	messagesrepository "github.com/DKhorkov/kfc/internal/repositories/messages"
+	pushsubscriptionsrepository "github.com/DKhorkov/kfc/internal/repositories/push_subscriptions"
 	settingsrepository "github.com/DKhorkov/kfc/internal/repositories/settings"
 	usersrepository "github.com/DKhorkov/kfc/internal/repositories/users"
 	authservice "github.com/DKhorkov/kfc/internal/services/auth"
 	chatsservice "github.com/DKhorkov/kfc/internal/services/chats"
 	messagesservice "github.com/DKhorkov/kfc/internal/services/messages"
 	notificationsservice "github.com/DKhorkov/kfc/internal/services/notifications"
+	pushsubscriptionsservice "github.com/DKhorkov/kfc/internal/services/push_subscriptions"
 	settingsservice "github.com/DKhorkov/kfc/internal/services/settings"
 	usersservice "github.com/DKhorkov/kfc/internal/services/users"
 	"github.com/DKhorkov/kfc/internal/uow"
@@ -27,9 +29,11 @@ import (
 	chatsusecases "github.com/DKhorkov/kfc/internal/usecases/chats"
 	messagesusecases "github.com/DKhorkov/kfc/internal/usecases/messages"
 	notificaionsusecases "github.com/DKhorkov/kfc/internal/usecases/notifications"
+	pushsubscriptionsusecases "github.com/DKhorkov/kfc/internal/usecases/push_subscriptions"
 	settingsusecases "github.com/DKhorkov/kfc/internal/usecases/settings"
 	usersusecases "github.com/DKhorkov/kfc/internal/usecases/users"
 	forgetpasswordmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/forget_password"
+	pushnotificationmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/push_notification"
 	messagehandlerbuildertracingdecorator "github.com/DKhorkov/kfc/internal/workers/handlers/builders/tracing_decorator"
 	verifyemailmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/verify_email"
 	"github.com/DKhorkov/libs/cache"
@@ -287,6 +291,31 @@ func main() {
 		),
 	)
 
+	pushSubscriptionsService := pushsubscriptionsservice.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.Services.PushSubscriptions,
+		pushsubscriptionsservice.New(
+			unitOfWork,
+			func(tx postgresql.Transaction) interfaces.PushSubscriptionsRepository {
+				return pushsubscriptionsrepository.NewTraceDecorator(
+					traceProvider,
+					cfg.Tracing.Spans.Repositories.PushSubscriptions,
+					pushsubscriptionsrepository.New(tx),
+				)
+			},
+		),
+	)
+
+	pushSubscriptionsUseCases := pushsubscriptionsusecases.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.UseCases.PushSubscriptions,
+		pushsubscriptionsusecases.New(
+			pushSubscriptionsService,
+			cfg.WebPush,
+			logger,
+		),
+	)
+
 	verifyEmailWorker, err := customnats.NewConsumer(
 		cfg.NATS.ClientURL,
 		cfg.NATS.Subjects.VerifyEmail,
@@ -363,6 +392,45 @@ func main() {
 		}
 	}()
 
+	pushNotificationWorker, err := customnats.NewConsumer(
+		cfg.NATS.ClientURL,
+		cfg.NATS.Subjects.PushNotification,
+		customnats.WithGoroutinesPoolSize(cfg.NATS.GoroutinesPoolSize),
+		customnats.WithMessageChannelBufferSize(cfg.NATS.MessageChannelBufferSize),
+		customnats.WithNatsOptions(nats.Name(cfg.NATS.Workers.PushNotification.Name)),
+		customnats.WithMessageHandler(
+			messagehandlerbuildertracingdecorator.New(
+				traceProvider,
+				cfg.Tracing.Spans.Handlers.PushNotification,
+				pushnotificationmessagehandlerbuilder.New(
+					pushSubscriptionsUseCases,
+					messagesUseCases,
+					logger,
+				),
+			).MessageHandler(context.Background()),
+		),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	if err = pushNotificationWorker.Run(); err != nil {
+		panic(err)
+	}
+
+	defer func() {
+		if err = pushNotificationWorker.Stop(); err != nil {
+			logging.LogError(
+				logger,
+				fmt.Sprintf(
+					"Error shutting down %q worker",
+					cfg.NATS.Workers.PushNotification.Name,
+				),
+				err,
+			)
+		}
+	}()
+
 	upgrader := &websocket.Upgrader{
 		HandshakeTimeout: cfg.Websocket.HandshakeTimeout,
 	}
@@ -372,14 +440,17 @@ func main() {
 		cfg.CORS,
 		cfg.Docs,
 		cfg.Cookies,
+		cfg.NATS,
 		usersUseCases,
 		authUseCases,
 		chatsUseCases,
 		messagesUseCases,
 		settingsUseCases,
+		pushSubscriptionsUseCases,
 		logger,
 		traceProvider,
 		upgrader,
+		natsPublisher,
 		cfg.Tracing.Spans.Root,
 		cfg.Security,
 		[]string{ // Чувствительная информация, которая не должна быть заллогирована
@@ -388,6 +459,7 @@ func main() {
 			"oldPassword",
 			"newPassword",
 		},
+		cfg.WebPush.VAPIDPublicKey,
 	)
 	if err != nil {
 		panic(err)

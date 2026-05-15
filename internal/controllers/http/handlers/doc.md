@@ -10,12 +10,13 @@ metrics) и делегирует API-маршруты в подпакет `api/`
 
 ```
 handlers/
-├── setup.go        — оркестратор: subrouter /api, docs, metrics, default, not_allowed
+├── setup.go        — оркестратор: subrouter /api, /web, docs, metrics, default, not_allowed
 ├── common/         — shared утилиты (pagination, route keys, headers)
-├── default/        — 404 handler (пере��аправляет на /docs)
+├── default/        — 404 handler (перенаправляет на /docs)
 ├── not_allowed/    — 405 handler
 ├── docs/           — Swagger UI (статические файлы)
-└── api/            — API-обработчики (см. api/doc.md)
+├── api/            — API-обработчики (см. api/doc.md)
+└── web/            — веб-интерфейс: страницы, Service Worker (/sw.js), статика (CSS/JS)
 ```
 
 ## Shared-пакеты

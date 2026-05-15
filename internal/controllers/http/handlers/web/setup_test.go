@@ -36,6 +36,7 @@ func TestSetupHandlers_RoutesRegistered(t *testing.T) {
 		{"GET /forget-password", http.MethodGet, "/forget-password"},
 		{"GET /chat", http.MethodGet, "/chat"},
 		{"GET /verify-email/test-token", http.MethodGet, "/verify-email/test-token"},
+		{"GET /sw.js", http.MethodGet, "/sw.js"},
 	}
 
 	for _, tt := range tests {

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	webpush "github.com/SherClockHolmes/webpush-go"
+	"github.com/SherClockHolmes/webpush-go"
 
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
@@ -83,7 +83,11 @@ func (u *UseCases) SendPushNotification(
 		return fmt.Errorf("send push notification: %w", err)
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		if err = resp.Body.Close(); err != nil {
+			u.logger.Error("failed to close push notification response body", err)
+		}
+	}()
 
 	if resp.StatusCode == http.StatusGone || resp.StatusCode == http.StatusNotFound {
 		u.logger.Info(

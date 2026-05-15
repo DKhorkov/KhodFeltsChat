@@ -59,6 +59,7 @@ type MessagesService interface {
 		chatID uint64,
 		pagination *domains.Pagination,
 	) ([]domains.Message, error)
+	GetMessageByID(ctx context.Context, userID uint64, messageID uint64) (*domains.Message, error)
 }
 
 //go:generate mockgen -source=services.go -destination=../../mocks/services/notifications_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,AuthService,SettingsService,PushSubscriptionsService
