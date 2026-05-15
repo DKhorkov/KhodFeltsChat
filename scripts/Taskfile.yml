@@ -107,7 +107,6 @@ tasks:
 
   docker_stop_all:
     desc: "Stop all docker containers."
-    dir: ../
     cmd: sudo docker stop $(sudo docker ps -a -q)
 
   docker_stop:
