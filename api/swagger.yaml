@@ -69,6 +69,16 @@ definitions:
         title: Chat represents a chat record, where users can send a message.
         type: object
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
+    CreateWebPushSubscriptionResponse:
+        properties:
+            id:
+                description: ID of the created subscription
+                format: uint64
+                type: integer
+                x-go-name: ID
+        title: CreateWebPushSubscriptionResponse represents the response for a created push subscription.
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
     EmailInput:
         properties:
             email:
@@ -229,6 +239,31 @@ definitions:
             - createdAt
             - updatedAt
         title: User represents a user's contact record.
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
+    VAPIDKeyResponse:
+        properties:
+            publicKey:
+                description: VAPID public key
+                type: string
+                x-go-name: PublicKey
+        title: VAPIDKeyResponse represents the VAPID public key response.
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
+    WebPushSubscriptionKeys:
+        properties:
+            auth:
+                description: Auth secret
+                type: string
+                x-go-name: Auth
+            encryptionKey:
+                description: Encryption key (P-256 ECDH)
+                type: string
+                x-go-name: EncryptionKey
+        required:
+            - encryptionKey
+            - auth
+        title: WebPushSubscriptionKeys represents the browser push subscription keys.
         type: object
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
 info:
@@ -686,7 +721,7 @@ paths:
                     - '[]'
             summary: GetSettings
             tags:
-                - settings
+                - users
         put:
             description: Updates settings of the current authorized User.
             operationId: UpdateSettings
@@ -715,7 +750,7 @@ paths:
                     - '[]'
             summary: UpdateSettings
             tags:
-                - settings
+                - users
     /api/users/password/change:
         post:
             description: Changes old password to new password of current user.
@@ -815,6 +850,77 @@ paths:
             summary: ForgetPassword
             tags:
                 - users
+    /api/web-push/subscribe:
+        post:
+            description: Creates a new push subscription for the current authorized User.
+            operationId: CreateWebPushSubscription
+            parameters:
+                - description: Push subscription data
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    properties:
+                        endpoint:
+                            description: Push endpoint URL
+                            type: string
+                            x-go-name: Endpoint
+                        keys:
+                            $ref: '#/definitions/WebPushSubscriptionKeys'
+                    required:
+                        - endpoint
+                        - keys
+                    type: object
+            responses:
+                "201":
+                    description: CreateWebPushSubscriptionResponse
+                    schema:
+                        $ref: '#/definitions/CreateWebPushSubscriptionResponse'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: CreateWebPushSubscription
+            tags:
+                - web-pushes
+    /api/web-push/subscriptions/{id}:
+        delete:
+            description: Deletes a push subscription by ID for the current authorized User.
+            operationId: DeleteWebPushSubscription
+            responses:
+                "204":
+                    description: ""
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: DeleteWebPushSubscription
+            tags:
+                - web-pushes
+    /api/web-push/vapid-key:
+        get:
+            description: Returns the VAPID public key for push subscription registration.
+            operationId: GetVAPIDKey
+            responses:
+                "200":
+                    description: VAPIDKeyResponse
+                    schema:
+                        $ref: '#/definitions/VAPIDKeyResponse'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: GetVAPIDKey
+            tags:
+                - web-pushes
     /api/ws:
         get:
             description: Creates websocket connection for current user.
@@ -987,8 +1093,10 @@ tags:
   description: "Управление сессиями (авторизация)"
 - name: chats
   description: "Управление чатами"
-- name: websockets
-  description: "Веб-сокеты"
+- name: web
+  description: "WEB странички"
+- name: web-pushes
+  description: "WEB пуши для уведомления пользователей"
 
 securityDefinitions:
   cookieAuth:
