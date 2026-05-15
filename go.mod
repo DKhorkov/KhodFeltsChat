@@ -7,6 +7,7 @@ toolchain go1.24.11
 require (
 	github.com/DKhorkov/libs v1.15.3
 	github.com/Masterminds/squirrel v1.5.4
+	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/go-openapi/runtime v0.29.2
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0

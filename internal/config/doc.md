@@ -29,6 +29,7 @@ type Config struct {
     Tracing     TracingConfig     // Jaeger URL + SpanConfig для каждого слоя
     Websocket   WebsocketConfig   // HandshakeTimeout
     NATS        NATSConfig        // URL, subjects, worker/publisher names, pool size
+    WebPush     WebPushConfig     // VAPID ключи для Web Push уведомлений
 }
 ```
 
@@ -46,6 +47,7 @@ type Config struct {
 | `NATSConfig` | `NATS_HOST`, `NATS_CLIENT_PORT`, `NATS_*_SUBJECT`, `NATS_*_WORKER_NAME` |
 | `TracingConfig` | `TRACING_SERVICE_NAME`, `TRACING_JAEGER_HOST`, `TRACING_API_TRACES_PORT` |
 | `WebsocketConfig` | `WEBSOCKET_HANDSHAKE_TIMEOUT` |
+| `WebPushConfig` | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT` |
 
 Путь к файлу логов формируется как `logs/<дата>.log` с использованием `common.Timezone` (Europe/Moscow).
 

@@ -39,14 +39,14 @@ func (s *Service) CreatePushSubscription(
 		func(ctx context.Context, tx pg.Transaction) error {
 			repo := s.newPushSubscriptionsRepositoryFunc(tx)
 
-			id, createErr := repo.CreatePushSubscription(ctx, subscription)
-			if createErr != nil {
-				return createErr
+			id, err := repo.CreatePushSubscription(ctx, subscription)
+			if err != nil {
+				return err
 			}
 
-			subscriptions, getErr := repo.GetPushSubscriptionsByUserID(ctx, subscription.UserID)
-			if getErr != nil {
-				return getErr
+			subscriptions, err := repo.GetPushSubscriptionsByUserID(ctx, subscription.UserID)
+			if err != nil {
+				return err
 			}
 
 			for _, sub := range subscriptions {

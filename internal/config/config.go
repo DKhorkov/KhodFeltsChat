@@ -158,6 +158,11 @@ func New() Config {
 				),
 			},
 		},
+		WebPush: WebPushConfig{
+			VAPIDPublicKey:  loadenv.GetEnv("VAPID_PUBLIC_KEY", ""),
+			VAPIDPrivateKey: loadenv.GetEnv("VAPID_PRIVATE_KEY", ""),
+			VAPIDContact:    loadenv.GetEnv("VAPID_CONTACT", "mailto:admin@example.com"),
+		},
 		NATS: NATSConfig{
 			ClientURL: fmt.Sprintf(
 				"nats://%s:%d",
@@ -1099,6 +1104,12 @@ type NATSWorker struct {
 	Name string
 }
 
+type WebPushConfig struct {
+	VAPIDPublicKey  string
+	VAPIDPrivateKey string
+	VAPIDContact    string
+}
+
 type Config struct {
 	HTTP        HTTPConfig
 	Security    security.Config
@@ -1115,4 +1126,5 @@ type Config struct {
 	Tracing     TracingConfig
 	Websocket   WebsocketConfig
 	NATS        NATSConfig
+	WebPush     WebPushConfig
 }
