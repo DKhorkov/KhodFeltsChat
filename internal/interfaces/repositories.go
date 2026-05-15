@@ -7,13 +7,13 @@ import (
 	"github.com/DKhorkov/kfc/internal/domains"
 )
 
-//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/emails_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,UsersRepository,MessagesRepository,ChatsRepository,SettingsRepository
+//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/emails_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,UsersRepository,MessagesRepository,ChatsRepository,SettingsRepository,PushSubscriptionsRepository
 type EmailsRepository interface {
 	SendVerifyEmailMessage(ctx context.Context, user domains.User) error
 	SendForgetPasswordMessage(ctx context.Context, user domains.User) error
 }
 
-//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/users_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,EmailsRepository,MessagesRepository,ChatsRepository,SettingsRepository
+//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/users_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,EmailsRepository,MessagesRepository,ChatsRepository,SettingsRepository,PushSubscriptionsRepository
 type UsersRepository interface {
 	GetUserByID(ctx context.Context, id uint64) (*domains.User, error)
 	GetUsers(
@@ -26,7 +26,7 @@ type UsersRepository interface {
 	UpdateUser(ctx context.Context, userProfileData domains.UpdateUserDTO) error
 }
 
-//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/auth_repository.go -package=mockrepositories -exclude_interfaces=UsersRepository,EmailsRepository,MessagesRepository,ChatsRepository,SettingsRepository
+//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/auth_repository.go -package=mockrepositories -exclude_interfaces=UsersRepository,EmailsRepository,MessagesRepository,ChatsRepository,SettingsRepository,PushSubscriptionsRepository
 type AuthRepository interface {
 	RegisterUser(ctx context.Context, userData domains.RegisterDTO) (userID uint64, err error)
 	CreateRefreshToken(
@@ -41,7 +41,7 @@ type AuthRepository interface {
 	ChangePassword(ctx context.Context, userID uint64, newPassword string) error
 }
 
-//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/chats_repository.go -package=mockrepositories -exclude_interfaces=UsersRepository,AuthRepository,MessagesRepository,EmailsRepository,SettingsRepository
+//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/chats_repository.go -package=mockrepositories -exclude_interfaces=UsersRepository,AuthRepository,MessagesRepository,EmailsRepository,SettingsRepository,PushSubscriptionsRepository
 type ChatsRepository interface {
 	GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error)
 	GetUserChats(
@@ -60,7 +60,7 @@ type ChatsRepository interface {
 	PrivateChatExists(ctx context.Context, members []domains.User) (bool, error)
 }
 
-//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/messages_service.go -package=mockrepositories -exclude_interfaces=UsersRepository,AuthRepository,ChatsRepository,EmailsRepository,SettingsRepository
+//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/messages_service.go -package=mockrepositories -exclude_interfaces=UsersRepository,AuthRepository,ChatsRepository,EmailsRepository,SettingsRepository,PushSubscriptionsRepository
 type MessagesRepository interface {
 	SaveMessage(ctx context.Context, message domains.Message) (uint64, error)
 	GetChatMessages(
@@ -78,9 +78,17 @@ type MessagesRepository interface {
 	) error
 }
 
-//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/settings_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,UsersRepository,EmailsRepository,MessagesRepository,ChatsRepository
+//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/settings_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,UsersRepository,EmailsRepository,MessagesRepository,ChatsRepository,PushSubscriptionsRepository
 type SettingsRepository interface {
 	CreateSettings(ctx context.Context, settings domains.Settings) error
 	GetSettingsByUserID(ctx context.Context, userID uint64) (*domains.Settings, error)
 	UpdateSettings(ctx context.Context, settings domains.Settings) error
+}
+
+//go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/push_subscriptions_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,UsersRepository,EmailsRepository,MessagesRepository,ChatsRepository,SettingsRepository
+type PushSubscriptionsRepository interface {
+	CreatePushSubscription(ctx context.Context, subscription domains.PushSubscription) (uint64, error)
+	GetPushSubscriptionsByUserID(ctx context.Context, userID uint64) ([]domains.PushSubscription, error)
+	DeletePushSubscription(ctx context.Context, id uint64) error
+	DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint string) error
 }
