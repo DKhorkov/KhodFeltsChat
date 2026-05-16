@@ -12,7 +12,7 @@ import (
 //
 // GetVAPIDKey
 //
-// Returns the VAPID public key for push subscription registration.
+// Returns the VAPID public key for web-push subscription registration.
 //
 // Responses:
 //	200: VAPIDKeyResponse

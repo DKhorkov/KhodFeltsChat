@@ -17,7 +17,7 @@ import (
 //
 // CreateWebPushSubscription
 //
-// Creates a new push subscription for the current authorized User.
+// Creates a new web-push subscription for the current authorized User.
 //
 // Security:
 // - cookieAuth: []
@@ -28,7 +28,7 @@ import (
 //	401: Unauthorized
 //	500: InternalServerError
 
-// Handler creates a new push subscription for the current authorized User.
+// Handler creates a new web-push subscription for the current authorized User.
 func Handler(u interfaces.WebPushSubscriptionsUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := contextlib.ValueFromContext[uint64](

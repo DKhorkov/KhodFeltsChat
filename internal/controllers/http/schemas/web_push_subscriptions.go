@@ -14,14 +14,14 @@ type WebPushSubscriptionKeys struct {
 // CreateWebPushSubscriptionRequest body
 // swagger:parameters CreateWebPushSubscription
 type CreateWebPushSubscriptionRequest struct {
-	// Push subscription data
+	// WebPush subscription data
 	// required: true
 	// in: body
 	Body struct {
-		// Push endpoint URL
+		// WebPush endpoint URL
 		// required: true
 		Endpoint string `json:"endpoint"`
-		// Push subscription keys
+		// WebPush subscription keys
 		// required: true
 		Keys WebPushSubscriptionKeys `json:"keys"`
 	}

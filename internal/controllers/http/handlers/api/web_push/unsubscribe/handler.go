@@ -15,7 +15,7 @@ import (
 //
 // DeleteWebPushSubscription
 //
-// Deletes a push subscription by ID for the current authorized User.
+// Deletes a web-push subscription by ID for the current authorized User.
 //
 // Security:
 // - cookieAuth: []
@@ -26,7 +26,7 @@ import (
 //	401: Unauthorized
 //	500: InternalServerError
 
-// Handler deletes a push subscription by ID.
+// Handler deletes a web-push subscription by ID.
 func Handler(u interfaces.WebPushSubscriptionsUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, err := contextlib.ValueFromContext[uint64](
