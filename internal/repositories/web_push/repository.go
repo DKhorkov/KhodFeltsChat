@@ -56,6 +56,8 @@ func (repo *Repository) SendNotification(
 			VAPIDPublicKey:  repo.webPushConfig.VAPIDPublicKey,
 			VAPIDPrivateKey: repo.webPushConfig.VAPIDPrivateKey,
 			Subscriber:      repo.webPushConfig.VAPIDContact,
+			TTL:             repo.webPushConfig.TTL,
+			Urgency:         webpush.UrgencyHigh, // Пробуждает устройство на iOS
 		},
 	)
 	if err != nil {
