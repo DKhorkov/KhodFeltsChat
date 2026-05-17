@@ -309,6 +309,9 @@ body {
    ═══════════════════════════════════════ */
 .profile-modal {
     width: 420px;
+    height: 80vh;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 .profile-modal__header {
