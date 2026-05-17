@@ -13,7 +13,6 @@ self.addEventListener('push', (event) => {
     const options = {
         body: data.body || '',
         icon: '/web/static/assets/icon.png',
-        badge: '/web/static/assets/icon.png',
         timestamp: data.timestamp || Date.now(),
         data: {
             chatId: data.chatId,
@@ -22,12 +21,18 @@ self.addEventListener('push', (event) => {
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-            const hasFocusedClient = windowClients.some(
-                (client) => client.focused && client.url.includes('/web/chat')
-            );
+            // На десктопе не показываем уведомление, если чат в фокусе.
+            // На iOS подавлять нельзя — iOS требует showNotification на каждый push,
+            // иначе молча отбрасывает уведомление и может отозвать разрешение.
+            const isIOS = /iP(hone|ad|od)/.test(self.navigator.userAgent);
+            if (!isIOS) {
+                const hasFocusedClient = windowClients.some(
+                    (client) => client.focused && client.url.includes('/web/chat')
+                );
 
-            if (hasFocusedClient) {
-                return;
+                if (hasFocusedClient) {
+                    return;
+                }
             }
 
             return self.registration.showNotification(title, options);

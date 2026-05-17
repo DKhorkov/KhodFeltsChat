@@ -122,14 +122,23 @@ async function subscribeToWebPush(registration) {
     await sendWebPushSubscriptionToServer(subscription);
 }
 
+function arrayBufferToBase64Url(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 async function sendWebPushSubscriptionToServer(subscription) {
     const resp = await fetchWithAuth('/api/web-push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             endpoint: subscription.endpoint,
-            encryptionKey: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
-            auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
+            encryptionKey: arrayBufferToBase64Url(subscription.getKey('p256dh')),
+            auth: arrayBufferToBase64Url(subscription.getKey('auth')),
         }),
     });
 
@@ -139,8 +148,22 @@ async function sendWebPushSubscriptionToServer(subscription) {
     }
 }
 
+function isIOSSafari() {
+    return /iP(hone|ad|od)/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function isStandaloneMode() {
+    return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}
+
 async function ensureBrowserWebPushSubscription() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+
+    // На iOS web-push работает только из Home Screen (PWA)
+    if (isIOSSafari() && !isStandaloneMode()) {
+        showInfo('Для получения уведомлений на iOS добавьте сайт на экран «Домой» через кнопку «Поделиться»');
+        return false;
+    }
 
     if (Notification.permission === 'denied') return false;
 
