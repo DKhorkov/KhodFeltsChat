@@ -185,6 +185,11 @@ definitions:
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
     Settings:
         properties:
+            emailConsents:
+                description: Email notification consents bitmask.
+                format: int64
+                type: integer
+                x-go-name: EmailConsents
             theme:
                 description: Theme of the user interface. 0 = Light, 1 = Dark.
                 format: int64
@@ -192,8 +197,15 @@ definitions:
                 minimum: 0
                 type: integer
                 x-go-name: Theme
+            webPushConsents:
+                description: Web push notification consents bitmask.
+                format: int64
+                type: integer
+                x-go-name: WebPushConsents
         required:
             - theme
+            - emailConsents
+            - webPushConsents
         title: Settings represents user settings.
         type: object
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
@@ -248,22 +260,6 @@ definitions:
                 type: string
                 x-go-name: PublicKey
         title: VAPIDKeyResponse represents the VAPID public key response.
-        type: object
-        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
-    WebPushSubscriptionKeys:
-        properties:
-            auth:
-                description: Auth secret
-                type: string
-                x-go-name: Auth
-            encryptionKey:
-                description: Encryption key (P-256 ECDH)
-                type: string
-                x-go-name: EncryptionKey
-        required:
-            - encryptionKey
-            - auth
-        title: WebPushSubscriptionKeys represents the browser push subscription keys.
         type: object
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
 info:
@@ -852,24 +848,31 @@ paths:
                 - users
     /api/web-push/subscribe:
         post:
-            description: Creates a new push subscription for the current authorized User.
+            description: Creates a new web-push subscription for the current authorized User.
             operationId: CreateWebPushSubscription
             parameters:
-                - description: Push subscription data
+                - description: WebPush subscription data
                   in: body
                   name: Body
                   required: true
                   schema:
                     properties:
+                        auth:
+                            description: Auth secret
+                            type: string
+                            x-go-name: Auth
+                        encryptionKey:
+                            description: Encryption key (P-256 ECDH)
+                            type: string
+                            x-go-name: EncryptionKey
                         endpoint:
-                            description: Push endpoint URL
+                            description: WebPush endpoint URL
                             type: string
                             x-go-name: Endpoint
-                        keys:
-                            $ref: '#/definitions/WebPushSubscriptionKeys'
                     required:
                         - endpoint
-                        - keys
+                        - encryptionKey
+                        - auth
                     type: object
             responses:
                 "201":
@@ -890,7 +893,7 @@ paths:
                 - web-pushes
     /api/web-push/subscriptions/{id}:
         delete:
-            description: Deletes a push subscription by ID for the current authorized User.
+            description: Deletes a web-push subscription by ID for the current authorized User.
             operationId: DeleteWebPushSubscription
             responses:
                 "204":
@@ -909,7 +912,7 @@ paths:
                 - web-pushes
     /api/web-push/vapid-key:
         get:
-            description: Returns the VAPID public key for push subscription registration.
+            description: Returns the VAPID public key for web-push subscription registration.
             operationId: GetVAPIDKey
             responses:
                 "200":
@@ -1093,6 +1096,8 @@ tags:
   description: "Управление сессиями (авторизация)"
 - name: chats
   description: "Управление чатами"
+- name: websockets
+  description: "Веб-сокеты"
 - name: web
   description: "WEB странички"
 - name: web-pushes
