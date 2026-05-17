@@ -10,7 +10,7 @@ const ERROR_DEFAULT = 'Что-то пошло не так...';
 
 const errorMapping = [
     // Auth
-    { key: 'new password can not be equal to old password', message: 'Старый пароль не может быть использован в качестве нового пароля' },
+    { key: 'new password equal to old password', message: 'Старый пароль не может быть использован в качестве нового пароля' },
     { key: 'access token does not belong to refresh token', message: 'Ошибка авторизации' },
     { key: 'invalid jwt token: invalid forget_password_token', message: 'Некорректный код для сброса пароля' },
     { key: 'email already confirmed', message: 'Эта почта уже подтверждена' },
@@ -33,6 +33,12 @@ const errorMapping = [
 
     // Users
     { key: 'duplicate key value violates unique constraint "users_username_key"', message: 'Пользователь с таким логином уже существует' },
+
+    // Settings
+    { key: 'settings not found', message: 'Не удалось получить настройки' },
+
+    // Web Push
+    { key: 'web-push subscription not found', message: 'Подписка на уведомления в браузере не найдена' },
 
     // Chats
     { key: 'user is not a chat member', message: 'У вас нет доступа к этому чату' },
