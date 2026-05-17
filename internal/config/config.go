@@ -162,6 +162,7 @@ func New() Config {
 			VAPIDPublicKey:  loadenv.GetEnv("VAPID_PUBLIC_KEY", ""),
 			VAPIDPrivateKey: loadenv.GetEnv("VAPID_PRIVATE_KEY", ""),
 			VAPIDContact:    loadenv.GetEnv("VAPID_CONTACT", "mailto:admin@example.com"),
+			TTL:             loadenv.GetEnvAsInt("WEB_PUSH_TTL", 86400),
 		},
 		NATS: NATSConfig{
 			ClientURL: fmt.Sprintf(
@@ -1261,6 +1262,7 @@ type WebPushConfig struct {
 	VAPIDPublicKey  string
 	VAPIDPrivateKey string
 	VAPIDContact    string
+	TTL             int
 }
 
 type Config struct {
