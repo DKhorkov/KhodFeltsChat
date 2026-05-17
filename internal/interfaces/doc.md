@@ -12,24 +12,25 @@
 ### Repositories
 - **UsersRepository** — CRUD пользователей
 - **AuthRepository** — регистрация, токены, verify email, change password
-- **ChatsRepository** — чаты, участники, is_read статусы
+- **ChatsRepository** — чаты, участники, is_read статусы, `GetChatByID`
 - **MessagesRepository** — сообщения, статусы прочтения
-- **EmailsRepository** — SMTP отправка
+- **EmailsRepository** — SMTP отправка: `SendVerifyEmailMessage(user)`, `SendForgetPasswordMessage(user)`, `SendNewMessageEmail(recipient, message, chat)` — принимает доменные объекты
 - **SettingsRepository** — настройки пользователя (CRUD)
-- **WebPushSubscriptionsRepository** — подписки на push-уведомления (CRUD, удаление по endpoint)
+- **WebPushSubscriptionsRepository** — подписки на push-уведомления (CRUD)
 
 ### Services
-- **UsersService**, **AuthService**, **ChatsService**, **MessagesService** — бизнес-логика
-- **NotificationsService** (embeds EmailsRepository) — уведомления
+- **UsersService**, **AuthService**, **MessagesService** — бизнес-логика
+- **ChatsService** — чаты + `GetChatByID`
+- **NotificationsService** — email (`SendVerifyEmailMessage`, `SendForgetPasswordMessage`, `SendNewMessageEmail`) + web push (`SendWebPushNotification(subscription, message)`)
 - **SettingsService** — настройки пользователя
-- **WebPushSubscriptionsService** — управление push-подписками
+- **WebPushSubscriptionsService** — CRUD push-подписок
 
 ### Use Cases
 - **UsersUseCases**, **AuthUseCases**, **ChatsUseCases** — верхний уровень
 - **MessagesUseCases** (embeds MessagesService) — сообщения + save через WS
-- **NotificationsUseCases** — уведомления по email
+- **NotificationsUseCases** — уведомления с явным разделением по каналам: `SendNewMessageByEmail(userID, payload)`, `SendNewMessageByWebPush(userID, payload)`, `SendVerifyEmailMessage(userID)`, `SendForgetPasswordMessage(userID)`
 - **SettingsUseCases** — настройки пользователя
-- **WebPushSubscriptionsUseCases** — push-подписки + отправка push-уведомлений
+- **WebPushSubscriptionsUseCases** — чистый CRUD подписок: `CreateWebPushSubscription`, `DeleteWebPushSubscription`
 
 ### Workers
 - **MessageHandler** — `func(msg *nats.Msg)` — обработчик NATS сообщений
@@ -38,3 +39,5 @@
 ### Content Builders
 - **VerifyEmailContentBuilder** — `Subject()` + `Body(ctx, user)` для email подтверждения
 - **ForgetPasswordContentBuilder** — то же для сброса пароля
+- **NewMessageContentBuilder** — `Subject()` + `Body(ctx, message, chat)` — принимает доменные объекты Message и Chat
+- **ContentBuilders** — агрегат всех content builders

@@ -31,7 +31,11 @@ func TestHandler(t *testing.T) {
 		data, err := json.Marshal(body)
 		require.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodPost, "/api/web-push/subscribe", bytes.NewReader(data))
+		req := httptest.NewRequest(
+			http.MethodPost,
+			"/api/web-push/subscribe",
+			bytes.NewReader(data),
+		)
 		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 
 		return req.WithContext(ctx)
@@ -55,12 +59,10 @@ func TestHandler(t *testing.T) {
 			CreatedAt:     now,
 		}
 
-		requestBody := map[string]any{
-			"endpoint": "https://fcm.googleapis.com/fcm/send/test",
-			"keys": map[string]string{
-				"encryptionKey": "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8p8V953hA",
-				"auth":          "tBHItJI5svbpC7htE1Gg3A",
-			},
+		requestBody := domains.WebPushSubscription{
+			Endpoint:      "https://fcm.googleapis.com/fcm/send/test",
+			EncryptionKey: "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8p8V953hA",
+			Auth:          "tBHItJI5svbpC7htE1Gg3A",
 		}
 
 		mockUseCase.EXPECT().
@@ -142,12 +144,10 @@ func TestHandler(t *testing.T) {
 		handler := subscribe.Handler(mockUseCase)
 
 		userID := uint64(123)
-		requestBody := map[string]any{
-			"endpoint": "https://fcm.googleapis.com/fcm/send/test",
-			"keys": map[string]string{
-				"encryptionKey": "test-key",
-				"auth":          "test-auth",
-			},
+		requestBody := domains.WebPushSubscription{
+			Endpoint:      "https://fcm.googleapis.com/fcm/send/test",
+			EncryptionKey: "test-key",
+			Auth:          "test-auth",
 		}
 
 		mockUseCase.EXPECT().

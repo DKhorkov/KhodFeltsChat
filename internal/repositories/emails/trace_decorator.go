@@ -48,3 +48,18 @@ func (d *TraceDecorator) SendForgetPasswordMessage(
 
 	return d.base.SendForgetPasswordMessage(ctx, user)
 }
+
+func (d *TraceDecorator) SendMessage(
+	ctx context.Context,
+	recipient domains.User,
+	message domains.Message,
+	chat domains.Chat,
+) error {
+	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
+	defer span.End()
+
+	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
+	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
+
+	return d.base.SendMessage(ctx, recipient, message, chat)
+}

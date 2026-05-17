@@ -9,6 +9,16 @@ type Settings struct {
 	// minimum: 0
 	// maximum: 1
 	Theme int `json:"theme"`
+
+	// Email notification consents bitmask.
+	// required: true
+	// nullable: false
+	EmailConsents int `json:"emailConsents"`
+
+	// Web push notification consents bitmask.
+	// required: true
+	// nullable: false
+	WebPushConsents int `json:"webPushConsents"`
 }
 
 // UpdateSettingsInput

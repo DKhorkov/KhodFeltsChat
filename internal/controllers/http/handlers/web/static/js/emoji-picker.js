@@ -54,28 +54,34 @@ const EMOJI_CATEGORIES = [
 function createEmojiPicker(container, onSelect) {
     let activeCategory = EMOJI_CATEGORIES[0].name;
 
-    function render() {
-        container.innerHTML = '';
+    const tabs = document.createElement('div');
+    tabs.className = 'emoji-picker__tabs';
 
-        const tabs = document.createElement('div');
-        tabs.className = 'emoji-picker__tabs';
+    const grid = document.createElement('div');
+    grid.className = 'emoji-picker__grid';
 
-        for (const category of EMOJI_CATEGORIES) {
-            const tab = document.createElement('span');
-            tab.className = 'emoji-picker__tab' +
-                (activeCategory === category.name ? ' emoji-picker__tab--active' : '');
-            tab.title = category.label;
-            tab.textContent = category.icon;
-            tab.addEventListener('click', () => {
-                activeCategory = category.name;
-                render();
-            });
-            tabs.appendChild(tab);
+    for (const category of EMOJI_CATEGORIES) {
+        const tab = document.createElement('span');
+        tab.className = 'emoji-picker__tab';
+        tab.dataset.category = category.name;
+        tab.title = category.label;
+        tab.textContent = category.icon;
+        tab.addEventListener('click', () => {
+            activeCategory = category.name;
+            updateTabHighlight();
+            renderGrid();
+        });
+        tabs.appendChild(tab);
+    }
+
+    function updateTabHighlight() {
+        for (const t of tabs.children) {
+            t.classList.toggle('emoji-picker__tab--active', t.dataset.category === activeCategory);
         }
+    }
 
-        const grid = document.createElement('div');
-        grid.className = 'emoji-picker__grid';
-
+    function renderGrid() {
+        grid.innerHTML = '';
         const current = EMOJI_CATEGORIES.find(c => c.name === activeCategory);
         for (const emoji of current.emojis) {
             const item = document.createElement('span');
@@ -84,10 +90,10 @@ function createEmojiPicker(container, onSelect) {
             item.addEventListener('click', () => onSelect(emoji));
             grid.appendChild(item);
         }
-
-        container.appendChild(tabs);
-        container.appendChild(grid);
     }
 
-    render();
+    container.appendChild(tabs);
+    container.appendChild(grid);
+    updateTabHighlight();
+    renderGrid();
 }

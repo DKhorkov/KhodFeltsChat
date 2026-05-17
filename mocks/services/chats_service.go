@@ -56,6 +56,21 @@ func (mr *MockChatsServiceMockRecorder) CreateChat(ctx, chat any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateChat", reflect.TypeOf((*MockChatsService)(nil).CreateChat), ctx, chat)
 }
 
+// GetChatByID mocks base method.
+func (m *MockChatsService) GetChatByID(ctx context.Context, chatID uint64) (*domains.Chat, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetChatByID", ctx, chatID)
+	ret0, _ := ret[0].(*domains.Chat)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetChatByID indicates an expected call of GetChatByID.
+func (mr *MockChatsServiceMockRecorder) GetChatByID(ctx, chatID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChatByID", reflect.TypeOf((*MockChatsService)(nil).GetChatByID), ctx, chatID)
+}
+
 // GetChatMembers mocks base method.
 func (m *MockChatsService) GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error) {
 	m.ctrl.T.Helper()

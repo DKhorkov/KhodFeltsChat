@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	domains "github.com/DKhorkov/kfc/internal/domains"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -52,6 +53,34 @@ func (m *MockNotificationsUseCases) SendForgetPasswordMessage(ctx context.Contex
 func (mr *MockNotificationsUseCasesMockRecorder) SendForgetPasswordMessage(ctx, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendForgetPasswordMessage", reflect.TypeOf((*MockNotificationsUseCases)(nil).SendForgetPasswordMessage), ctx, userID)
+}
+
+// SendNewMessageByEmail mocks base method.
+func (m *MockNotificationsUseCases) SendNewMessageByEmail(ctx context.Context, userID uint64, payload domains.NewMessagePayload) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendNewMessageByEmail", ctx, userID, payload)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendNewMessageByEmail indicates an expected call of SendNewMessageByEmail.
+func (mr *MockNotificationsUseCasesMockRecorder) SendNewMessageByEmail(ctx, userID, payload any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendNewMessageByEmail", reflect.TypeOf((*MockNotificationsUseCases)(nil).SendNewMessageByEmail), ctx, userID, payload)
+}
+
+// SendNewMessageByWebPush mocks base method.
+func (m *MockNotificationsUseCases) SendNewMessageByWebPush(ctx context.Context, userID uint64, payload domains.NewMessagePayload) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendNewMessageByWebPush", ctx, userID, payload)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendNewMessageByWebPush indicates an expected call of SendNewMessageByWebPush.
+func (mr *MockNotificationsUseCasesMockRecorder) SendNewMessageByWebPush(ctx, userID, payload any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendNewMessageByWebPush", reflect.TypeOf((*MockNotificationsUseCases)(nil).SendNewMessageByWebPush), ctx, userID, payload)
 }
 
 // SendVerifyEmailMessage mocks base method.

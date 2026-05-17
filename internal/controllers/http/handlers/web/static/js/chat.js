@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await loadChats();
     connectWebSocket();
-    await initPushNotifications();
+    await initWebPushNotifications();
 
     setupSendMessage();
     setupEmojiPicker();
@@ -38,13 +38,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Открытие чата из push-уведомления (по query-параметру):
     const params = new URLSearchParams(window.location.search);
     const pushChatId = params.get('chatId');
-    if (pushChatId) {
+    if (pushChatId && !isNaN(Number(pushChatId))) {
         await openChatById(Number(pushChatId));
         history.replaceState(null, '', window.location.pathname);
     }
 
+    // Обработка postMessage от Service Worker (переход в чат по push-уведомлению):
+    navigator.serviceWorker?.addEventListener('message', async (event) => {
+        if (event.data?.type === 'open-chat' && event.data.chatId) {
+            await openChatById(Number(event.data.chatId));
+        }
+    });
+
     // Периодическое обновление списка чатов:
-    setInterval(loadChats, CHAT_LIST_POLL_INTERVAL_MS);
+    const chatsPollingInterval = setInterval(loadChats, CHAT_LIST_POLL_INTERVAL_MS);
 });
 
 async function loadCurrentUser() {
@@ -53,7 +60,7 @@ async function loadCurrentUser() {
         if (!resp.ok) return null;
         return await resp.json();
     } catch (err) {
-        console.log(err)
+        console.error(err);
 
         return null;
     }
@@ -92,7 +99,7 @@ function setupEscapeHandler() {
         // Если модалок нет — закрываем панель чата:
         if (selectedChatId) {
             closeChat();
-            await loadChats();
+            debouncedLoadChats();
         }
     });
 }
@@ -108,8 +115,18 @@ function connectWebSocket() {
         const message = JSON.parse(event.data);
 
         if (selectedChatId === message.chatId) {
-            messages.push(message);
-            appendMessageBubble(message);
+            // Дедупликация: если есть оптимистичное сообщение с таким же текстом от текущего пользователя — заменяем
+            const optimisticIdx = messages.findIndex(
+                m => m.optimistic && m.chatId === message.chatId && m.text === message.text && m.sender.id === message.sender.id
+            );
+
+            if (optimisticIdx >= 0) {
+                messages[optimisticIdx] = message;
+            } else {
+                messages.push(message);
+                appendMessageBubble(message);
+            }
+
             scrollToBottom();
         }
 
@@ -120,7 +137,7 @@ function connectWebSocket() {
         }
 
         // Обновляем список чатов (непрочитанное):
-        loadChats().catch(err => console.log(err));
+        debouncedLoadChats();
     };
 
     ws.onclose = () => {
@@ -130,7 +147,9 @@ function connectWebSocket() {
 
     ws.onerror = () => {
         // На iOS WebSocket может оборваться без onclose:
-        ws.close();
+        if (ws.readyState !== WebSocket.CLOSED && ws.readyState !== WebSocket.CLOSING) {
+            ws.close();
+        }
     };
 }
 
@@ -145,8 +164,14 @@ async function loadChats() {
         const chats = await resp.json();
         renderChatList(chats);
     } catch (err) {
-        console.log(err)
+        console.error(err);
     }
+}
+
+let loadChatsTimer = null;
+function debouncedLoadChats() {
+    if (loadChatsTimer) clearTimeout(loadChatsTimer);
+    loadChatsTimer = setTimeout(loadChats, 300);
 }
 
 function renderChatList(chats) {
@@ -214,7 +239,7 @@ async function openChatById(chatId) {
         const chat = chats.find(c => c.id === chatId);
         if (chat) await selectChat(chat);
     } catch (err) {
-        console.log('Open chat by ID error:', err);
+        console.error('Open chat by ID error:', err);
     }
 }
 
@@ -243,7 +268,7 @@ async function selectChat(chat) {
     scrollToBottom();
 
     // Обновляем active в списке:
-    await loadChats();
+    debouncedLoadChats();
 
     // Подписка на подгрузку старых сообщений при скролле вверх:
     msgList.onscroll = async () => {
@@ -281,17 +306,23 @@ async function loadMessages(chatId, offset) {
             prependMessages(reversed);
         }
     } catch (err) {
-        console.log(err)
+        console.error(err);
     }
+}
+
+function serverMessageCount() {
+    return messages.filter(m => !m.optimistic).length;
 }
 
 async function loadMoreMessages() {
     if (isLoadingMore || !hasMoreMessages || !selectedChatId) return;
     isLoadingMore = true;
 
-    await loadMessages(selectedChatId, messages.length);
-
-    isLoadingMore = false;
+    try {
+        await loadMessages(selectedChatId, serverMessageCount());
+    } finally {
+        isLoadingMore = false;
+    }
 }
 
 // ═══════════════════════════════════════
@@ -440,6 +471,7 @@ function sendMessage() {
         createdAt: new Date().toISOString(),
         sender: { id: currentUser.id, username: currentUser.username },
         isRead: true,
+        optimistic: true,
     };
 
     messages.push(optimisticMessage);
@@ -497,9 +529,9 @@ function setupEmojiPicker() {
 // Закрытие чата
 // ═══════════════════════════════════════
 function setupCloseChat() {
-    document.getElementById('btn-close-chat').addEventListener('click', async () => {
+    document.getElementById('btn-close-chat').addEventListener('click', () => {
         closeChat();
-        await loadChats();
+        debouncedLoadChats();
     });
 }
 
@@ -789,7 +821,7 @@ async function searchUsersForCreate(query, selectedUserIds) {
             container.appendChild(label);
         }
     } catch (err) {
-        console.log(err)
+        console.error(err);
     }
 }
 
@@ -880,7 +912,7 @@ async function searchUsersGlobal(query) {
             container.appendChild(item);
         }
     } catch (err) {
-        console.log(err)
+        console.error(err);
     }
 }
 
@@ -934,7 +966,7 @@ function showToast(senderName, text, chatId) {
                 if (chat) await selectChat(chat);
             }
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
     });
 
@@ -948,7 +980,7 @@ function showToast(senderName, text, chatId) {
 // ═══════════════════════════════════════
 // Web Push уведомления
 // ═══════════════════════════════════════
-async function initPushNotifications() {
+async function initWebPushNotifications() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         return;
     }
@@ -958,7 +990,7 @@ async function initPushNotifications() {
 
         const existingSubscription = await registration.pushManager.getSubscription();
         if (existingSubscription) {
-            await sendSubscriptionToServer(existingSubscription);
+            await sendWebPushSubscriptionToServer(existingSubscription);
             return;
         }
 
@@ -973,13 +1005,13 @@ async function initPushNotifications() {
             }
         }
 
-        await subscribeToPush(registration);
+        await subscribeToWebPush(registration);
     } catch (err) {
-        console.log('Push init error:', err);
+        console.error('Web push init error:', err);
     }
 }
 
-async function subscribeToPush(registration) {
+async function subscribeToWebPush(registration) {
     try {
         const resp = await fetchWithAuth('/api/web-push/vapid-key');
         if (!resp.ok) return;
@@ -991,32 +1023,30 @@ async function subscribeToPush(registration) {
             applicationServerKey: urlBase64ToUint8Array(publicKey),
         });
 
-        await sendSubscriptionToServer(subscription);
+        await sendWebPushSubscriptionToServer(subscription);
     } catch (err) {
-        console.log('Push subscribe error:', err);
+        console.error('Web push subscribe error:', err);
     }
 }
 
-async function sendSubscriptionToServer(subscription) {
+async function sendWebPushSubscriptionToServer(subscription) {
     try {
         const resp = await fetchWithAuth('/api/web-push/subscribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 endpoint: subscription.endpoint,
-                keys: {
-                    encryptionKey: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
-                    auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
-                },
+                encryptionKey: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
+                auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
             }),
         });
 
         if (resp.ok) {
             const data = await resp.json();
-            localStorage.setItem('pushSubscriptionId', data.id);
+            localStorage.setItem('webPushSubscriptionId', data.id);
         }
     } catch (err) {
-        console.log('Send subscription error:', err);
+        console.error('Send web push subscription error:', err);
     }
 }
 

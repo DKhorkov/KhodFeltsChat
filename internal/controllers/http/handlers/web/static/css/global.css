@@ -2,6 +2,9 @@
    Дизайн-токены: светлая тема
    ═══════════════════════════════════════ */
 :root {
+    /* Navbar */
+    --navbar-height: 49px;
+
     /* Радиусы */
     --radius-sm:  6px;
     --radius-md:  8px;
@@ -56,7 +59,7 @@
     --text-primary:      #333333;
     --text-secondary:    #555555;
     --text-muted:        #666666;
-    --text-placeholder:  #999999;
+    --text-placeholder:  #767676;
     --text-on-accent:    #ffffff;
     --text-toast:        #e2e2f0;
 
@@ -96,7 +99,7 @@
     --text-primary:      #e2e2f0;
     --text-secondary:    #b8b8d0;
     --text-muted:        #8888a8;
-    --text-placeholder:  #66668a;
+    --text-placeholder:  #8888aa;
     --text-toast:        #e2e2f0;
 
     --accent:            #667eea;
@@ -152,4 +155,253 @@ body {
 @keyframes fadeIn {
     from { opacity: 0; }
     to   { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════
+   Тогл-переключатель (общий компонент)
+   ═══════════════════════════════════════ */
+.toggle {
+    cursor: pointer;
+}
+
+.toggle__track {
+    width: 44px;
+    height: 24px;
+    background: var(--border);
+    border-radius: 12px;
+    position: relative;
+    transition: background var(--transition-slow);
+    cursor: pointer;
+}
+
+.toggle__track--on {
+    background: var(--accent);
+}
+
+.toggle__thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--text-on-accent);
+    border-radius: var(--radius-full);
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform var(--transition-slow);
+    box-shadow: var(--shadow-sm);
+}
+
+.toggle__thumb--on {
+    transform: translateX(20px);
+}
+
+/* ═══════════════════════════════════════
+   Модалки (общие стили)
+   ═══════════════════════════════════════ */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn var(--transition-fast) forwards;
+    outline: none;
+}
+
+.modal-content {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3xl);
+    width: 480px;
+    max-width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+}
+
+.modal-content__close {
+    position: absolute;
+    top: var(--space-lg);
+    right: var(--space-lg);
+    background: none;
+    border: none;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text-placeholder);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    padding: 0;
+    transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+.modal-content__close:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.modal-content__title {
+    margin-bottom: var(--space-xl);
+    font-size: var(--font-xl);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.modal-content__form-group {
+    margin-bottom: var(--space-xl);
+}
+
+.modal-content__form-group label {
+    display: block;
+    margin-bottom: var(--space-sm);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.modal-content__form-group input,
+.modal-content__form-group select {
+    width: 100%;
+    padding: var(--space-md);
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-md);
+    font-size: var(--font-md);
+    font-family: inherit;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    transition: border-color var(--transition-base);
+}
+
+.modal-content__form-group input::placeholder {
+    color: var(--text-placeholder);
+}
+
+.modal-content__form-group input:focus,
+.modal-content__form-group select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.modal-content__actions {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: flex-end;
+}
+
+.modal-content__actions button {
+    padding: var(--space-md) var(--space-xl);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: var(--font-md);
+    font-weight: 500;
+    transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+/* ═══════════════════════════════════════
+   Профиль (общие стили модалки)
+   ═══════════════════════════════════════ */
+.profile-modal {
+    width: 420px;
+}
+
+.profile-modal__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+}
+
+.profile-modal__avatar {
+    width: 56px;
+    height: 56px;
+    background: var(--accent);
+    color: var(--text-on-accent);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: var(--font-xl);
+    flex-shrink: 0;
+}
+
+.profile-modal__title h2 {
+    font-size: var(--font-xl);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.profile-modal__email {
+    font-size: var(--font-sm);
+    color: var(--text-muted);
+}
+
+.profile-modal__details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-lg);
+    background: var(--bg-panel);
+    border-radius: var(--radius-md);
+}
+
+.profile-modal__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.profile-modal__label {
+    font-size: var(--font-md);
+    color: var(--text-secondary);
+}
+
+.profile-modal__value {
+    font-size: var(--font-md);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.profile-modal__value--success {
+    color: #38a169;
+}
+
+.profile-modal__value--warning {
+    color: var(--danger);
+}
+
+/* ═══════════════════════════════════════
+   Кнопки (общие)
+   ═══════════════════════════════════════ */
+.btn--primary {
+    background: var(--accent);
+    color: var(--text-on-accent);
+}
+
+.btn--primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+}
+
+.btn--danger {
+    padding: var(--space-md) var(--space-xl);
+    background: var(--danger);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: var(--font-md);
+    font-weight: 500;
+    transition: opacity var(--transition-base);
+}
+
+.btn--danger:hover {
+    opacity: 0.9;
 }

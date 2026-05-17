@@ -17,47 +17,63 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+var testNewMessageNatsMsg = func() *nats.Msg {
+	payload, _ := json.Marshal(domains.NewMessagePayload{
+		MessageID: 10,
+	})
+
+	dto := domains.WebPushNotificationDTO{
+		Type:    domains.WebPushTypeNewMessage,
+		UserID:  1,
+		Payload: payload,
+	}
+
+	data, _ := json.Marshal(dto)
+
+	return &nats.Msg{Data: data}
+}()
+
 func TestNew(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name                         string
-		webPushSubscriptionsUseCases interfaces.WebPushSubscriptionsUseCases
-		messagesUseCases             interfaces.MessagesUseCases
-		logger                       logging.Logger
+		name                  string
+		notificationsUseCases interfaces.NotificationsUseCases
+		settingsUseCases      interfaces.SettingsUseCases
+		logger                logging.Logger
 	}{
 		{
 			name: "create builder with valid params",
-			webPushSubscriptionsUseCases: mockusecases.NewMockWebPushSubscriptionsUseCases(
+			notificationsUseCases: mockusecases.NewMockNotificationsUseCases(
 				gomock.NewController(t),
 			),
-			messagesUseCases: mockusecases.NewMockMessagesUseCases(
-				gomock.NewController(t),
-			),
-			logger: mocks.NewMockLogger(gomock.NewController(t)),
-		},
-		{
-			name:                         "create builder with nil webPushSubscriptionsUseCases",
-			webPushSubscriptionsUseCases: nil,
-			messagesUseCases: mockusecases.NewMockMessagesUseCases(
+			settingsUseCases: mockusecases.NewMockSettingsUseCases(
 				gomock.NewController(t),
 			),
 			logger: mocks.NewMockLogger(gomock.NewController(t)),
 		},
 		{
-			name: "create builder with nil messagesUseCases",
-			webPushSubscriptionsUseCases: mockusecases.NewMockWebPushSubscriptionsUseCases(
+			name:                  "create builder with nil notificationsUseCases",
+			notificationsUseCases: nil,
+			settingsUseCases: mockusecases.NewMockSettingsUseCases(
 				gomock.NewController(t),
 			),
-			messagesUseCases: nil,
+			logger: mocks.NewMockLogger(gomock.NewController(t)),
+		},
+		{
+			name: "create builder with nil settingsUseCases",
+			notificationsUseCases: mockusecases.NewMockNotificationsUseCases(
+				gomock.NewController(t),
+			),
+			settingsUseCases: nil,
 			logger:           mocks.NewMockLogger(gomock.NewController(t)),
 		},
 		{
 			name: "create builder with nil logger",
-			webPushSubscriptionsUseCases: mockusecases.NewMockWebPushSubscriptionsUseCases(
+			notificationsUseCases: mockusecases.NewMockNotificationsUseCases(
 				gomock.NewController(t),
 			),
-			messagesUseCases: mockusecases.NewMockMessagesUseCases(
+			settingsUseCases: mockusecases.NewMockSettingsUseCases(
 				gomock.NewController(t),
 			),
 			logger: nil,
@@ -69,8 +85,8 @@ func TestNew(t *testing.T) {
 			t.Parallel()
 
 			builder := web_push_notification.New(
-				tt.webPushSubscriptionsUseCases,
-				tt.messagesUseCases,
+				tt.notificationsUseCases,
+				tt.settingsUseCases,
 				tt.logger,
 			)
 
@@ -85,54 +101,55 @@ func TestBuilder_MessageHandler(t *testing.T) {
 	tests := []struct {
 		name       string
 		setupMocks func(
-			*mockusecases.MockWebPushSubscriptionsUseCases,
-			*mockusecases.MockMessagesUseCases,
+			*mockusecases.MockNotificationsUseCases,
+			*mockusecases.MockSettingsUseCases,
 			*mocks.MockLogger,
 		)
 		message *nats.Msg
 	}{
 		{
-			name: "successful message handling",
+			name: "successful message handling with consent",
 			setupMocks: func(
-				mockPushUseCases *mockusecases.MockWebPushSubscriptionsUseCases,
-				mockMsgUseCases *mockusecases.MockMessagesUseCases,
+				mockNotificationsUseCases *mockusecases.MockNotificationsUseCases,
+				mockSettingsUseCases *mockusecases.MockSettingsUseCases,
 				_ *mocks.MockLogger,
 			) {
-				msg := &domains.Message{ID: 10, Text: "hello"}
+				mockSettingsUseCases.EXPECT().
+					GetSettingsByUserID(gomock.Any(), uint64(1)).
+					Return(&domains.Settings{
+						WebPushConsents: domains.ConsentNewMessage,
+					}, nil)
 
-				mockMsgUseCases.EXPECT().
-					GetMessageByID(gomock.Any(), uint64(1), uint64(10)).
-					Return(msg, nil)
-
-				subs := []domains.WebPushSubscription{
-					{ID: 1, UserID: 1, Endpoint: "https://push.example.com/sub1"},
-					{ID: 2, UserID: 1, Endpoint: "https://push.example.com/sub2"},
-				}
-
-				mockPushUseCases.EXPECT().
-					GetWebPushSubscriptionsByUserID(gomock.Any(), uint64(1)).
-					Return(subs, nil)
-
-				mockPushUseCases.EXPECT().
-					SendWebPushNotification(gomock.Any(), subs[0], *msg).
-					Return(nil)
-
-				mockPushUseCases.EXPECT().
-					SendWebPushNotification(gomock.Any(), subs[1], *msg).
+				mockNotificationsUseCases.EXPECT().
+					SendNewMessageByWebPush(
+						gomock.Any(),
+						uint64(1),
+						domains.NewMessagePayload{MessageID: 10},
+					).
 					Return(nil)
 			},
-			message: func() *nats.Msg {
-				dto := domains.WebPushNotificationDTO{UserID: 1, MessageID: 10}
-				data, _ := json.Marshal(dto)
-
-				return &nats.Msg{Data: data}
-			}(),
+			message: testNewMessageNatsMsg,
+		},
+		{
+			name: "skip when no web push consent",
+			setupMocks: func(
+				_ *mockusecases.MockNotificationsUseCases,
+				mockSettingsUseCases *mockusecases.MockSettingsUseCases,
+				_ *mocks.MockLogger,
+			) {
+				mockSettingsUseCases.EXPECT().
+					GetSettingsByUserID(gomock.Any(), uint64(1)).
+					Return(&domains.Settings{
+						WebPushConsents: 0,
+					}, nil)
+			},
+			message: testNewMessageNatsMsg,
 		},
 		{
 			name: "invalid JSON message",
 			setupMocks: func(
-				_ *mockusecases.MockWebPushSubscriptionsUseCases,
-				_ *mockusecases.MockMessagesUseCases,
+				_ *mockusecases.MockNotificationsUseCases,
+				_ *mockusecases.MockSettingsUseCases,
 				mockLogger *mocks.MockLogger,
 			) {
 				mockLogger.EXPECT().
@@ -144,121 +161,50 @@ func TestBuilder_MessageHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "GetMessageByID returns error",
+			name: "GetSettingsByUserID returns error",
 			setupMocks: func(
-				_ *mockusecases.MockWebPushSubscriptionsUseCases,
-				mockMsgUseCases *mockusecases.MockMessagesUseCases,
+				_ *mockusecases.MockNotificationsUseCases,
+				mockSettingsUseCases *mockusecases.MockSettingsUseCases,
 				mockLogger *mocks.MockLogger,
 			) {
-				mockMsgUseCases.EXPECT().
-					GetMessageByID(gomock.Any(), uint64(1), uint64(10)).
-					Return(nil, errors.New("message not found"))
+				mockSettingsUseCases.EXPECT().
+					GetSettingsByUserID(gomock.Any(), uint64(1)).
+					Return(nil, errors.New("settings error"))
 
 				mockLogger.EXPECT().
 					Error(gomock.Any(), gomock.Any()).
 					Times(1)
 			},
-			message: func() *nats.Msg {
-				dto := domains.WebPushNotificationDTO{UserID: 1, MessageID: 10}
-				data, _ := json.Marshal(dto)
-
-				return &nats.Msg{Data: data}
-			}(),
+			message: testNewMessageNatsMsg,
 		},
 		{
-			name: "GetWebPushSubscriptionsByUserID returns error",
+			name: "SendNewMessageByWebPush returns error",
 			setupMocks: func(
-				mockPushUseCases *mockusecases.MockWebPushSubscriptionsUseCases,
-				mockMsgUseCases *mockusecases.MockMessagesUseCases,
+				mockNotificationsUseCases *mockusecases.MockNotificationsUseCases,
+				mockSettingsUseCases *mockusecases.MockSettingsUseCases,
 				mockLogger *mocks.MockLogger,
 			) {
-				mockMsgUseCases.EXPECT().
-					GetMessageByID(gomock.Any(), uint64(1), uint64(10)).
-					Return(&domains.Message{ID: 10, Text: "hello"}, nil)
+				mockSettingsUseCases.EXPECT().
+					GetSettingsByUserID(gomock.Any(), uint64(1)).
+					Return(&domains.Settings{
+						WebPushConsents: domains.ConsentNewMessage,
+					}, nil)
 
-				mockPushUseCases.EXPECT().
-					GetWebPushSubscriptionsByUserID(gomock.Any(), uint64(1)).
-					Return(nil, errors.New("database error"))
+				mockNotificationsUseCases.EXPECT().
+					SendNewMessageByWebPush(gomock.Any(), uint64(1), gomock.Any()).
+					Return(errors.New("push failed"))
 
 				mockLogger.EXPECT().
 					Error(gomock.Any(), gomock.Any()).
 					Times(1)
 			},
-			message: func() *nats.Msg {
-				dto := domains.WebPushNotificationDTO{UserID: 1, MessageID: 10}
-				data, _ := json.Marshal(dto)
-
-				return &nats.Msg{Data: data}
-			}(),
-		},
-		{
-			name: "SendWebPushNotification returns error for one subscription",
-			setupMocks: func(
-				mockPushUseCases *mockusecases.MockWebPushSubscriptionsUseCases,
-				mockMsgUseCases *mockusecases.MockMessagesUseCases,
-				mockLogger *mocks.MockLogger,
-			) {
-				msg := &domains.Message{ID: 10, Text: "hello"}
-
-				mockMsgUseCases.EXPECT().
-					GetMessageByID(gomock.Any(), uint64(1), uint64(10)).
-					Return(msg, nil)
-
-				subs := []domains.WebPushSubscription{
-					{ID: 1, UserID: 1, Endpoint: "https://push.example.com/sub1"},
-					{ID: 2, UserID: 1, Endpoint: "https://push.example.com/sub2"},
-				}
-
-				mockPushUseCases.EXPECT().
-					GetWebPushSubscriptionsByUserID(gomock.Any(), uint64(1)).
-					Return(subs, nil)
-
-				mockPushUseCases.EXPECT().
-					SendWebPushNotification(gomock.Any(), subs[0], *msg).
-					Return(errors.New("push service unavailable"))
-
-				mockPushUseCases.EXPECT().
-					SendWebPushNotification(gomock.Any(), subs[1], *msg).
-					Return(nil)
-
-				mockLogger.EXPECT().
-					Error(gomock.Any(), gomock.Any()).
-					Times(1)
-			},
-			message: func() *nats.Msg {
-				dto := domains.WebPushNotificationDTO{UserID: 1, MessageID: 10}
-				data, _ := json.Marshal(dto)
-
-				return &nats.Msg{Data: data}
-			}(),
-		},
-		{
-			name: "no subscriptions for user",
-			setupMocks: func(
-				mockPushUseCases *mockusecases.MockWebPushSubscriptionsUseCases,
-				mockMsgUseCases *mockusecases.MockMessagesUseCases,
-				_ *mocks.MockLogger,
-			) {
-				mockMsgUseCases.EXPECT().
-					GetMessageByID(gomock.Any(), uint64(1), uint64(10)).
-					Return(&domains.Message{ID: 10, Text: "hello"}, nil)
-
-				mockPushUseCases.EXPECT().
-					GetWebPushSubscriptionsByUserID(gomock.Any(), uint64(1)).
-					Return([]domains.WebPushSubscription{}, nil)
-			},
-			message: func() *nats.Msg {
-				dto := domains.WebPushNotificationDTO{UserID: 1, MessageID: 10}
-				data, _ := json.Marshal(dto)
-
-				return &nats.Msg{Data: data}
-			}(),
+			message: testNewMessageNatsMsg,
 		},
 		{
 			name: "empty message data",
 			setupMocks: func(
-				_ *mockusecases.MockWebPushSubscriptionsUseCases,
-				_ *mockusecases.MockMessagesUseCases,
+				_ *mockusecases.MockNotificationsUseCases,
+				_ *mockusecases.MockSettingsUseCases,
 				mockLogger *mocks.MockLogger,
 			) {
 				mockLogger.EXPECT().
@@ -272,8 +218,8 @@ func TestBuilder_MessageHandler(t *testing.T) {
 		{
 			name: "nil message data",
 			setupMocks: func(
-				_ *mockusecases.MockWebPushSubscriptionsUseCases,
-				_ *mockusecases.MockMessagesUseCases,
+				_ *mockusecases.MockNotificationsUseCases,
+				_ *mockusecases.MockSettingsUseCases,
 				mockLogger *mocks.MockLogger,
 			) {
 				mockLogger.EXPECT().
@@ -284,6 +230,27 @@ func TestBuilder_MessageHandler(t *testing.T) {
 				Data: nil,
 			},
 		},
+		{
+			name: "unknown notification type",
+			setupMocks: func(
+				_ *mockusecases.MockNotificationsUseCases,
+				_ *mockusecases.MockSettingsUseCases,
+				mockLogger *mocks.MockLogger,
+			) {
+				mockLogger.EXPECT().
+					Error(gomock.Any(), gomock.Any()).
+					Times(1)
+			},
+			message: func() *nats.Msg {
+				dto := domains.WebPushNotificationDTO{
+					Type:   "unknown_type",
+					UserID: 1,
+				}
+				data, _ := json.Marshal(dto)
+
+				return &nats.Msg{Data: data}
+			}(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -292,15 +259,19 @@ func TestBuilder_MessageHandler(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 
-			mockPushUseCases := mockusecases.NewMockWebPushSubscriptionsUseCases(ctrl)
-			mockMsgUseCases := mockusecases.NewMockMessagesUseCases(ctrl)
+			mockNotificationsUseCases := mockusecases.NewMockNotificationsUseCases(ctrl)
+			mockSettingsUseCases := mockusecases.NewMockSettingsUseCases(ctrl)
 			mockLogger := mocks.NewMockLogger(ctrl)
 
 			if tt.setupMocks != nil {
-				tt.setupMocks(mockPushUseCases, mockMsgUseCases, mockLogger)
+				tt.setupMocks(mockNotificationsUseCases, mockSettingsUseCases, mockLogger)
 			}
 
-			builder := web_push_notification.New(mockPushUseCases, mockMsgUseCases, mockLogger)
+			builder := web_push_notification.New(
+				mockNotificationsUseCases,
+				mockSettingsUseCases,
+				mockLogger,
+			)
 
 			ctx := context.Background()
 			handler := builder.MessageHandler(ctx)

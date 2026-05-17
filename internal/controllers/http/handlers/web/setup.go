@@ -7,6 +7,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/chat"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/forget_password"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/login"
+	serviceworker "github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/service_worker"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/verify_email"
 	"github.com/gorilla/mux"
 )
@@ -34,11 +35,7 @@ func SetupHandlers(webMux *mux.Router) {
 	)
 
 	// Service Worker (served from /web/ scope):
-	getMux.HandleFunc(ServiceWorkerURL, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/javascript")
-		w.Header().Set("Service-Worker-Allowed", "/")
-		http.ServeFile(w, r, StaticFilePath+"sw.js")
-	})
+	getMux.HandleFunc(ServiceWorkerURL, serviceworker.Handler())
 
 	// Статические файлы (CSS, JS):
 	webMux.PathPrefix(StaticURL).Handler(

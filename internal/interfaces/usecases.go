@@ -48,8 +48,18 @@ type MessagesUseCases interface {
 
 //go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/notifications_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,ChatsUseCases,MessagesUseCases,AuthUseCases,SettingsUseCases,WebPushSubscriptionsUseCases
 type NotificationsUseCases interface {
-	SendForgetPasswordMessage(ctx context.Context, userID uint64) error
 	SendVerifyEmailMessage(ctx context.Context, userID uint64) error
+	SendForgetPasswordMessage(ctx context.Context, userID uint64) error
+	SendNewMessageByEmail(
+		ctx context.Context,
+		userID uint64,
+		payload domains.NewMessagePayload,
+	) error
+	SendNewMessageByWebPush(
+		ctx context.Context,
+		userID uint64,
+		payload domains.NewMessagePayload,
+	) error
 }
 
 //go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/settings_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,WebPushSubscriptionsUseCases
@@ -64,14 +74,5 @@ type WebPushSubscriptionsUseCases interface {
 		ctx context.Context,
 		subscription domains.WebPushSubscription,
 	) (*domains.WebPushSubscription, error)
-	GetWebPushSubscriptionsByUserID(
-		ctx context.Context,
-		userID uint64,
-	) ([]domains.WebPushSubscription, error)
 	DeleteWebPushSubscription(ctx context.Context, id uint64) error
-	SendWebPushNotification(
-		ctx context.Context,
-		subscription domains.WebPushSubscription,
-		message domains.Message,
-	) error
 }

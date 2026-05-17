@@ -11,8 +11,9 @@
 |-------|----------|
 | `SendVerifyEmailMessage(ctx, user)` | Формирует и отправляет письмо с ссылкой для верификации email |
 | `SendForgetPasswordMessage(ctx, user)` | Формирует и отправляет письмо для сброса пароля |
+| `SendNewMessageEmail(ctx, recipient, message, chat)` | Формирует и отправляет уведомление о новом сообщении. Принимает доменные объекты `User`, `Message`, `Chat` |
 
-Оба метода:
+Все методы:
 1. Вызывают соответствующий `ContentBuilder` для генерации темы и HTML-тела письма.
 2. Создают новый `gomail.Dialer` на каждый вызов (соединение не переиспользуется).
 3. Отправляют письмо через `DialAndSend`.
@@ -22,7 +23,7 @@
 - `gopkg.in/gomail.v2` — формирование и отправка email по SMTP
 - `github.com/DKhorkov/kfc/internal/config.SMTPConfig` — хост, порт, логин, пароль SMTP
 - `github.com/DKhorkov/kfc/internal/interfaces.ContentBuilders` — генераторы содержимого писем
-- `github.com/DKhorkov/kfc/internal/domains` — тип `User`
+- `github.com/DKhorkov/kfc/internal/domains` — типы `User`, `Message`, `Chat`
 
 ## Trace-декоратор
 

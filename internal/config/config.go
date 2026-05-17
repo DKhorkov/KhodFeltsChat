@@ -170,13 +170,12 @@ func New() Config {
 				loadenv.GetEnvAsInt("NATS_CLIENT_PORT", 4222),
 			),
 			Subjects: NATSSubjects{
-				VerifyEmail: loadenv.GetEnv("NATS_VERIFY_EMAIL_SUBJECT", "verify-email"),
-				ForgetPassword: loadenv.GetEnv(
-					"NATS_FORGET_PASSWORD_SUBJECT",
-					"forget-password",
+				EmailNotification: loadenv.GetEnv(
+					"NATS_EMAIL_NOTIFICATION_SUBJECT",
+					"email-notification",
 				),
 				WebPushNotification: loadenv.GetEnv(
-					"NATS_PUSH_NOTIFICATION_SUBJECT",
+					"NATS_WEB_PUSH_NOTIFICATION_SUBJECT",
 					"web-push-notification",
 				),
 			},
@@ -186,19 +185,16 @@ func New() Config {
 			MessageChannelBufferSize: loadenv.GetEnvAsInt("NATS_MESSAGE_CHANNEL_BUFFER_SIZE", 1),
 			GoroutinesPoolSize:       loadenv.GetEnvAsInt("NATS_GOROUTINES_POOL_SIZE", 1),
 			Workers: NATSWorkers{
-				VerifyEmail: NATSWorker{
-					Name: loadenv.GetEnv("NATS_VERIFY_EMAIL_WORKER_NAME", "verify-email-worker"),
-				},
-				ForgetPassword: NATSWorker{
+				EmailNotification: NATSWorker{
 					Name: loadenv.GetEnv(
-						"NATS_FORGET_PASSWORD_WORKER_NAME",
-						"forget-password-worker",
+						"NATS_EMAIL_NOTIFICATION_WORKER_NAME",
+						"email-notification-worker",
 					),
 				},
 				WebPushNotification: NATSWorker{
 					Name: loadenv.GetEnv(
-						"NATS_PUSH_NOTIFICATION_WORKER_NAME",
-						"push-notification-worker",
+						"NATS_WEB_PUSH_NOTIFICATION_WORKER_NAME",
+						"web-push-notification-worker",
 					),
 				},
 			},
@@ -513,6 +509,41 @@ func New() Config {
 							},
 							End: tracing.SpanEventConfig{
 								Name: "Received response from WebPushSubscriptions Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+					WebPush: tracing.SpanConfig{
+						Name: "WebPush repository",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling WebPush Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from WebPush Repository",
 								Opts: []trace.EventOption{
 									trace.WithAttributes(
 										attribute.String(
@@ -1020,8 +1051,8 @@ func New() Config {
 					},
 				},
 				Handlers: SpanHandlers{
-					VerifyEmail: tracing.SpanConfig{
-						Name: "VerifyEmail worker handler",
+					EmailNotification: tracing.SpanConfig{
+						Name: "EmailNotification worker handler",
 						Opts: []trace.SpanStartOption{
 							trace.WithAttributes(
 								attribute.String(
@@ -1032,7 +1063,7 @@ func New() Config {
 						},
 						Events: tracing.SpanEventsConfig{
 							Start: tracing.SpanEventConfig{
-								Name: "Calling verify-email worker handler",
+								Name: "Calling email-notification worker handler",
 								Opts: []trace.EventOption{
 									trace.WithAttributes(
 										attribute.String(
@@ -1043,42 +1074,7 @@ func New() Config {
 								},
 							},
 							End: tracing.SpanEventConfig{
-								Name: "Received response from verify-email worker handler",
-								Opts: []trace.EventOption{
-									trace.WithAttributes(
-										attribute.String(
-											"Environment",
-											loadenv.GetEnv("ENVIRONMENT", "local"),
-										),
-									),
-								},
-							},
-						},
-					},
-					ForgetPassword: tracing.SpanConfig{
-						Name: "ForgetPassword worker handler",
-						Opts: []trace.SpanStartOption{
-							trace.WithAttributes(
-								attribute.String(
-									"Environment",
-									loadenv.GetEnv("ENVIRONMENT", "local"),
-								),
-							),
-						},
-						Events: tracing.SpanEventsConfig{
-							Start: tracing.SpanEventConfig{
-								Name: "Calling forget-password worker handler",
-								Opts: []trace.EventOption{
-									trace.WithAttributes(
-										attribute.String(
-											"Environment",
-											loadenv.GetEnv("ENVIRONMENT", "local"),
-										),
-									),
-								},
-							},
-							End: tracing.SpanEventConfig{
-								Name: "Received response from forget-password worker handler",
+								Name: "Received response from email-notification worker handler",
 								Opts: []trace.EventOption{
 									trace.WithAttributes(
 										attribute.String(
@@ -1102,7 +1098,7 @@ func New() Config {
 						},
 						Events: tracing.SpanEventsConfig{
 							Start: tracing.SpanEventConfig{
-								Name: "Calling push-notification worker handler",
+								Name: "Calling web-push-notification worker handler",
 								Opts: []trace.EventOption{
 									trace.WithAttributes(
 										attribute.String(
@@ -1113,7 +1109,7 @@ func New() Config {
 								},
 							},
 							End: tracing.SpanEventConfig{
-								Name: "Received response from push-notification worker handler",
+								Name: "Received response from web-push-notification worker handler",
 								Opts: []trace.EventOption{
 									trace.WithAttributes(
 										attribute.String(
@@ -1184,6 +1180,7 @@ type SpanRepositories struct {
 	Messages             tracing.SpanConfig
 	Settings             tracing.SpanConfig
 	WebPushSubscriptions tracing.SpanConfig
+	WebPush              tracing.SpanConfig
 }
 
 type SpanServices struct {
@@ -1207,8 +1204,7 @@ type SpanUseCases struct {
 }
 
 type SpanHandlers struct {
-	VerifyEmail         tracing.SpanConfig
-	ForgetPassword      tracing.SpanConfig
+	EmailNotification   tracing.SpanConfig
 	WebPushNotification tracing.SpanConfig
 }
 
@@ -1245,8 +1241,7 @@ type NATSConfig struct {
 }
 
 type NATSSubjects struct {
-	VerifyEmail         string
-	ForgetPassword      string
+	EmailNotification   string
 	WebPushNotification string
 }
 
@@ -1254,8 +1249,7 @@ type NATSPublisher struct {
 	Name string
 }
 type NATSWorkers struct {
-	VerifyEmail         NATSWorker
-	ForgetPassword      NATSWorker
+	EmailNotification   NATSWorker
 	WebPushNotification NATSWorker
 }
 

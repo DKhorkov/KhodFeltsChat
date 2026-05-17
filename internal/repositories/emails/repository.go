@@ -55,6 +55,25 @@ func (repo *Repository) SendForgetPasswordMessage(
 	)
 }
 
+func (repo *Repository) SendMessage(
+	ctx context.Context,
+	recipient domains.User,
+	message domains.Message,
+	chat domains.Chat,
+) error {
+	body, err := repo.contentBuilders.NewMessage.Body(ctx, message, chat)
+	if err != nil {
+		return err
+	}
+
+	return repo.send(
+		ctx,
+		repo.contentBuilders.NewMessage.Subject(),
+		body,
+		[]string{recipient.Email},
+	)
+}
+
 func (repo *Repository) send(
 	_ context.Context,
 	subject, body string,

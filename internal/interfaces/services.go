@@ -40,6 +40,7 @@ type AuthService interface {
 
 //go:generate mockgen -source=services.go -destination=../../mocks/services/chats_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService
 type ChatsService interface {
+	GetChatByID(ctx context.Context, chatID uint64) (*domains.Chat, error)
 	GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error)
 	GetUserChats(
 		ctx context.Context,
@@ -64,7 +65,19 @@ type MessagesService interface {
 
 //go:generate mockgen -source=services.go -destination=../../mocks/services/notifications_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,AuthService,SettingsService,WebPushSubscriptionsService
 type NotificationsService interface {
-	EmailsRepository
+	SendVerifyEmailMessage(ctx context.Context, user domains.User) error
+	SendForgetPasswordMessage(ctx context.Context, user domains.User) error
+	SendNewMessageByEmail(
+		ctx context.Context,
+		recipient domains.User,
+		message domains.Message,
+		chat domains.Chat,
+	) error
+	SendNewMessageByWebPush(
+		ctx context.Context,
+		subscription domains.WebPushSubscription,
+		message domains.Message,
+	) error
 }
 
 //go:generate mockgen -source=services.go -destination=../../mocks/services/settings_service.go -package=mockservices -exclude_interfaces=AuthService,UsersService,ChatsService,MessagesService,NotificationsService,WebPushSubscriptionsService

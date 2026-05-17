@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/DKhorkov/kfc/internal/domains"
-	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/kfc/internal/services/notifications"
 	mockrepositories "github.com/DKhorkov/kfc/mocks/repositories"
 	"github.com/stretchr/testify/assert"
@@ -17,29 +16,14 @@ import (
 func TestNew(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name             string
-		emailsRepository interfaces.EmailsRepository
-	}{
-		{
-			name:             "create notifications service with valid repository",
-			emailsRepository: mockrepositories.NewMockEmailsRepository(gomock.NewController(t)),
-		},
-		{
-			name:             "create notifications service with nil repository",
-			emailsRepository: nil,
-		},
-	}
+	ctrl := gomock.NewController(t)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+	service := notifications.New(
+		mockrepositories.NewMockEmailsRepository(ctrl),
+		mockrepositories.NewMockWebPushRepository(ctrl),
+	)
 
-			service := notifications.New(tt.emailsRepository)
-
-			assert.NotNil(t, service)
-		})
-	}
+	assert.NotNil(t, service)
 }
 
 func TestService_SendVerifyEmailMessage(t *testing.T) {
@@ -76,7 +60,7 @@ func TestService_SendVerifyEmailMessage(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "user not found",
+			name: "repository returns error",
 			user: domains.User{
 				ID:        999,
 				Username:  "nonexistent",
@@ -90,54 +74,6 @@ func TestService_SendVerifyEmailMessage(t *testing.T) {
 					Return(errors.New("user not found"))
 			},
 			expectedError: errors.New("user not found"),
-		},
-		{
-			name: "email already verified",
-			user: domains.User{
-				ID:        2,
-				Username:  "verified_user",
-				Email:     "verified@example.com",
-				CreatedAt: now,
-				UpdatedAt: now,
-			},
-			setupMocks: func(mockEmailsRepo *mockrepositories.MockEmailsRepository) {
-				mockEmailsRepo.EXPECT().
-					SendVerifyEmailMessage(gomock.Any(), gomock.Any()).
-					Return(errors.New("email already verified"))
-			},
-			expectedError: errors.New("email already verified"),
-		},
-		{
-			name: "invalid email format",
-			user: domains.User{
-				ID:        3,
-				Username:  "user",
-				Email:     "invalid-email",
-				CreatedAt: now,
-				UpdatedAt: now,
-			},
-			setupMocks: func(mockEmailsRepo *mockrepositories.MockEmailsRepository) {
-				mockEmailsRepo.EXPECT().
-					SendVerifyEmailMessage(gomock.Any(), gomock.Any()).
-					Return(errors.New("invalid email format"))
-			},
-			expectedError: errors.New("invalid email format"),
-		},
-		{
-			name: "rate limit exceeded",
-			user: domains.User{
-				ID:        4,
-				Username:  "user",
-				Email:     "user@example.com",
-				CreatedAt: now,
-				UpdatedAt: now,
-			},
-			setupMocks: func(mockEmailsRepo *mockrepositories.MockEmailsRepository) {
-				mockEmailsRepo.EXPECT().
-					SendVerifyEmailMessage(gomock.Any(), gomock.Any()).
-					Return(errors.New("rate limit exceeded, try again later"))
-			},
-			expectedError: errors.New("rate limit exceeded, try again later"),
 		},
 		{
 			name: "email service unavailable",
@@ -164,12 +100,16 @@ func TestService_SendVerifyEmailMessage(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
 			mockEmailsRepo := mockrepositories.NewMockEmailsRepository(ctrl)
+			mockWebPushRepo := mockrepositories.NewMockWebPushRepository(ctrl)
 
 			if tt.setupMocks != nil {
 				tt.setupMocks(mockEmailsRepo)
 			}
 
-			service := notifications.New(mockEmailsRepo)
+			service := notifications.New(
+				mockEmailsRepo,
+				mockWebPushRepo,
+			)
 
 			ctx := context.Background()
 			err := service.SendVerifyEmailMessage(ctx, tt.user)
@@ -218,7 +158,7 @@ func TestService_SendForgetPasswordMessage(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			name: "user not found",
+			name: "repository returns error",
 			user: domains.User{
 				ID:        999,
 				Username:  "nonexistent",
@@ -232,38 +172,6 @@ func TestService_SendForgetPasswordMessage(t *testing.T) {
 					Return(errors.New("user not found"))
 			},
 			expectedError: errors.New("user not found"),
-		},
-		{
-			name: "invalid email format",
-			user: domains.User{
-				ID:        2,
-				Username:  "user",
-				Email:     "invalid-email",
-				CreatedAt: now,
-				UpdatedAt: now,
-			},
-			setupMocks: func(mockEmailsRepo *mockrepositories.MockEmailsRepository) {
-				mockEmailsRepo.EXPECT().
-					SendForgetPasswordMessage(gomock.Any(), gomock.Any()).
-					Return(errors.New("invalid email format"))
-			},
-			expectedError: errors.New("invalid email format"),
-		},
-		{
-			name: "rate limit exceeded",
-			user: domains.User{
-				ID:        3,
-				Username:  "user",
-				Email:     "user@example.com",
-				CreatedAt: now,
-				UpdatedAt: now,
-			},
-			setupMocks: func(mockEmailsRepo *mockrepositories.MockEmailsRepository) {
-				mockEmailsRepo.EXPECT().
-					SendForgetPasswordMessage(gomock.Any(), gomock.Any()).
-					Return(errors.New("rate limit exceeded, try again later"))
-			},
-			expectedError: errors.New("rate limit exceeded, try again later"),
 		},
 		{
 			name: "email service unavailable",
@@ -281,21 +189,100 @@ func TestService_SendForgetPasswordMessage(t *testing.T) {
 			},
 			expectedError: errors.New("email service unavailable"),
 		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockEmailsRepo := mockrepositories.NewMockEmailsRepository(ctrl)
+			mockWebPushRepo := mockrepositories.NewMockWebPushRepository(ctrl)
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockEmailsRepo)
+			}
+
+			service := notifications.New(
+				mockEmailsRepo,
+				mockWebPushRepo,
+			)
+
+			ctx := context.Background()
+			err := service.SendForgetPasswordMessage(ctx, tt.user)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestService_SendNewMessageByEmail(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+
+	tests := []struct {
+		name          string
+		recipient     domains.User
+		message       domains.Message
+		chat          domains.Chat
+		setupMocks    func(*mockrepositories.MockEmailsRepository)
+		expectedError error
+	}{
 		{
-			name: "empty email",
-			user: domains.User{
-				ID:        5,
-				Username:  "user",
-				Email:     "",
+			name: "successful send new message email",
+			recipient: domains.User{
+				ID:       1,
+				Username: "john_doe",
+				Email:    "john@example.com",
+			},
+			message: domains.Message{
+				ID:     10,
+				ChatID: 5,
+				Text:   "Hello!",
+				Sender: domains.User{
+					ID:       2,
+					Username: "alice",
+				},
 				CreatedAt: now,
-				UpdatedAt: now,
+			},
+			chat: domains.Chat{
+				ID: 5,
 			},
 			setupMocks: func(mockEmailsRepo *mockrepositories.MockEmailsRepository) {
 				mockEmailsRepo.EXPECT().
-					SendForgetPasswordMessage(gomock.Any(), gomock.Any()).
-					Return(errors.New("email is required"))
+					SendMessage(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil)
 			},
-			expectedError: errors.New("email is required"),
+			expectedError: nil,
+		},
+		{
+			name: "repository returns error",
+			recipient: domains.User{
+				ID:       1,
+				Username: "john_doe",
+				Email:    "john@example.com",
+			},
+			message: domains.Message{
+				ID:     10,
+				ChatID: 5,
+				Text:   "Hello!",
+			},
+			chat: domains.Chat{
+				ID: 5,
+			},
+			setupMocks: func(mockEmailsRepo *mockrepositories.MockEmailsRepository) {
+				mockEmailsRepo.EXPECT().
+					SendMessage(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("smtp error"))
+			},
+			expectedError: errors.New("smtp error"),
 		},
 	}
 
@@ -306,15 +293,19 @@ func TestService_SendForgetPasswordMessage(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
 			mockEmailsRepo := mockrepositories.NewMockEmailsRepository(ctrl)
+			mockWebPushRepo := mockrepositories.NewMockWebPushRepository(ctrl)
 
 			if tt.setupMocks != nil {
 				tt.setupMocks(mockEmailsRepo)
 			}
 
-			service := notifications.New(mockEmailsRepo)
+			service := notifications.New(
+				mockEmailsRepo,
+				mockWebPushRepo,
+			)
 
 			ctx := context.Background()
-			err := service.SendForgetPasswordMessage(ctx, tt.user)
+			err := service.SendNewMessageByEmail(ctx, tt.recipient, tt.message, tt.chat)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

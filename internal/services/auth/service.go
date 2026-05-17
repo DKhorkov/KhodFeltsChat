@@ -82,23 +82,27 @@ func (s *Service) RegisterUser(
 
 			settingsRepository := s.newSettingsRepositoryFunc(tx)
 			if err = settingsRepository.CreateSettings(ctx, domains.Settings{
-				UserID: user.ID,
-				Theme:  domains.ThemeLight,
+				UserID:          user.ID,
+				Theme:           domains.ThemeLight,
+				EmailConsents:   domains.ConsentNewMessage,
+				WebPushConsents: domains.ConsentNewMessage,
 			}); err != nil {
 				return err
 			}
 
-			verifyEmailDTO := &domains.VerifyEmailNotificationDTO{
-				UserID: user.ID,
+			emailDTO := &domains.EmailNotificationDTO{
+				Type:    domains.EmailTypeVerifyEmail,
+				UserID:  user.ID,
+				Payload: nil,
 			}
 
-			content, err := json.Marshal(verifyEmailDTO) //nolint:govet // неважное затенение
+			content, err := json.Marshal(emailDTO) //nolint:govet // неважное затенение
 			if err != nil {
 				return err
 			}
 
 			if err = s.natsPublisher.Publish(
-				s.natsConfig.Subjects.VerifyEmail,
+				s.natsConfig.Subjects.EmailNotification,
 				content,
 			); err != nil {
 				return err
@@ -256,17 +260,19 @@ func (s *Service) SendForgetPasswordMessage(ctx context.Context, email string) e
 				return fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 			}
 
-			forgetPasswordDTO := &domains.ForgetPasswordNotificationDTO{
-				UserID: user.ID,
+			emailDTO := &domains.EmailNotificationDTO{
+				Type:    domains.EmailTypeForgetPassword,
+				UserID:  user.ID,
+				Payload: nil,
 			}
 
-			content, err := json.Marshal(forgetPasswordDTO)
+			content, err := json.Marshal(emailDTO)
 			if err != nil {
 				return err
 			}
 
 			if err = s.natsPublisher.Publish(
-				s.natsConfig.Subjects.ForgetPassword,
+				s.natsConfig.Subjects.EmailNotification,
 				content,
 			); err != nil {
 				return err
@@ -288,17 +294,19 @@ func (s *Service) SendVerifyEmailMessage(ctx context.Context, email string) erro
 				return fmt.Errorf("%w: %w", customerrors.ErrUserNotFound, err)
 			}
 
-			verifyEmailDTO := &domains.VerifyEmailNotificationDTO{
-				UserID: user.ID,
+			emailDTO := &domains.EmailNotificationDTO{
+				Type:    domains.EmailTypeVerifyEmail,
+				UserID:  user.ID,
+				Payload: nil,
 			}
 
-			content, err := json.Marshal(verifyEmailDTO)
+			content, err := json.Marshal(emailDTO)
 			if err != nil {
 				return err
 			}
 
 			if err = s.natsPublisher.Publish(
-				s.natsConfig.Subjects.VerifyEmail,
+				s.natsConfig.Subjects.EmailNotification,
 				content,
 			); err != nil {
 				return err

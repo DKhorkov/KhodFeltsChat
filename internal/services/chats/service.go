@@ -29,6 +29,33 @@ func New(
 	}
 }
 
+func (s *Service) GetChatByID(
+	ctx context.Context,
+	chatID uint64,
+) (*domains.Chat, error) {
+	var (
+		chat *domains.Chat
+		err  error
+	)
+
+	err = s.uow.Do(
+		ctx,
+		func(ctx context.Context, tx pg.Transaction) error {
+			chatsRepository := s.newChatsRepositoryFunc(tx)
+			if chat, err = chatsRepository.GetChatByID(ctx, chatID); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", customerrors.ErrChatNotFound, err)
+	}
+
+	return chat, nil
+}
+
 func (s *Service) GetChatMembers(
 	ctx context.Context,
 	chatID uint64,

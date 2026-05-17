@@ -26,6 +26,16 @@ func NewTraceDecorator(
 	}
 }
 
+func (d *TraceDecorator) SendVerifyEmailMessage(ctx context.Context, user domains.User) error {
+	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
+	defer span.End()
+
+	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
+	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
+
+	return d.base.SendVerifyEmailMessage(ctx, user)
+}
+
 func (d *TraceDecorator) SendForgetPasswordMessage(ctx context.Context, user domains.User) error {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
@@ -36,12 +46,31 @@ func (d *TraceDecorator) SendForgetPasswordMessage(ctx context.Context, user dom
 	return d.base.SendForgetPasswordMessage(ctx, user)
 }
 
-func (d *TraceDecorator) SendVerifyEmailMessage(ctx context.Context, user domains.User) error {
+func (d *TraceDecorator) SendNewMessageByEmail(
+	ctx context.Context,
+	recipient domains.User,
+	message domains.Message,
+	chat domains.Chat,
+) error {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
 
 	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
 	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
 
-	return d.base.SendVerifyEmailMessage(ctx, user)
+	return d.base.SendNewMessageByEmail(ctx, recipient, message, chat)
+}
+
+func (d *TraceDecorator) SendNewMessageByWebPush(
+	ctx context.Context,
+	subscription domains.WebPushSubscription,
+	message domains.Message,
+) error {
+	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
+	defer span.End()
+
+	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
+	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
+
+	return d.base.SendNewMessageByWebPush(ctx, subscription, message)
 }

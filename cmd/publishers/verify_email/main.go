@@ -23,16 +23,18 @@ func main() {
 
 	defer natsPublisher.Close()
 
-	ticketUpdatedDTO := domains.VerifyEmailNotificationDTO{
-		UserID: 1,
+	emailDTO := domains.EmailNotificationDTO{
+		Type:    domains.EmailTypeVerifyEmail,
+		UserID:  1,
+		Payload: nil,
 	}
 
-	content, err := json.Marshal(ticketUpdatedDTO)
+	content, err := json.Marshal(emailDTO)
 	if err != nil {
 		panic(err)
 	}
 
-	err = natsPublisher.Publish(settings.NATS.Subjects.VerifyEmail, content)
+	err = natsPublisher.Publish(settings.NATS.Subjects.EmailNotification, content)
 	if err != nil {
 		panic(err)
 	}

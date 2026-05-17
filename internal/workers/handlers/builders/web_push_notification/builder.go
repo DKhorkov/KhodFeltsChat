@@ -12,88 +12,77 @@ import (
 )
 
 type Builder struct {
-	webPushSubscriptionsUseCases interfaces.WebPushSubscriptionsUseCases
-	messagesUseCases             interfaces.MessagesUseCases
-	logger                       logging.Logger
+	notificationsUseCases interfaces.NotificationsUseCases
+	settingsUseCases      interfaces.SettingsUseCases
+	logger                logging.Logger
 }
 
 func New(
-	webPushSubscriptionsUseCases interfaces.WebPushSubscriptionsUseCases,
-	messagesUseCases interfaces.MessagesUseCases,
+	notificationsUseCases interfaces.NotificationsUseCases,
+	settingsUseCases interfaces.SettingsUseCases,
 	logger logging.Logger,
 ) *Builder {
 	return &Builder{
-		webPushSubscriptionsUseCases: webPushSubscriptionsUseCases,
-		messagesUseCases:             messagesUseCases,
-		logger:                       logger,
+		notificationsUseCases: notificationsUseCases,
+		settingsUseCases:      settingsUseCases,
+		logger:                logger,
 	}
 }
 
 func (b *Builder) MessageHandler(ctx context.Context) interfaces.MessageHandler {
 	return func(message *nats.Msg) {
-		dto := b.natsMessageToDTO(message)
-		if dto == nil {
+		var dto domains.WebPushNotificationDTO
+		if err := json.Unmarshal(message.Data, &dto); err != nil {
+			logging.LogError(b.logger, "Failed to unmarshal web push notification message", err)
+
 			return
 		}
 
-		msg, err := b.messagesUseCases.GetMessageByID(ctx, dto.UserID, dto.MessageID)
-		if err != nil {
+		switch dto.Type {
+		case domains.WebPushTypeNewMessage:
+			b.handleNewMessage(ctx, dto)
+		default:
 			logging.LogError(
 				b.logger,
-				fmt.Sprintf(
-					"Failed to get message with ID=%d",
-					dto.MessageID,
-				),
-				err,
+				fmt.Sprintf("Unknown web push notification type: %s", dto.Type),
+				nil,
 			)
-
-			return
-		}
-
-		subscriptions, err := b.webPushSubscriptionsUseCases.GetWebPushSubscriptionsByUserID(
-			ctx,
-			dto.UserID,
-		)
-		if err != nil {
-			logging.LogError(
-				b.logger,
-				fmt.Sprintf(
-					"Failed to get push subscriptions for User with ID=%d",
-					dto.UserID,
-				),
-				err,
-			)
-
-			return
-		}
-
-		for _, sub := range subscriptions {
-			if err = b.webPushSubscriptionsUseCases.SendWebPushNotification(
-				ctx,
-				sub,
-				*msg,
-			); err != nil {
-				logging.LogError(
-					b.logger,
-					fmt.Sprintf(
-						"Failed to send push notification to endpoint=%s for User with ID=%d",
-						sub.Endpoint,
-						dto.UserID,
-					),
-					err,
-				)
-			}
 		}
 	}
 }
 
-func (b *Builder) natsMessageToDTO(message *nats.Msg) *domains.WebPushNotificationDTO {
-	var dto domains.WebPushNotificationDTO
-	if err := json.Unmarshal(message.Data, &dto); err != nil {
-		logging.LogError(b.logger, "Failed to unmarshal push-notification message", err)
+func (b *Builder) handleNewMessage(ctx context.Context, dto domains.WebPushNotificationDTO) {
+	settings, err := b.settingsUseCases.GetSettingsByUserID(ctx, dto.UserID)
+	if err != nil {
+		logging.LogError(
+			b.logger,
+			fmt.Sprintf("Failed to get settings for User with ID=%d", dto.UserID),
+			err,
+		)
 
-		return nil
+		return
 	}
 
-	return &dto
+	if !domains.HasConsent(settings.WebPushConsents, domains.ConsentNewMessage) {
+		return
+	}
+
+	var payload domains.NewMessagePayload
+	if err = json.Unmarshal(dto.Payload, &payload); err != nil {
+		logging.LogError(b.logger, "Failed to unmarshal new message payload", err)
+
+		return
+	}
+
+	if err = b.notificationsUseCases.SendNewMessageByWebPush(
+		ctx,
+		dto.UserID,
+		payload,
+	); err != nil {
+		logging.LogError(
+			b.logger,
+			fmt.Sprintf("Failed to send web push to User with ID=%d", dto.UserID),
+			err,
+		)
+	}
 }

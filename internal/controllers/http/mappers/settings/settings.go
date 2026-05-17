@@ -7,6 +7,8 @@ import (
 
 func MapSettings(settings domains.Settings) schemas.Settings {
 	return schemas.Settings{
-		Theme: int(settings.Theme),
+		Theme:           int(settings.Theme),
+		EmailConsents:   int(settings.EmailConsents),
+		WebPushConsents: int(settings.WebPushConsents),
 	}
 }

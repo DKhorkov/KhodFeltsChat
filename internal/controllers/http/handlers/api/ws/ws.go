@@ -185,7 +185,7 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 
 		messageToSend := messages.MapMessage(*savedMessage)
 
-		messageToSend.IsRead = false // Соощбение не прочитано дял всех получателей, так как является новым
+		messageToSend.IsRead = false // Сообщение не прочитано для всех получателей, так как является новым
 
 		for _, member := range chatMembers {
 			// Не отправляем обратно отправителю:
@@ -195,7 +195,11 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 
 			value, exists := h.connections.Load(member.ID)
 			if !exists {
-				h.publishWebPushNotification(ctx, member.ID, savedMessage.ID)
+				h.publishNewMessageNotifications(
+					ctx,
+					member.ID,
+					savedMessage.ID,
+				)
 
 				continue
 			}
@@ -240,20 +244,29 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 	}
 }
 
-func (h *Handler) publishWebPushNotification(ctx context.Context, userID, messageID uint64) {
-	pushDTO := domains.WebPushNotificationDTO{
-		UserID:    userID,
+func (h *Handler) publishNewMessageNotifications(
+	ctx context.Context,
+	userID, messageID uint64,
+) {
+	payload, err := json.Marshal(domains.NewMessagePayload{
 		MessageID: messageID,
+	})
+	if err != nil {
+		logging.LogErrorContext(ctx, h.logger, "Failed to marshal notification payload", err)
+
+		return
 	}
 
-	content, err := json.Marshal(pushDTO)
+	// Web push notification
+	webPushDTO := domains.WebPushNotificationDTO{
+		Type:    domains.WebPushTypeNewMessage,
+		UserID:  userID,
+		Payload: payload,
+	}
+
+	content, err := json.Marshal(webPushDTO)
 	if err != nil {
-		logging.LogErrorContext(
-			ctx,
-			h.logger,
-			"Failed to marshal push notification DTO",
-			err,
-		)
+		logging.LogErrorContext(ctx, h.logger, "Failed to marshal web-push DTO", err)
 
 		return
 	}
@@ -262,12 +275,28 @@ func (h *Handler) publishWebPushNotification(ctx context.Context, userID, messag
 		h.natsConfig.Subjects.WebPushNotification,
 		content,
 	); err != nil {
-		logging.LogErrorContext(
-			ctx,
-			h.logger,
-			"Failed to publish push notification",
-			err,
-		)
+		logging.LogErrorContext(ctx, h.logger, "Failed to publish web-push notification", err)
+	}
+
+	// Email notification
+	emailDTO := domains.EmailNotificationDTO{
+		Type:    domains.EmailTypeNewMessage,
+		UserID:  userID,
+		Payload: payload,
+	}
+
+	content, err = json.Marshal(emailDTO)
+	if err != nil {
+		logging.LogErrorContext(ctx, h.logger, "Failed to marshal email DTO", err)
+
+		return
+	}
+
+	if err = h.natsPublisher.Publish(
+		h.natsConfig.Subjects.EmailNotification,
+		content,
+	); err != nil {
+		logging.LogErrorContext(ctx, h.logger, "Failed to publish email notification", err)
 	}
 }
 

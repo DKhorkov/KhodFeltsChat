@@ -6,7 +6,6 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
 	mappers "github.com/DKhorkov/kfc/internal/controllers/http/mappers/web_push_subscriptions"
-	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"github.com/DKhorkov/kfc/internal/domains"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/contextlib"
@@ -41,22 +40,16 @@ func Handler(u interfaces.WebPushSubscriptionsUseCases) http.HandlerFunc {
 			return
 		}
 
-		var body schemas.CreateWebPushSubscriptionRequest
-		if err = json.NewDecoder(r.Body).Decode(&body.Body); err != nil {
+		var webPushSubscription domains.WebPushSubscription
+		if err = json.NewDecoder(r.Body).Decode(&webPushSubscription); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
 
-		subscription, err := u.CreateWebPushSubscription(
-			r.Context(),
-			domains.WebPushSubscription{
-				UserID:        userID,
-				Endpoint:      body.Body.Endpoint,
-				EncryptionKey: body.Body.Keys.EncryptionKey,
-				Auth:          body.Body.Keys.Auth,
-			},
-		)
+		webPushSubscription.UserID = userID
+
+		subscription, err := u.CreateWebPushSubscription(r.Context(), webPushSubscription)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 

@@ -39,19 +39,6 @@ func (d *TraceDecorator) CreateWebPushSubscription(
 	return d.base.CreateWebPushSubscription(ctx, subscription)
 }
 
-func (d *TraceDecorator) GetWebPushSubscriptionsByUserID(
-	ctx context.Context,
-	userID uint64,
-) ([]domains.WebPushSubscription, error) {
-	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
-	defer span.End()
-
-	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
-	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
-
-	return d.base.GetWebPushSubscriptionsByUserID(ctx, userID)
-}
-
 func (d *TraceDecorator) DeleteWebPushSubscription(ctx context.Context, id uint64) error {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
@@ -60,18 +47,4 @@ func (d *TraceDecorator) DeleteWebPushSubscription(ctx context.Context, id uint6
 	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
 
 	return d.base.DeleteWebPushSubscription(ctx, id)
-}
-
-func (d *TraceDecorator) SendWebPushNotification(
-	ctx context.Context,
-	subscription domains.WebPushSubscription,
-	message domains.Message,
-) error {
-	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
-	defer span.End()
-
-	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
-	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
-
-	return d.base.SendWebPushNotification(ctx, subscription, message)
 }

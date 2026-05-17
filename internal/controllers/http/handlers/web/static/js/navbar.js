@@ -5,6 +5,9 @@
 const THEME_LIGHT = 0;
 const THEME_DARK = 1;
 
+// Бит-маска согласий на уведомления
+const CONSENT_NEW_MESSAGE = 1;
+
 function applyTheme(themeDark) {
     if (themeDark) {
         document.documentElement.setAttribute('data-bs-theme', 'dark');
@@ -26,25 +29,20 @@ async function toggleTheme() {
     applyTheme(newDark);
 
     // Сохраняем на сервер
-    try {
-        await fetchWithAuth('/api/users/me/settings', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ theme: newDark ? THEME_DARK : THEME_LIGHT }),
-        });
-    } catch (err) {
-        console.error('Не удалось сохранить тему:', err);
-    }
+    await saveSettings({ theme: newDark ? THEME_DARK : THEME_LIGHT });
 }
 
 function updateThemeSwitchUI() {
-    const track = document.querySelector('.theme-switch__track');
-    const thumb = document.querySelector('.theme-switch__thumb');
+    const container = document.getElementById('theme-switch-toggle');
+    if (!container) return;
+
+    const track = container.querySelector('.toggle__track');
+    const thumb = container.querySelector('.toggle__thumb');
     if (!track || !thumb) return;
 
     const dark = isDarkTheme();
-    track.classList.toggle('theme-switch__track--on', dark);
-    thumb.classList.toggle('theme-switch__thumb--on', dark);
+    track.classList.toggle('toggle__track--on', dark);
+    thumb.classList.toggle('toggle__thumb--on', dark);
 }
 
 function clearTheme() {
@@ -53,27 +51,94 @@ function clearTheme() {
     updateThemeSwitchUI();
 }
 
-async function updatePushToggleUI(toggleEl) {
-    const label = toggleEl.querySelector('.profile-modal__push-status');
-    if (!label) return;
+// ═══════════════════════════════════════
+// Уведомления: управление согласиями
+// ═══════════════════════════════════════
 
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        label.textContent = 'Не поддерживается';
-        return;
+function updateSwitchUI(switchEl, on) {
+    if (!switchEl) return;
+
+    const track = switchEl.querySelector('.toggle__track');
+    const thumb = switchEl.querySelector('.toggle__thumb');
+    if (!track || !thumb) return;
+
+    track.classList.toggle('toggle__track--on', on);
+    thumb.classList.toggle('toggle__thumb--on', on);
+}
+
+// Текущее состояние настроек, хранится для отправки полного объекта при обновлении
+let currentSettings = null;
+
+async function saveSettings(patch) {
+    if (currentSettings) {
+        Object.assign(currentSettings, patch);
     }
 
+    const body = currentSettings || patch;
+
     try {
-        const registration = await navigator.serviceWorker.getRegistration('/web/sw.js');
-        if (!registration) {
-            label.textContent = 'Отключены';
-            return;
+        await fetchWithAuth('/api/users/me/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+    } catch (err) {
+        console.error('Не удалось сохранить настройки:', err);
+    }
+}
+
+function hasConsent(mask, bit) {
+    return (mask & bit) !== 0;
+}
+
+function toggleConsent(mask, bit) {
+    return hasConsent(mask, bit) ? mask & ~bit : mask | bit;
+}
+
+async function ensureBrowserWebPushSubscription() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+
+    if (Notification.permission === 'denied') return false;
+
+    const registration = await navigator.serviceWorker.getRegistration('/web/sw.js');
+    if (!registration) return false;
+
+    const existing = await registration.pushManager.getSubscription();
+    if (existing) return true;
+
+    if (typeof subscribeToWebPush === 'function') {
+        try {
+            await subscribeToWebPush(registration);
+            return true;
+        } catch (err) {
+            console.error('Не удалось подписаться на web-push:', err);
+            return false;
+        }
+    }
+
+    return false;
+}
+
+async function removeBrowserWebPushSubscription() {
+    if (!('serviceWorker' in navigator)) return;
+
+    const registration = await navigator.serviceWorker.getRegistration('/web/sw.js');
+    if (!registration) return;
+
+    const subscription = await registration.pushManager.getSubscription();
+    if (!subscription) return;
+
+    await subscription.unsubscribe();
+
+    const subId = localStorage.getItem('webPushSubscriptionId');
+    if (subId) {
+        try {
+            await fetchWithAuth('/api/web-push/subscribe/' + subId, { method: 'DELETE' });
+        } catch (err) {
+            console.error('Unsubscribe error:', err);
         }
 
-        const subscription = await registration.pushManager.getSubscription();
-        label.textContent = subscription ? 'Включены' : 'Отключены';
-    } catch (err) {
-        console.log('Push toggle UI update error:', err);
-        label.textContent = 'Отключены';
+        localStorage.removeItem('webPushSubscriptionId');
     }
 }
 
@@ -117,18 +182,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         profile.addEventListener('click', () => openMyProfileModal(currentUser));
 
-        // Подтягиваем тему пользователя с сервера
+        // Подтягиваем настройки пользователя с сервера
         try {
             const settingsResp = await fetchWithAuth('/api/users/me/settings');
             if (settingsResp.ok) {
-                const settings = await settingsResp.json();
-                applyTheme(settings.theme === THEME_DARK);
+                currentSettings = await settingsResp.json();
+                applyTheme(currentSettings.theme === THEME_DARK);
+                initNotificationToggles(currentSettings);
             }
         } catch (e) {
-            console.log('Не удалось загрузить настройки:', e);
+            console.error('Не удалось загрузить настройки:', e);
         }
     } catch (err) {
-        console.log(err);
+        console.error(err);
     }
 
     // --- Модалка профиля ---
@@ -173,6 +239,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             passwordForm.reset();
         }
 
+        const notificationsPanel = document.getElementById('my-profile-notifications-panel');
+        if (notificationsPanel) {
+            notificationsPanel.style.display = 'none';
+        }
+
         document.querySelectorAll('#modal-my-profile .profile-modal__chevron').forEach(
             ch => ch.classList.remove('profile-modal__chevron--open')
         );
@@ -195,6 +266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Тогглы секций
     setupMyProfileToggle('my-profile-toggle-edit', 'my-profile-edit-form');
     setupMyProfileToggle('my-profile-toggle-password', 'my-profile-password-form');
+    setupMyProfileToggle('my-profile-toggle-notifications', 'my-profile-notifications-panel');
 
     function setupMyProfileToggle(toggleId, formId) {
         const toggle = document.getElementById(toggleId);
@@ -315,61 +387,69 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Push-уведомления
-    const pushToggle = document.getElementById('my-profile-toggle-push');
-    if (pushToggle) {
-        updatePushToggleUI(pushToggle);
+    // Уведомления — обработчики тоглов
 
-        pushToggle.addEventListener('click', async () => {
-            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                showInfo('Push-уведомления не поддерживаются вашим браузером');
-                return;
-            }
+    function initNotificationToggles(settings) {
+        const emailToggle = document.getElementById('toggle-email-new-message');
+        const webPushToggle = document.getElementById('toggle-webpush-new-message');
 
-            const registration = await navigator.serviceWorker.getRegistration('/web/sw.js');
-            if (!registration) {
-                showInfo('Service Worker не зарегистрирован. Обновите страницу.');
-                return;
-            }
+        updateSwitchUI(emailToggle, hasConsent(settings.emailConsents, CONSENT_NEW_MESSAGE));
+        updateSwitchUI(webPushToggle, hasConsent(settings.webPushConsents, CONSENT_NEW_MESSAGE));
 
-            const subscription = await registration.pushManager.getSubscription();
-
-            if (subscription) {
-                // Отключаем
-                const subId = localStorage.getItem('pushSubscriptionId');
-                await subscription.unsubscribe();
-
-                if (subId) {
-                    try {
-                        await fetchWithAuth('/api/web-push/subscribe/' + subId, { method: 'DELETE' });
-                    } catch (err) {
-                        console.log('Unsubscribe error:', err);
-                    }
-
-                    localStorage.removeItem('pushSubscriptionId');
+        // Авто-синхронизация: если на сервере согласие есть, подписываемся в браузере
+        if (hasConsent(settings.webPushConsents, CONSENT_NEW_MESSAGE)) {
+            ensureBrowserWebPushSubscription().then(ok => {
+                if (!ok && Notification.permission === 'denied') {
+                    // Браузер запретил — сбрасываем серверный бит
+                    currentSettings.webPushConsents = currentSettings.webPushConsents & ~CONSENT_NEW_MESSAGE;
+                    updateSwitchUI(webPushToggle, false);
+                    return saveSettings({ webPushConsents: currentSettings.webPushConsents });
                 }
+            }).catch(err => console.error('Web push subscription check failed:', err));
+        }
+    }
 
-                showInfo('Push-уведомления отключены');
-            } else {
-                // Включаем
-                if (Notification.permission === 'denied') {
-                    showInfo('Уведомления заблокированы в настройках браузера');
-                    updatePushToggleUI(pushToggle);
+    const emailNewMsgToggle = document.getElementById('toggle-email-new-message');
+    if (emailNewMsgToggle) {
+        emailNewMsgToggle.addEventListener('click', async () => {
+            if (!currentSettings) return;
+
+            currentSettings.emailConsents = toggleConsent(currentSettings.emailConsents, CONSENT_NEW_MESSAGE);
+            updateSwitchUI(emailNewMsgToggle, hasConsent(currentSettings.emailConsents, CONSENT_NEW_MESSAGE));
+            await saveSettings({ emailConsents: currentSettings.emailConsents });
+        });
+    }
+
+    const webPushNewMsgToggle = document.getElementById('toggle-webpush-new-message');
+    if (webPushNewMsgToggle) {
+        webPushNewMsgToggle.addEventListener('click', async () => {
+            if (!currentSettings) return;
+
+            const turningOn = !hasConsent(currentSettings.webPushConsents, CONSENT_NEW_MESSAGE);
+
+            if (turningOn) {
+                if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                    showInfo('Web Push-уведомления не поддерживаются вашим браузером');
                     return;
                 }
 
-                try {
-                    if (typeof subscribeToPush === 'function') {
-                        await subscribeToPush(registration);
-                    }
-
-                    showInfo('Push-уведомления включены');
-                } catch (err) {
-                    showError('Не удалось включить уведомления: ' + err.message);
+                if (Notification.permission === 'denied') {
+                    showInfo('Уведомления заблокированы в настройках браузера');
+                    return;
                 }
+
+                const ok = await ensureBrowserWebPushSubscription();
+                if (!ok) {
+                    showInfo('Не удалось подписаться на Web Push-уведомления');
+                    return;
+                }
+            } else {
+                await removeBrowserWebPushSubscription();
             }
 
-            updatePushToggleUI(pushToggle);
+            currentSettings.webPushConsents = toggleConsent(currentSettings.webPushConsents, CONSENT_NEW_MESSAGE);
+            updateSwitchUI(webPushNewMsgToggle, hasConsent(currentSettings.webPushConsents, CONSENT_NEW_MESSAGE));
+            await saveSettings({ webPushConsents: currentSettings.webPushConsents });
         });
     }
 
@@ -383,7 +463,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     credentials: 'same-origin',
                 });
             } catch (err) {
-                console.log(err);
+                console.error(err);
             }
 
             // Сбрасываем тему на светлую при выходе

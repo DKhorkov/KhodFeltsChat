@@ -12,11 +12,13 @@ import (
 const (
 	settingsTableName = "settings"
 
-	idColumnName        = "id"
-	userIDColumnName    = "user_id"
-	themeColumnName     = "theme"
-	createdAtColumnName = "created_at"
-	updatedAtColumnName = "updated_at"
+	idColumnName              = "id"
+	userIDColumnName          = "user_id"
+	themeColumnName           = "theme"
+	createdAtColumnName       = "created_at"
+	updatedAtColumnName       = "updated_at"
+	emailConsentsColumnName   = "email_consents"
+	webPushConsentsColumnName = "web_push_consents"
 
 	selectAllColumns = "*"
 )
@@ -35,10 +37,14 @@ func (repo *Repository) CreateSettings(ctx context.Context, settings domains.Set
 		Columns(
 			userIDColumnName,
 			themeColumnName,
+			emailConsentsColumnName,
+			webPushConsentsColumnName,
 		).
 		Values(
 			settings.UserID,
 			settings.Theme,
+			settings.EmailConsents,
+			settings.WebPushConsents,
 		).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
@@ -83,6 +89,8 @@ func (repo *Repository) UpdateSettings(
 		Update(settingsTableName).
 		Where(sq.Eq{userIDColumnName: settings.UserID}).
 		Set(themeColumnName, settings.Theme).
+		Set(emailConsentsColumnName, settings.EmailConsents).
+		Set(webPushConsentsColumnName, settings.WebPushConsents).
 		Set(updatedAtColumnName, time.Now()).
 		PlaceholderFormat(sq.Dollar)
 

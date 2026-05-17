@@ -1,3 +1,11 @@
+self.addEventListener('install', async () => {
+    await self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(clients.claim());
+});
+
 self.addEventListener('push', (event) => {
     const data = event.data ? event.data.json() : {};
 
@@ -13,7 +21,19 @@ self.addEventListener('push', (event) => {
         },
     };
 
-    event.waitUntil(self.registration.showNotification(title, options));
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+            const hasFocusedClient = windowClients.some(
+                (client) => client.focused && client.url.includes('/web/chat')
+            );
+
+            if (hasFocusedClient) {
+                return;
+            }
+
+            return self.registration.showNotification(title, options);
+        })
+    );
 });
 
 self.addEventListener('notificationclick', (event) => {
@@ -25,6 +45,9 @@ self.addEventListener('notificationclick', (event) => {
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
             for (const client of windowClients) {
                 if (client.url.includes('/web/chat') && 'focus' in client) {
+                    if (chatId) {
+                        client.postMessage({ type: 'open-chat', chatId: chatId });
+                    }
                     return client.focus();
                 }
             }
