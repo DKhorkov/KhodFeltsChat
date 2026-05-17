@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const modalContent = document.getElementById('modal-my-profile-content');
     if (!modal) return;
 
-    function openMyProfileModal(user) {
+    async function openMyProfileModal(user) {
         document.getElementById('my-profile-avatar').textContent =
             user.username.charAt(0).toUpperCase();
         document.getElementById('my-profile-username').textContent = user.username;
@@ -269,6 +269,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
         modal.style.display = '';
+
+        // Перезапрашиваем настройки при открытии модалки (синхронизация с другими устройствами)
+        try {
+            const settingsResp = await fetchWithAuth('/api/users/me/settings');
+            if (settingsResp.ok) {
+                currentSettings = await settingsResp.json();
+                applyTheme(currentSettings.theme === THEME_DARK);
+                initNotificationToggles(currentSettings);
+            }
+        } catch (e) {
+            console.error('Не удалось обновить настройки:', e);
+        }
     }
 
     function closeMyProfileModal() {
@@ -499,6 +511,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             await saveSettings({ webPushConsents: currentSettings.webPushConsents });
         });
     }
+
+    // Синхронизация настроек при возврате на вкладку (например, после изменения темы в GUI)
+    document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState !== 'visible') return;
+
+        try {
+            const settingsResp = await fetchWithAuth('/api/users/me/settings');
+            if (!settingsResp.ok) return;
+
+            currentSettings = await settingsResp.json();
+            applyTheme(currentSettings.theme === THEME_DARK);
+            initNotificationToggles(currentSettings);
+        } catch (e) {
+            console.error('Не удалось обновить настройки:', e);
+        }
+    });
 
     // Выход
     const logoutBtn = document.getElementById('btn-my-profile-logout');
