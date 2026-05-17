@@ -5,6 +5,9 @@
 const THEME_LIGHT = 0;
 const THEME_DARK = 1;
 
+// Бит-маска согласий на уведомления
+const CONSENT_NEW_MESSAGE = 1;
+
 function applyTheme(themeDark) {
     if (themeDark) {
         document.documentElement.setAttribute('data-bs-theme', 'dark');
@@ -26,31 +29,164 @@ async function toggleTheme() {
     applyTheme(newDark);
 
     // Сохраняем на сервер
-    try {
-        await fetchWithAuth('/api/users/me/settings', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ theme: newDark ? THEME_DARK : THEME_LIGHT }),
-        });
-    } catch (err) {
-        console.error('Не удалось сохранить тему:', err);
-    }
+    await saveSettings({ theme: newDark ? THEME_DARK : THEME_LIGHT });
 }
 
 function updateThemeSwitchUI() {
-    const track = document.querySelector('.theme-switch__track');
-    const thumb = document.querySelector('.theme-switch__thumb');
+    const container = document.getElementById('theme-switch-toggle');
+    if (!container) return;
+
+    const track = container.querySelector('.toggle__track');
+    const thumb = container.querySelector('.toggle__thumb');
     if (!track || !thumb) return;
 
     const dark = isDarkTheme();
-    track.classList.toggle('theme-switch__track--on', dark);
-    thumb.classList.toggle('theme-switch__thumb--on', dark);
+    track.classList.toggle('toggle__track--on', dark);
+    thumb.classList.toggle('toggle__thumb--on', dark);
 }
 
 function clearTheme() {
     document.documentElement.removeAttribute('data-bs-theme');
     localStorage.removeItem('theme');
     updateThemeSwitchUI();
+}
+
+// ═══════════════════════════════════════
+// Уведомления: управление согласиями
+// ═══════════════════════════════════════
+
+function updateSwitchUI(switchEl, on) {
+    if (!switchEl) return;
+
+    const track = switchEl.querySelector('.toggle__track');
+    const thumb = switchEl.querySelector('.toggle__thumb');
+    if (!track || !thumb) return;
+
+    track.classList.toggle('toggle__track--on', on);
+    thumb.classList.toggle('toggle__thumb--on', on);
+}
+
+// Текущее состояние настроек, хранится для отправки полного объекта при обновлении
+let currentSettings = null;
+
+async function saveSettings(patch) {
+    if (currentSettings) {
+        Object.assign(currentSettings, patch);
+    }
+
+    const body = currentSettings || patch;
+
+    try {
+        await fetchWithAuth('/api/users/me/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+    } catch (err) {
+        console.error('Не удалось сохранить настройки:', err);
+    }
+}
+
+function hasConsent(mask, bit) {
+    return (mask & bit) !== 0;
+}
+
+function toggleConsent(mask, bit) {
+    return hasConsent(mask, bit) ? mask & ~bit : mask | bit;
+}
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+
+    return outputArray;
+}
+
+async function subscribeToWebPush(registration) {
+    const resp = await fetchWithAuth('/api/web-push/vapid-key');
+    if (!resp.ok) throw new Error('Failed to fetch VAPID key');
+
+    const { publicKey } = await resp.json();
+
+    const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+    });
+
+    await sendWebPushSubscriptionToServer(subscription);
+}
+
+async function sendWebPushSubscriptionToServer(subscription) {
+    const resp = await fetchWithAuth('/api/web-push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            endpoint: subscription.endpoint,
+            encryptionKey: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
+            auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
+        }),
+    });
+
+    if (resp.ok) {
+        const data = await resp.json();
+        localStorage.setItem('webPushSubscriptionId', data.id);
+    }
+}
+
+async function ensureBrowserWebPushSubscription() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+
+    if (Notification.permission === 'denied') return false;
+
+    try {
+        const registration = await navigator.serviceWorker.register('/web/sw.js');
+
+        const existing = await registration.pushManager.getSubscription();
+        if (existing) return true;
+
+        if (Notification.permission === 'default') {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') return false;
+        }
+
+        if (typeof subscribeToWebPush === 'function') {
+            await subscribeToWebPush(registration);
+            return true;
+        }
+    } catch (err) {
+        console.error('Не удалось подписаться на web-push:', err);
+    }
+
+    return false;
+}
+
+async function removeBrowserWebPushSubscription() {
+    if (!('serviceWorker' in navigator)) return;
+
+    const registration = await navigator.serviceWorker.getRegistration('/web/sw.js');
+    if (!registration) return;
+
+    const subscription = await registration.pushManager.getSubscription();
+    if (!subscription) return;
+
+    await subscription.unsubscribe();
+
+    const subId = localStorage.getItem('webPushSubscriptionId');
+    if (subId) {
+        try {
+            await fetchWithAuth('/api/web-push/subscribe/' + subId, { method: 'DELETE' });
+        } catch (err) {
+            console.error('Unsubscribe error:', err);
+        }
+
+        localStorage.removeItem('webPushSubscriptionId');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -93,18 +229,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         profile.addEventListener('click', () => openMyProfileModal(currentUser));
 
-        // Подтягиваем тему пользователя с сервера
+        // Подтягиваем настройки пользователя с сервера
         try {
             const settingsResp = await fetchWithAuth('/api/users/me/settings');
             if (settingsResp.ok) {
-                const settings = await settingsResp.json();
-                applyTheme(settings.theme === THEME_DARK);
+                currentSettings = await settingsResp.json();
+                applyTheme(currentSettings.theme === THEME_DARK);
+                initNotificationToggles(currentSettings);
             }
         } catch (e) {
-            console.log('Не удалось загрузить настройки:', e);
+            console.error('Не удалось загрузить настройки:', e);
         }
     } catch (err) {
-        console.log(err);
+        console.error(err);
     }
 
     // --- Модалка профиля ---
@@ -149,6 +286,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             passwordForm.reset();
         }
 
+        const notificationsPanel = document.getElementById('my-profile-notifications-panel');
+        if (notificationsPanel) {
+            notificationsPanel.style.display = 'none';
+        }
+
         document.querySelectorAll('#modal-my-profile .profile-modal__chevron').forEach(
             ch => ch.classList.remove('profile-modal__chevron--open')
         );
@@ -171,6 +313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Тогглы секций
     setupMyProfileToggle('my-profile-toggle-edit', 'my-profile-edit-form');
     setupMyProfileToggle('my-profile-toggle-password', 'my-profile-password-form');
+    setupMyProfileToggle('my-profile-toggle-notifications', 'my-profile-notifications-panel');
 
     function setupMyProfileToggle(toggleId, formId) {
         const toggle = document.getElementById(toggleId);
@@ -291,6 +434,72 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // Уведомления — обработчики тоглов
+
+    function initNotificationToggles(settings) {
+        const emailToggle = document.getElementById('toggle-email-new-message');
+        const webPushToggle = document.getElementById('toggle-webpush-new-message');
+
+        updateSwitchUI(emailToggle, hasConsent(settings.emailConsents, CONSENT_NEW_MESSAGE));
+        updateSwitchUI(webPushToggle, hasConsent(settings.webPushConsents, CONSENT_NEW_MESSAGE));
+
+        // Авто-синхронизация: если на сервере согласие есть, подписываемся в браузере
+        if (hasConsent(settings.webPushConsents, CONSENT_NEW_MESSAGE)) {
+            ensureBrowserWebPushSubscription().then(ok => {
+                if (!ok && Notification.permission === 'denied') {
+                    // Браузер запретил — сбрасываем серверный бит
+                    currentSettings.webPushConsents = currentSettings.webPushConsents & ~CONSENT_NEW_MESSAGE;
+                    updateSwitchUI(webPushToggle, false);
+                    return saveSettings({ webPushConsents: currentSettings.webPushConsents });
+                }
+            }).catch(err => console.error('Web push subscription check failed:', err));
+        }
+    }
+
+    const emailNewMsgToggle = document.getElementById('toggle-email-new-message');
+    if (emailNewMsgToggle) {
+        emailNewMsgToggle.addEventListener('click', async () => {
+            if (!currentSettings) return;
+
+            currentSettings.emailConsents = toggleConsent(currentSettings.emailConsents, CONSENT_NEW_MESSAGE);
+            updateSwitchUI(emailNewMsgToggle, hasConsent(currentSettings.emailConsents, CONSENT_NEW_MESSAGE));
+            await saveSettings({ emailConsents: currentSettings.emailConsents });
+        });
+    }
+
+    const webPushNewMsgToggle = document.getElementById('toggle-webpush-new-message');
+    if (webPushNewMsgToggle) {
+        webPushNewMsgToggle.addEventListener('click', async () => {
+            if (!currentSettings) return;
+
+            const turningOn = !hasConsent(currentSettings.webPushConsents, CONSENT_NEW_MESSAGE);
+
+            if (turningOn) {
+                if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                    showInfo('Web Push-уведомления не поддерживаются вашим браузером');
+                    return;
+                }
+
+                if (Notification.permission === 'denied') {
+                    showInfo('Уведомления заблокированы в настройках браузера');
+                    return;
+                }
+
+                const ok = await ensureBrowserWebPushSubscription();
+                if (!ok) {
+                    showInfo('Не удалось подписаться на Web Push-уведомления');
+                    return;
+                }
+            } else {
+                await removeBrowserWebPushSubscription();
+            }
+
+            currentSettings.webPushConsents = toggleConsent(currentSettings.webPushConsents, CONSENT_NEW_MESSAGE);
+            updateSwitchUI(webPushNewMsgToggle, hasConsent(currentSettings.webPushConsents, CONSENT_NEW_MESSAGE));
+            await saveSettings({ webPushConsents: currentSettings.webPushConsents });
+        });
+    }
+
     // Выход
     const logoutBtn = document.getElementById('btn-my-profile-logout');
     if (logoutBtn) {
@@ -301,7 +510,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     credentials: 'same-origin',
                 });
             } catch (err) {
-                console.log(err);
+                console.error(err);
             }
 
             // Сбрасываем тему на светлую при выходе

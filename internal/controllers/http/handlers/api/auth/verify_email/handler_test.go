@@ -51,6 +51,7 @@ func TestHandler(t *testing.T) {
 			name: "successful email verification",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "valid_verification_token_123")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -68,6 +69,7 @@ func TestHandler(t *testing.T) {
 			name: "unauthorized - invalid JWT token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, invalidJWTToken)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -86,6 +88,7 @@ func TestHandler(t *testing.T) {
 			name: "not found - user not found",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "token_for_nonexistent_user")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -104,6 +107,7 @@ func TestHandler(t *testing.T) {
 			name: "conflict - email already confirmed",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "token_for_already_confirmed_email")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -122,6 +126,7 @@ func TestHandler(t *testing.T) {
 			name: "internal server error - use case error",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, validToken)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -140,7 +145,11 @@ func TestHandler(t *testing.T) {
 			name: "different token formats - standard JWT token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
-				return createRequest(t, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c")
+
+				return createRequest(
+					t,
+					"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+				)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
 				m.EXPECT().
@@ -153,6 +162,7 @@ func TestHandler(t *testing.T) {
 			name: "different token formats - hex token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "a1b2c3d4e5f67890")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -166,6 +176,7 @@ func TestHandler(t *testing.T) {
 			name: "different token formats - uuid token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "550e8400-e29b-41d4-a716-446655440000")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -179,6 +190,7 @@ func TestHandler(t *testing.T) {
 			name: "different token formats - token with special chars",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "token_with-special.chars+plus=equals")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -192,6 +204,7 @@ func TestHandler(t *testing.T) {
 			name: "different token formats - expired token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "expired_jwt_token")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -209,6 +222,7 @@ func TestHandler(t *testing.T) {
 			name: "different token formats - malformed JWT",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "not.a.valid.jwt")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -226,6 +240,7 @@ func TestHandler(t *testing.T) {
 			name: "expired verification token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "expired_verification_token")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -243,11 +258,14 @@ func TestHandler(t *testing.T) {
 			name: "very long token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				var longTokenSb strings.Builder
 				for range 4096 {
 					longTokenSb.WriteString("a")
 				}
+
 				longToken := longTokenSb.String()
+
 				return createRequest(t, longToken)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -255,6 +273,7 @@ func TestHandler(t *testing.T) {
 				for range 4096 {
 					longTokenSb.WriteString("a")
 				}
+
 				m.EXPECT().
 					VerifyEmail(gomock.Any(), longTokenSb.String()).
 					Return(nil)
@@ -265,6 +284,7 @@ func TestHandler(t *testing.T) {
 			name: "verification for deleted user",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "token_for_deleted_user")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -282,6 +302,7 @@ func TestHandler(t *testing.T) {
 			name: "database or external service errors - database connection error",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, validToken)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -299,6 +320,7 @@ func TestHandler(t *testing.T) {
 			name: "database or external service errors - cache service error",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, validToken)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -316,6 +338,7 @@ func TestHandler(t *testing.T) {
 			name: "database or external service errors - transaction error",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, validToken)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -333,6 +356,7 @@ func TestHandler(t *testing.T) {
 			name: "status code 204 No Content on success",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "valid_verification_token")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -343,7 +367,12 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
-				assert.NotEqual(t, http.StatusOK, rr.Code, "Should return 204 No Content, not 200 OK")
+				assert.NotEqual(
+					t,
+					http.StatusOK,
+					rr.Code,
+					"Should return 204 No Content, not 200 OK",
+				)
 				assert.Empty(t, rr.Body.String())
 			},
 		},
@@ -351,6 +380,7 @@ func TestHandler(t *testing.T) {
 			name: "token with query parameters in URL",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				token := "token123"
 				url := "/verify-email/" + token + "?redirect=true&mode=web"
 				req := httptest.NewRequest(http.MethodPost, url, http.NoBody)
@@ -358,6 +388,7 @@ func TestHandler(t *testing.T) {
 					verify_email.TokenRouteKey: token,
 				}
 				req = mux.SetURLVars(req, vars)
+
 				return req
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -371,6 +402,7 @@ func TestHandler(t *testing.T) {
 			name: "verification after user changes email",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "token_for_old_email")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -388,6 +420,7 @@ func TestHandler(t *testing.T) {
 			name: "verification with body in request (should be ignored)",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				req := httptest.NewRequest(
 					http.MethodPost,
 					"/verify-email/"+validToken,
@@ -397,6 +430,7 @@ func TestHandler(t *testing.T) {
 					verify_email.TokenRouteKey: validToken,
 				}
 				req = mux.SetURLVars(req, vars)
+
 				return req
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {

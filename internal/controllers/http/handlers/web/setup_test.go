@@ -36,6 +36,7 @@ func TestSetupHandlers_RoutesRegistered(t *testing.T) {
 		{"GET /forget-password", http.MethodGet, "/forget-password"},
 		{"GET /chat", http.MethodGet, "/chat"},
 		{"GET /verify-email/test-token", http.MethodGet, "/verify-email/test-token"},
+		{"GET /sw.js", http.MethodGet, "/sw.js"},
 	}
 
 	for _, tt := range tests {
@@ -44,7 +45,13 @@ func TestSetupHandlers_RoutesRegistered(t *testing.T) {
 
 			req := httptest.NewRequest(tt.method, tt.path, http.NoBody)
 			match := mux.RouteMatch{}
-			assert.True(t, webMux.Match(req, &match), "Expected %s %s to be registered", tt.method, tt.path)
+			assert.True(
+				t,
+				webMux.Match(req, &match),
+				"Expected %s %s to be registered",
+				tt.method,
+				tt.path,
+			)
 		})
 	}
 }

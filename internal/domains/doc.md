@@ -29,6 +29,15 @@
 ### Pagination
 Параметры постраничной выборки: `Limit *uint64`, `Offset *uint64`.
 
+### Settings
+Настройки пользователя: `UserID`, `Theme`, `EmailConsents`, `WebPushConsents`.
+- `NotificationConsent` — битовая маска согласий (`uint64`).
+- `ConsentNewMessage = 1 << iota` — согласие на уведомления о новых сообщениях.
+- `HasConsent(consents, consent) bool` — проверка наличия конкретного согласия в маске.
+
+### WebPushSubscription
+Push-подписка пользователя на Web Push уведомления: `ID`, `UserID`, `Endpoint`, `EncryptionKey`, `Auth`, `CreatedAt`.
+
 ## DTO
 
 | Тип | Назначение |
@@ -43,13 +52,24 @@
 | `SendVerifyEmailMessageDTO` | Email для отправки письма верификации |
 | `SendForgetPasswordMessageDTO` | Email для отправки письма восстановления пароля |
 
+
+## Типы уведомлений (notifications.go)
+
+| Тип | Описание |
+|---|---|
+| `EmailNotificationType` | Тип email-уведомления (строка): `VerifyEmail`, `ForgetPassword`, `NewMessage` |
+| `WebPushNotificationType` | Тип web-push-уведомления (строка): `NewMessage` |
+
 ## Notification DTO (для NATS-воркеров)
 
 | Тип | Поля |
 |---|---|
-| `VerifyEmailNotificationDTO` | `UserID uint64` |
-| `ForgetPasswordNotificationDTO` | `UserID uint64` |
+| `EmailNotificationDTO` | `Type`, `UserID`, `Payload json.RawMessage` |
+| `WebPushNotificationDTO` | `Type`, `UserID`, `Payload json.RawMessage` |
+| `NewMessagePayload` | `MessageID`, `ChatID` — полезная нагрузка уведомления о новом сообщении |
+
+Оба DTO используют двухэтапную десериализацию: сначала envelope (Type + UserID), затем Payload в зависимости от Type.
 
 ## Зависимости
 
-Только стандартная библиотека (`time`, `slices`).
+Стандартная библиотека (`time`, `encoding/json`).

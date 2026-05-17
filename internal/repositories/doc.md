@@ -17,13 +17,14 @@
 
 ## Подпакеты
 
-| Пакет      | Таблицы                              | Описание                          |
-|------------|--------------------------------------|-----------------------------------|
-| `auth`     | `users`, `refresh_tokens`            | Регистрация, токены, пароли       |
-| `users`    | `users`                              | CRUD пользователей                |
-| `chats`    | `chats`, `chats_members`             | Чаты и участники                  |
-| `messages` | `messages`, `messages_statuses`      | Сообщения и статусы прочтения     |
-| `emails`   | —                                    | Отправка email через SMTP (gomail)|
+| Пакет                | Таблицы                              | Описание                               |
+|----------------------|--------------------------------------|----------------------------------------|
+| `auth`               | `users`, `refresh_tokens`            | Регистрация, токены, пароли            |
+| `users`              | `users`                              | CRUD пользователей                     |
+| `chats`              | `chats`, `chats_members`             | Чаты и участники                       |
+| `messages`           | `messages`, `messages_statuses`      | Сообщения и статусы прочтения          |
+| `emails`             | —                                    | Отправка email через SMTP (gomail)     |
+| `web_push_subscriptions` | `push_subscriptions`                 | CRUD push-подписок на уведомления      |
 
 ## Зависимости
 

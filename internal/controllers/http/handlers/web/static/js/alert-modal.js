@@ -23,11 +23,26 @@ function showAlert(message, type) {
     const modal = document.createElement('div');
     modal.className = 'alert-modal';
 
-    modal.innerHTML =
-        '<div class="alert-modal__icon">' + (isError ? '❌' : 'ℹ️') + '</div>' +
-        '<div class="alert-modal__title">' + (isError ? 'Ошибка' : 'Информация') + '</div>' +
-        '<div class="alert-modal__message">' + message + '</div>' +
-        '<button class="alert-modal__btn alert-modal__btn--' + type + '">OK</button>';
+    const icon = document.createElement('div');
+    icon.className = 'alert-modal__icon';
+    icon.textContent = isError ? '❌' : 'ℹ️';
+
+    const title = document.createElement('div');
+    title.className = 'alert-modal__title';
+    title.textContent = isError ? 'Ошибка' : 'Информация';
+
+    const msg = document.createElement('div');
+    msg.className = 'alert-modal__message';
+    msg.textContent = message;
+
+    const btn = document.createElement('button');
+    btn.className = 'alert-modal__btn alert-modal__btn--' + type;
+    btn.textContent = 'OK';
+
+    modal.appendChild(icon);
+    modal.appendChild(title);
+    modal.appendChild(msg);
+    modal.appendChild(btn);
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);

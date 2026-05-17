@@ -7,6 +7,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/chat"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/forget_password"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/login"
+	serviceworker "github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/service_worker"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web/verify_email"
 	"github.com/gorilla/mux"
 )
@@ -18,6 +19,7 @@ const (
 	VerifyEmailURL    = "/verify-email/{%s}"
 	ChatURL           = "/chat"
 	StaticURL         = "/static/"
+	ServiceWorkerURL  = "/sw.js"
 
 	StaticFilePath = "internal/controllers/http/handlers" + WebURL + StaticURL
 )
@@ -31,6 +33,9 @@ func SetupHandlers(webMux *mux.Router) {
 		fmt.Sprintf(VerifyEmailURL, verify_email.TokenRouteKey),
 		verify_email.Handler(),
 	)
+
+	// Service Worker (served from /web/ scope):
+	getMux.HandleFunc(ServiceWorkerURL, serviceworker.Handler())
 
 	// Статические файлы (CSS, JS):
 	webMux.PathPrefix(StaticURL).Handler(

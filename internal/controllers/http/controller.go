@@ -21,6 +21,7 @@ import (
 	metricsmiddleware "github.com/DKhorkov/libs/middlewares/http/metrics"
 	requestidmiddleware "github.com/DKhorkov/libs/middlewares/http/request_id"
 	tracingmiddleware "github.com/DKhorkov/libs/middlewares/http/tracing"
+	customnats "github.com/DKhorkov/libs/nats"
 	"github.com/DKhorkov/libs/security"
 	"github.com/DKhorkov/libs/tracing"
 	"github.com/gorilla/mux"
@@ -39,17 +40,21 @@ func New(
 	corsConfig config.CORSConfig,
 	docsConfig config.DocsConfig,
 	cookiesConfig config.CookiesConfig,
+	natsConfig config.NATSConfig,
 	usersUseCases interfaces.UsersUseCases,
 	authUseCases interfaces.AuthUseCases,
 	chatsUseCases interfaces.ChatsUseCases,
 	messagesUseCases interfaces.MessagesUseCases,
 	settingsUseCases interfaces.SettingsUseCases,
+	webPushSubscriptionsUseCases interfaces.WebPushSubscriptionsUseCases,
 	logger logging.Logger,
 	traceProvider tracing.Provider,
 	upgrader interfaces.Upgrader,
+	natsPublisher customnats.Publisher,
 	spanConfig tracing.SpanConfig,
 	securityConfig security.Config,
 	sensitiveFields []string,
+	vapidPublicKey string,
 ) (*Controller, error) {
 	rootMux := mux.NewRouter()
 	rootMux.Use(tracingmiddleware.Middleware(traceProvider, spanConfig))
@@ -129,6 +134,12 @@ func New(
 					Methods: []string{http.MethodGet},
 				},
 				{
+					Path: regexp.MustCompile(
+						`^` + handlers.APIPrefix + api.WebPushVAPIDKeyURL + `$`,
+					),
+					Methods: []string{http.MethodGet},
+				},
+				{
 					Path:    regexp.MustCompile(`^` + handlers.WebPrefix),
 					Methods: []string{http.MethodGet},
 				},
@@ -140,13 +151,17 @@ func New(
 		rootMux,
 		docsConfig,
 		cookiesConfig,
+		natsConfig,
 		usersUseCases,
 		authUseCases,
 		chatsUseCases,
 		messagesUseCases,
 		settingsUseCases,
+		webPushSubscriptionsUseCases,
 		logger,
 		upgrader,
+		natsPublisher,
+		vapidPublicKey,
 	)
 
 	httpHandler := cors.New(

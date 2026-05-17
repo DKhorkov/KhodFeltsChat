@@ -615,3 +615,122 @@ func TestTraceDecorator_GetChatMessages(t *testing.T) {
 		})
 	}
 }
+
+func TestTraceDecorator_GetMessageByID(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+
+	tests := []struct {
+		name           string
+		userID         uint64
+		messageID      uint64
+		setupMocks     func(*mocktracing.MockProvider, *mockusecases.MockMessagesUseCases, *mocktracing.MockSpan)
+		expectedResult *domains.Message
+		expectedError  error
+	}{
+		{
+			name:      "successful get message by id with tracing",
+			userID:    1,
+			messageID: 10,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockMessagesUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					GetMessageByID(gomock.Any(), uint64(1), uint64(10)).
+					Return(&domains.Message{
+						ID:        10,
+						ChatID:    1,
+						Sender:    domains.User{ID: 2, Username: "user2"},
+						Text:      "Hello!",
+						CreatedAt: now,
+						UpdatedAt: now,
+						IsRead:    true,
+					}, nil)
+			},
+			expectedResult: &domains.Message{
+				ID:        10,
+				ChatID:    1,
+				Sender:    domains.User{ID: 2, Username: "user2"},
+				Text:      "Hello!",
+				CreatedAt: now,
+				UpdatedAt: now,
+				IsRead:    true,
+			},
+			expectedError: nil,
+		},
+		{
+			name:      "base returns error",
+			userID:    1,
+			messageID: 999,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockMessagesUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					GetMessageByID(gomock.Any(), uint64(1), uint64(999)).
+					Return(nil, errors.New("message not found"))
+			},
+			expectedResult: nil,
+			expectedError:  errors.New("message not found"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockusecases.NewMockMessagesUseCases(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			spanConfig := tracing.SpanConfig{
+				Name: "test-span",
+				Opts: []trace.SpanStartOption{},
+				Events: tracing.SpanEventsConfig{
+					Start: tracing.SpanEventConfig{
+						Name: "start",
+						Opts: []trace.EventOption{},
+					},
+					End: tracing.SpanEventConfig{
+						Name: "end",
+						Opts: []trace.EventOption{},
+					},
+				},
+			}
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockProvider, mockBase, mockSpan)
+			}
+
+			decorator := messages.NewTraceDecorator(mockProvider, spanConfig, mockBase)
+
+			ctx := context.Background()
+			result, err := decorator.GetMessageByID(ctx, tt.userID, tt.messageID)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}

@@ -86,6 +86,7 @@ func TestHandler(t *testing.T) {
 				)
 
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 
@@ -113,6 +114,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 
@@ -129,6 +131,7 @@ func TestHandler(t *testing.T) {
 				vars := map[string]string{
 					common.IDRouteKey: "invalid",
 				}
+
 				return mux.SetURLVars(req, vars)
 			},
 			setupMock:      func(_ *mockusecases.MockUsersUseCases) {},
@@ -145,6 +148,7 @@ func TestHandler(t *testing.T) {
 				vars := map[string]string{
 					common.IDRouteKey: "",
 				}
+
 				return mux.SetURLVars(req, vars)
 			},
 			setupMock:      func(_ *mockusecases.MockUsersUseCases) {},
@@ -199,6 +203,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, float64(1), response["id"])
@@ -218,6 +223,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, 1.8446744073709552e+19, response["id"])
@@ -240,6 +246,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, "simple@example.com", response["email"])
@@ -262,6 +269,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, "user.name@example.com", response["email"])
@@ -284,6 +292,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, "user_name@example.co.uk", response["email"])
@@ -306,6 +315,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, "user+tag@example.com", response["email"])
@@ -328,6 +338,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 				assert.Equal(t, "123456@example.com", response["email"])
@@ -357,6 +368,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 
@@ -381,10 +393,15 @@ func TestHandler(t *testing.T) {
 		{
 			name: "request with query parameters",
 			setupRequest: func(_ *testing.T) *http.Request {
-				req := httptest.NewRequest(http.MethodGet, "/users/123?fields=all&expand=true", http.NoBody)
+				req := httptest.NewRequest(
+					http.MethodGet,
+					"/users/123?fields=all&expand=true",
+					http.NoBody,
+				)
 				vars := map[string]string{
 					common.IDRouteKey: "123",
 				}
+
 				return mux.SetURLVars(req, vars)
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
@@ -406,6 +423,7 @@ func TestHandler(t *testing.T) {
 				vars := map[string]string{
 					common.IDRouteKey: "123",
 				}
+
 				return mux.SetURLVars(req, vars)
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {

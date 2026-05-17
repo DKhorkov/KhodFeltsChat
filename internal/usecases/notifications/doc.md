@@ -16,6 +16,10 @@
 - Проверяет, что email **подтверждён** (`EmailConfirmed`), иначе возвращает ошибку.
 - Вызывает `NotificationsService` для отправки письма со сбросом пароля.
 
+### SendNewMessageNotification
+- Получает пользователя по ID через `UsersService`.
+- Вызывает `NotificationsService` для отправки email-уведомления о новом сообщении.
+
 ## Зависимости
 
 - `internal/interfaces` — `NotificationsService`, `UsersService`.

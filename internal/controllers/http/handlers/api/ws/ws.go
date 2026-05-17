@@ -2,11 +2,13 @@ package ws
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"slices"
 	"sync"
 
+	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/controllers/http/mappers/messages"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
@@ -14,6 +16,7 @@ import (
 	"github.com/DKhorkov/libs/contextlib"
 	"github.com/DKhorkov/libs/logging"
 	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
+	customnats "github.com/DKhorkov/libs/nats"
 	"github.com/gorilla/websocket"
 )
 
@@ -24,6 +27,8 @@ type Handler struct {
 	messagesUseCases interfaces.MessagesUseCases
 	logger           logging.Logger
 	connections      *sync.Map
+	natsPublisher    customnats.Publisher
+	natsConfig       config.NATSConfig
 }
 
 func New(
@@ -32,6 +37,8 @@ func New(
 	chatsUseCases interfaces.ChatsUseCases,
 	messagesUseCases interfaces.MessagesUseCases,
 	logger logging.Logger,
+	natsPublisher customnats.Publisher,
+	natsConfig config.NATSConfig,
 ) Handler {
 	return Handler{
 		upgrader:         upgrader,
@@ -40,6 +47,8 @@ func New(
 		messagesUseCases: messagesUseCases,
 		logger:           logger,
 		connections:      new(sync.Map),
+		natsPublisher:    natsPublisher,
+		natsConfig:       natsConfig,
 	}
 }
 
@@ -176,7 +185,7 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 
 		messageToSend := messages.MapMessage(*savedMessage)
 
-		messageToSend.IsRead = false // Соощбение не прочитано дял всех получателей, так как является новым
+		messageToSend.IsRead = false // Сообщение не прочитано для всех получателей, так как является новым
 
 		for _, member := range chatMembers {
 			// Не отправляем обратно отправителю:
@@ -186,6 +195,12 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 
 			value, exists := h.connections.Load(member.ID)
 			if !exists {
+				h.publishNewMessageNotifications(
+					ctx,
+					member.ID,
+					savedMessage.ID,
+				)
+
 				continue
 			}
 
@@ -226,6 +241,62 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 				h.connections.Delete(member.ID)
 			}
 		}
+	}
+}
+
+func (h *Handler) publishNewMessageNotifications(
+	ctx context.Context,
+	userID, messageID uint64,
+) {
+	payload, err := json.Marshal(domains.NewMessagePayload{
+		MessageID: messageID,
+	})
+	if err != nil {
+		logging.LogErrorContext(ctx, h.logger, "Failed to marshal notification payload", err)
+
+		return
+	}
+
+	// Web push notification
+	webPushDTO := domains.WebPushNotificationDTO{
+		Type:    domains.WebPushTypeNewMessage,
+		UserID:  userID,
+		Payload: payload,
+	}
+
+	content, err := json.Marshal(webPushDTO)
+	if err != nil {
+		logging.LogErrorContext(ctx, h.logger, "Failed to marshal web-push DTO", err)
+
+		return
+	}
+
+	if err = h.natsPublisher.Publish(
+		h.natsConfig.Subjects.WebPushNotification,
+		content,
+	); err != nil {
+		logging.LogErrorContext(ctx, h.logger, "Failed to publish web-push notification", err)
+	}
+
+	// Email notification
+	emailDTO := domains.EmailNotificationDTO{
+		Type:    domains.EmailTypeNewMessage,
+		UserID:  userID,
+		Payload: payload,
+	}
+
+	content, err = json.Marshal(emailDTO)
+	if err != nil {
+		logging.LogErrorContext(ctx, h.logger, "Failed to marshal email DTO", err)
+
+		return
+	}
+
+	if err = h.natsPublisher.Publish(
+		h.natsConfig.Subjects.EmailNotification,
+		content,
+	); err != nil {
+		logging.LogErrorContext(ctx, h.logger, "Failed to publish email notification", err)
 	}
 }
 

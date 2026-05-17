@@ -15,7 +15,7 @@ import (
 	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 )
 
-// swagger:route PUT /api/users/me/settings settings UpdateSettings
+// swagger:route PUT /api/users/me/settings users UpdateSettings
 //
 // UpdateSettings
 //

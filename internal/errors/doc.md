@@ -57,6 +57,12 @@ Sentinel-ошибки для каждого домена. Позволяют в�
 |---|---|
 | `ErrLimitExceeded` | Превышен лимит попыток (rate limiting) |
 
+### web_push_subscriptions.go — push-подписки
+
+| Ошибка | Описание |
+|---|---|
+| `ErrWebPushSubscriptionNotFound` | Push-подписка не найдена |
+
 ## Зависимости
 
 Только стандартная библиотека (`errors`).

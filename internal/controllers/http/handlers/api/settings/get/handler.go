@@ -13,7 +13,7 @@ import (
 	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 )
 
-// swagger:route GET /api/users/me/settings settings GetSettings
+// swagger:route GET /api/users/me/settings users GetSettings
 //
 // GetSettings
 //

@@ -26,6 +26,19 @@ func NewTraceDecorator(
 	}
 }
 
+func (d *TraceDecorator) GetChatByID(
+	ctx context.Context,
+	chatID uint64,
+) (*domains.Chat, error) {
+	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
+	defer span.End()
+
+	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
+	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
+
+	return d.base.GetChatByID(ctx, chatID)
+}
+
 func (d *TraceDecorator) GetChatMembers(
 	ctx context.Context,
 	chatID uint64,

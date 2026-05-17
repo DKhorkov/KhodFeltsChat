@@ -23,16 +23,18 @@ func main() {
 
 	defer natsPublisher.Close()
 
-	forgetPasswordDTO := domains.ForgetPasswordNotificationDTO{
-		UserID: 1,
+	emailDTO := domains.EmailNotificationDTO{
+		Type:    domains.EmailTypeForgetPassword,
+		UserID:  1,
+		Payload: nil,
 	}
 
-	content, err := json.Marshal(forgetPasswordDTO)
+	content, err := json.Marshal(emailDTO)
 	if err != nil {
 		panic(err)
 	}
 
-	err = natsPublisher.Publish(settings.NATS.Subjects.ForgetPassword, content)
+	err = natsPublisher.Publish(settings.NATS.Subjects.EmailNotification, content)
 	if err != nil {
 		panic(err)
 	}

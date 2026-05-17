@@ -121,7 +121,11 @@ func TestHandler(t *testing.T) {
 
 				body, _ := json.Marshal(map[string]any{"theme": 1})
 
-				return httptest.NewRequest(http.MethodPut, "/api/users/me/settings", bytes.NewReader(body))
+				return httptest.NewRequest(
+					http.MethodPut,
+					"/api/users/me/settings",
+					bytes.NewReader(body),
+				)
 			},
 			setupMock:      func(_ *mockusecases.MockSettingsUseCases) {},
 			expectedStatus: http.StatusUnauthorized,

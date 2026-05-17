@@ -70,7 +70,10 @@ func (s *Service) UpdateSettings(
 				return err
 			}
 
-			if settings, err = settingsRepository.GetSettingsByUserID(ctx, settingsData.UserID); err != nil {
+			if settings, err = settingsRepository.GetSettingsByUserID(
+				ctx,
+				settingsData.UserID,
+			); err != nil {
 				return err
 			}
 

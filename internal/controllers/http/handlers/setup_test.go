@@ -38,13 +38,17 @@ func setupRouter(t *testing.T) *mux.Router {
 			Filepath: "api/swagger.json",
 		},
 		config.CookiesConfig{},
+		config.NATSConfig{},
 		mockusecases.NewMockUsersUseCases(ctrl),
 		mockusecases.NewMockAuthUseCases(ctrl),
 		mockusecases.NewMockChatsUseCases(ctrl),
 		mockusecases.NewMockMessagesUseCases(ctrl),
 		mockusecases.NewMockSettingsUseCases(ctrl),
+		mockusecases.NewMockWebPushSubscriptionsUseCases(ctrl),
 		mocks.NewMockLogger(ctrl),
 		mockupgrader.NewMockUpgrader(ctrl),
+		nil,
+		"",
 	)
 
 	return rootMux
@@ -88,6 +92,7 @@ func TestSetupHandlers_WebRoutesRegistered(t *testing.T) {
 		"/web/forget-password",
 		"/web/chat",
 		"/web/verify-email/test-token",
+		"/web/sw.js",
 	}
 
 	for _, path := range routes {
@@ -165,7 +170,8 @@ func TestSetupHandlers_MethodNotAllowed(t *testing.T) {
 
 	rootMux := setupRouter(t)
 
-	req := httptest.NewRequest(http.MethodPatch, "/api/sessions", http.NoBody)
+	// POST /metrics — зарегистрирован только для GET, gorilla/mux корректно возвращает 405.
+	req := httptest.NewRequest(http.MethodPost, "/metrics", http.NoBody)
 	rr := httptest.NewRecorder()
 
 	rootMux.ServeHTTP(rr, req)

@@ -90,6 +90,7 @@ func TestHandler(t *testing.T) {
 			name: "successful token refresh",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, validToken)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -150,6 +151,7 @@ func TestHandler(t *testing.T) {
 			name: "unauthorized - missing refresh token cookie",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "")
 			},
 			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
@@ -167,6 +169,7 @@ func TestHandler(t *testing.T) {
 			name: "unauthorized - invalid JWT token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "invalid_jwt_token")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -188,6 +191,7 @@ func TestHandler(t *testing.T) {
 			name: "unauthorized - access token does not belong to refresh token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "refresh_token_with_mismatched_access")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -213,6 +217,7 @@ func TestHandler(t *testing.T) {
 			name: "internal server error - use case error",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, validToken)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -252,6 +257,7 @@ func TestHandler(t *testing.T) {
 			},
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, validToken)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -266,6 +272,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				c := rr.Result().Cookies()
 				assert.Len(t, c, 2)
 
@@ -323,6 +330,7 @@ func TestHandler(t *testing.T) {
 			},
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, validToken)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -337,6 +345,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				c := rr.Result().Cookies()
 				assert.Len(t, c, 2)
 
@@ -394,6 +403,7 @@ func TestHandler(t *testing.T) {
 			},
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, validToken)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -408,6 +418,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				c := rr.Result().Cookies()
 				assert.Len(t, c, 2)
 
@@ -441,6 +452,7 @@ func TestHandler(t *testing.T) {
 			name: "multiple refresh token cookies - first one is used",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				req := httptest.NewRequest(http.MethodPost, "/refresh", http.NoBody)
 				req.AddCookie(&http.Cookie{
 					Name:  login.RefreshTokenCookieName,
@@ -450,6 +462,7 @@ func TestHandler(t *testing.T) {
 					Name:  login.RefreshTokenCookieName,
 					Value: "second_refresh_token",
 				})
+
 				return req
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -468,8 +481,10 @@ func TestHandler(t *testing.T) {
 			name: "POST method",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				req := httptest.NewRequest(http.MethodPost, "/refresh", http.NoBody)
 				req.AddCookie(&http.Cookie{Name: login.RefreshTokenCookieName, Value: validToken})
+
 				return req
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -485,8 +500,10 @@ func TestHandler(t *testing.T) {
 			name: "GET method",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				req := httptest.NewRequest(http.MethodGet, "/refresh", http.NoBody)
 				req.AddCookie(&http.Cookie{Name: login.RefreshTokenCookieName, Value: validToken})
+
 				return req
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -502,8 +519,10 @@ func TestHandler(t *testing.T) {
 			name: "PUT method",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				req := httptest.NewRequest(http.MethodPut, "/refresh", http.NoBody)
 				req.AddCookie(&http.Cookie{Name: login.RefreshTokenCookieName, Value: validToken})
+
 				return req
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -519,8 +538,10 @@ func TestHandler(t *testing.T) {
 			name: "PATCH method",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				req := httptest.NewRequest(http.MethodPatch, "/refresh", http.NoBody)
 				req.AddCookie(&http.Cookie{Name: login.RefreshTokenCookieName, Value: validToken})
+
 				return req
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -536,8 +557,10 @@ func TestHandler(t *testing.T) {
 			name: "DELETE method",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				req := httptest.NewRequest(http.MethodDelete, "/refresh", http.NoBody)
 				req.AddCookie(&http.Cookie{Name: login.RefreshTokenCookieName, Value: validToken})
+
 				return req
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -553,11 +576,14 @@ func TestHandler(t *testing.T) {
 			name: "very long refresh token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				var longTokenSb strings.Builder
 				for range 4096 {
 					longTokenSb.WriteString("a")
 				}
+
 				longToken := longTokenSb.String()
+
 				return createRequest(t, longToken)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -565,6 +591,7 @@ func TestHandler(t *testing.T) {
 				for range 4096 {
 					longTokenSb.WriteString("a")
 				}
+
 				longToken := longTokenSb.String()
 				expectedTokens := createTestTokens()
 				m.EXPECT().
@@ -578,6 +605,7 @@ func TestHandler(t *testing.T) {
 			name: "empty tokens from use case",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, validToken)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -592,6 +620,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				c := rr.Result().Cookies()
 				assert.Len(t, c, 2)
 
@@ -619,6 +648,7 @@ func TestHandler(t *testing.T) {
 			name: "malformed JWT token",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, "not.a.valid.jwt.token")
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {

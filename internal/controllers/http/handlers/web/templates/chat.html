@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KFC Chat</title>
+    <link rel="icon" type="image/png" href="/web/static/assets/icon.png">
+    <title>KFC Chat — Чаты</title>
     <script>if(localStorage.getItem('theme')==='dark')document.documentElement.setAttribute('data-bs-theme','dark');</script>
     <link rel="stylesheet" href="/web/static/css/global.css">
     <link rel="stylesheet" href="/web/static/css/navbar.css">
@@ -22,11 +23,11 @@
     {{template "navbar"}}
 
     <div class="chat-layout">
-        <aside class="sidebar">
+        <aside class="sidebar" aria-label="Список чатов">
             <div class="sidebar__header">
                 <h3>Чаты</h3>
-                <button class="sidebar__icon-btn" id="btn-create-chat" title="Создать чат">+</button>
-                <button class="sidebar__icon-btn" id="btn-search-users" title="Поиск пользователей">&#x1F50D;</button>
+                <button class="sidebar__icon-btn" id="btn-create-chat" title="Создать чат" aria-label="Создать чат">+</button>
+                <button class="sidebar__icon-btn" id="btn-search-users" title="Поиск пользователей" aria-label="Найти пользователей">&#x1F50D;</button>
             </div>
             <div class="sidebar__list" id="chat-list"></div>
         </aside>
@@ -34,7 +35,7 @@
         <main class="conversation" id="conversation" style="display: none;">
             <div class="conversation__header">
                 <h3 class="conversation__header-title" id="conversation-title"></h3>
-                <button class="conversation__close-btn" id="btn-close-chat" title="Закрыть чат">&times;</button>
+                <button class="conversation__close-btn" id="btn-close-chat" title="Закрыть чат" aria-label="Закрыть чат">&times;</button>
             </div>
 
             <div class="conversation__messages" id="messages-list"></div>
@@ -45,15 +46,16 @@
                         id="message-input"
                         placeholder="Введите сообщение..."
                         rows="3"
+                        aria-label="Сообщение"
                     ></textarea>
                     <div class="conversation__emoji-wrapper">
-                        <button type="button" class="conversation__emoji-toggle" id="btn-emoji-toggle" title="Смайлы">
+                        <button type="button" class="conversation__emoji-toggle" id="btn-emoji-toggle" title="Смайлы" aria-label="Эмодзи">
                             &#x1F642;
                         </button>
                         <div class="emoji-picker" id="emoji-picker-container" style="display: none;"></div>
                     </div>
                 </div>
-                <button id="btn-send" disabled>Отправить</button>
+                <button id="btn-send" disabled aria-label="Отправить">Отправить</button>
             </div>
         </main>
 
@@ -63,13 +65,13 @@
     </div>
 
     <!-- Модалка создания чата -->
-    <div class="modal-overlay" id="modal-create-chat" style="display: none;">
+    <div class="modal-overlay" id="modal-create-chat" style="display: none;" role="dialog" aria-modal="true">
         <div class="modal-content" id="modal-create-chat-content">
-            <button class="modal-content__close" id="btn-close-create-chat">&times;</button>
+            <button class="modal-content__close" id="btn-close-create-chat" aria-label="Закрыть">&times;</button>
             <h2 class="modal-content__title">Создать чат</h2>
 
             <div class="modal-content__form-group">
-                <label>Тип чата</label>
+                <label for="create-chat-type">Тип чата</label>
                 <select id="create-chat-type">
                     <option value="private">Приватный</option>
                     <option value="group">Групповой</option>
@@ -77,17 +79,17 @@
             </div>
 
             <div class="modal-content__form-group" id="group-title-field" style="display: none;">
-                <label>Название чата</label>
+                <label for="create-chat-title">Название чата</label>
                 <input id="create-chat-title" placeholder="Название чата">
             </div>
 
             <div class="modal-content__form-group" id="group-description-field" style="display: none;">
-                <label>Описание чата</label>
+                <label for="create-chat-description">Описание чата</label>
                 <input id="create-chat-description" placeholder="Описание чата">
             </div>
 
             <div class="modal-content__form-group">
-                <label>Поиск пользователей</label>
+                <label for="create-chat-search">Поиск пользователей</label>
                 <input id="create-chat-search" placeholder="Введите имя пользователя...">
             </div>
 
@@ -100,12 +102,13 @@
     </div>
 
     <!-- Модалка поиска пользователей -->
-    <div class="modal-overlay" id="modal-search-users" style="display: none;">
+    <div class="modal-overlay" id="modal-search-users" style="display: none;" role="dialog" aria-modal="true">
         <div class="modal-content" id="modal-search-users-content">
-            <button class="modal-content__close" id="btn-close-search-users">&times;</button>
+            <button class="modal-content__close" id="btn-close-search-users" aria-label="Закрыть">&times;</button>
             <h2 class="modal-content__title">Поиск пользователей</h2>
 
             <div class="modal-content__form-group">
+                <label for="search-users-input" class="visually-hidden">Поиск пользователей</label>
                 <input id="search-users-input" placeholder="Введите имя пользователя...">
             </div>
 
@@ -117,9 +120,9 @@
     </div>
 
     <!-- Модалка профиля участника -->
-    <div class="modal-overlay" id="modal-member-profile" style="display: none;">
+    <div class="modal-overlay" id="modal-member-profile" style="display: none;" role="dialog" aria-modal="true">
         <div class="modal-content profile-modal" id="modal-member-profile-content">
-            <button class="modal-content__close" id="btn-close-member-profile">&times;</button>
+            <button class="modal-content__close" id="btn-close-member-profile" aria-label="Закрыть">&times;</button>
             <div class="profile-modal__header">
                 <div class="profile-modal__avatar" id="member-avatar"></div>
                 <div class="profile-modal__title">
@@ -141,9 +144,9 @@
     </div>
 
     <!-- Модалка информации о групповом чате -->
-    <div class="modal-overlay" id="modal-group-chat" style="display: none;">
+    <div class="modal-overlay" id="modal-group-chat" style="display: none;" role="dialog" aria-modal="true">
         <div class="modal-content profile-modal" id="modal-group-chat-content">
-            <button class="modal-content__close" id="btn-close-group-chat">&times;</button>
+            <button class="modal-content__close" id="btn-close-group-chat" aria-label="Закрыть">&times;</button>
             <div class="profile-modal__header">
                 <div class="profile-modal__avatar" id="group-chat-avatar"></div>
                 <div class="profile-modal__title">

@@ -14,3 +14,5 @@ Swagger-аннотированные request/response структуры. Чис
 | `messages.go` | Message, Sender, GetChatMessagesInput |
 | `pagination.go` | Pagination (Limit, Offset) |
 | `responses.go` | Swagger envelope types: OK, BadRequest, NotFound, InternalServerError, Conflict, Unauthorized, Forbidden, SeeOther, NoContent, SwitchingProtocols |
+| `settings.go` | Settings (включает `EmailConsents` и `WebPushConsents`) |
+| `web_push_subscriptions.go` | CreateWebPushSubscriptionRequest (плоская структура: `endpoint`, `encryptionKey`, `auth`), CreateWebPushSubscriptionResponse, VAPIDKeyResponse |

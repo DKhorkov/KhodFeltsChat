@@ -6,7 +6,7 @@
     justify-content: center;
     align-items: center;
     flex: 1;
-    min-height: calc(100vh - 49px);
+    min-height: calc(100vh - var(--navbar-height));
     background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
 }
 

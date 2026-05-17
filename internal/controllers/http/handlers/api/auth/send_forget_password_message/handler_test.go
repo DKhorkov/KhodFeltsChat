@@ -41,9 +41,11 @@ func TestHandler(t *testing.T) {
 			name: "successful send forget password message",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user@example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -61,6 +63,7 @@ func TestHandler(t *testing.T) {
 			name: "bad request - empty request body",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, bytes.NewReader([]byte{}))
 			},
 			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
@@ -74,6 +77,7 @@ func TestHandler(t *testing.T) {
 			name: "bad request - invalid JSON",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, bytes.NewReader([]byte(`{"email": invalid}`)))
 			},
 			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
@@ -88,11 +92,15 @@ func TestHandler(t *testing.T) {
 			name: "bad request - missing required field",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				missingFieldJSON := `{}`
+
 				var dto domains.SendForgetPasswordMessageDTO
+
 				err := json.Unmarshal([]byte(missingFieldJSON), &dto)
 				require.NoError(t, err)
 				assert.Equal(t, "", dto.Email)
+
 				return createRequest(t, bytes.NewReader([]byte(missingFieldJSON)))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -111,9 +119,11 @@ func TestHandler(t *testing.T) {
 			name: "bad request - empty email",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: ""}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -132,9 +142,11 @@ func TestHandler(t *testing.T) {
 			name: "not found - user not found",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user@example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -153,9 +165,11 @@ func TestHandler(t *testing.T) {
 			name: "forbidden - email not confirmed",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user@example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -174,9 +188,11 @@ func TestHandler(t *testing.T) {
 			name: "internal server error - use case error",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user@example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -195,9 +211,11 @@ func TestHandler(t *testing.T) {
 			name: "different email formats - simple email",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user@example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -211,9 +229,11 @@ func TestHandler(t *testing.T) {
 			name: "different email formats - email with plus",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user+tag@example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -227,9 +247,11 @@ func TestHandler(t *testing.T) {
 			name: "different email formats - email with dot",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user.name@example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -243,9 +265,11 @@ func TestHandler(t *testing.T) {
 			name: "different email formats - email with subdomain",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user@sub.example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -259,9 +283,11 @@ func TestHandler(t *testing.T) {
 			name: "different email formats - invalid email format",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "not-an-email"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -279,9 +305,11 @@ func TestHandler(t *testing.T) {
 			name: "different email formats - email with spaces",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user @example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -299,9 +327,11 @@ func TestHandler(t *testing.T) {
 			name: "different email formats - case insensitive email",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "USER@EXAMPLE.COM"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -315,12 +345,14 @@ func TestHandler(t *testing.T) {
 			name: "JSON with extra fields",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				jsonWithExtraFields := `{
 				"email": "user@example.com",
 				"extraField": "should be ignored",
 				"anotherExtra": 123,
 				"username": "user123"
 			}`
+
 				return createRequest(t, bytes.NewReader([]byte(jsonWithExtraFields)))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -334,11 +366,15 @@ func TestHandler(t *testing.T) {
 			name: "null email in JSON",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				jsonWithNull := `{"email": null}`
+
 				var dto domains.SendForgetPasswordMessageDTO
+
 				err := json.Unmarshal([]byte(jsonWithNull), &dto)
 				require.NoError(t, err)
 				assert.Equal(t, "", dto.Email)
+
 				return createRequest(t, bytes.NewReader([]byte(jsonWithNull)))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -356,9 +392,13 @@ func TestHandler(t *testing.T) {
 			name: "email with special characters",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
-				dto := domains.SendForgetPasswordMessageDTO{Email: "user.name+tag@example-domain.co.uk"}
+
+				dto := domains.SendForgetPasswordMessageDTO{
+					Email: "user.name+tag@example-domain.co.uk",
+				}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -372,9 +412,13 @@ func TestHandler(t *testing.T) {
 			name: "non-existent domain email",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
-				dto := domains.SendForgetPasswordMessageDTO{Email: "user@nonexistent-domain-12345.com"}
+
+				dto := domains.SendForgetPasswordMessageDTO{
+					Email: "user@nonexistent-domain-12345.com",
+				}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -392,9 +436,11 @@ func TestHandler(t *testing.T) {
 			name: "status code 204 No Content on success",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user@example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -405,7 +451,12 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
-				assert.NotEqual(t, http.StatusOK, rr.Code, "Should return 204 No Content, not 200 OK")
+				assert.NotEqual(
+					t,
+					http.StatusOK,
+					rr.Code,
+					"Should return 204 No Content, not 200 OK",
+				)
 				assert.Empty(t, rr.Body.String())
 			},
 		},
@@ -413,9 +464,11 @@ func TestHandler(t *testing.T) {
 			name: "case insensitive email matching - uppercase",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "USER@EXAMPLE.COM"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -429,9 +482,11 @@ func TestHandler(t *testing.T) {
 			name: "case insensitive email matching - mixed case",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "User@Example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -445,9 +500,11 @@ func TestHandler(t *testing.T) {
 			name: "case insensitive email matching - lowercase",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user@example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -461,9 +518,11 @@ func TestHandler(t *testing.T) {
 			name: "email with international characters",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user@müller.de"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -477,9 +536,11 @@ func TestHandler(t *testing.T) {
 			name: "database or external service errors - database connection error",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user@example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -497,9 +558,11 @@ func TestHandler(t *testing.T) {
 			name: "database or external service errors - email service error",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user@example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -517,9 +580,11 @@ func TestHandler(t *testing.T) {
 			name: "database or external service errors - rate limit exceeded in service",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				dto := domains.SendForgetPasswordMessageDTO{Email: "user@example.com"}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {

@@ -14,16 +14,17 @@
    - **NATS** — publisher для отправки сообщений в очереди.
 3. Строится граф зависимостей (DI вручную):
    - `UnitOfWork` → `UnitOfWork.TraceDecorator`
-   - Репозитории (users, auth, chats, messages, emails) — каждый оборачивается в `TraceDecorator`.
-   - Сервисы (users, auth, chats, messages, notifications) — каждый оборачивается в `TraceDecorator`.
-   - UseCases (users, auth, chats, messages, notifications) — каждый оборачивается в `TraceDecorator`;
+   - Репозитории (users, auth, chats, messages, emails, settings, web_push_subscriptions) — каждый оборачивается в `TraceDecorator`.
+   - Сервисы (users, auth, chats, messages, settings, web_push_subscriptions, notifications) — каждый оборачивается в `TraceDecorator`.
+     **Важно**: `webPushSubscriptionsService` инициализируется до `notificationsService`, так как является его зависимостью.
+   - UseCases (users, auth, chats, messages, settings, notifications, web_push_subscriptions) — каждый оборачивается в `TraceDecorator`;
      `AuthUseCases` дополнительно оборачивается в `CacheDecorator`.
 4. Запускаются два NATS-воркера:
-   - **verify-email** — обрабатывает `VerifyEmailNotificationDTO`.
-   - **forget-password** — обрабатывает `ForgetPasswordNotificationDTO`.
+   - **email-notification** — обрабатывает `EmailNotificationDTO` (verify-email, forget-password, new-message).
+   - **web-push-notification** — обрабатывает `WebPushNotificationDTO` (new-message с проверкой consent).
    - Каждый воркер использует `MessageHandlerBuilder` с tracing-декоратором.
 5. Создаётся HTTP/WebSocket контроллер и запускается приложение через `app.New(controller).Run()`.
-6. При завершении (defer) корректно закрываются: tracer, Redis, оба NATS-воркера.
+6. При завершении (defer) корректно закрываются: tracer, Redis, NATS publisher, оба NATS-воркера.
 
 ## Чувствительные поля (не логируются)
 
@@ -33,8 +34,8 @@
 
 Утилиты для ручной публикации NATS-сообщений в целях тестирования:
 
-- `cmd/publishers/verify_email/main.go` — публикует сообщение в subject `verify-email`.
-- `cmd/publishers/forget_password/main.go` — публикует сообщение в subject `forget-password`.
+- `cmd/publishers/verify_email/main.go` — публикует `EmailNotificationDTO{Type: VerifyEmail, UserID: 1}`.
+- `cmd/publishers/forget_password/main.go` — публикует `EmailNotificationDTO{Type: ForgetPassword, UserID: 1}`.
 
 ## Зависимости
 

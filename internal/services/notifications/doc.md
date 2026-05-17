@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Тонкий фасад над `EmailsRepository`. Не содержит бизнес-логики.
+Тонкий фасад над репозиториями уведомлений. Не содержит бизнес-логики.
 
 ## Ключевые методы
 
@@ -10,7 +10,10 @@
 |-------|----------|
 | `SendVerifyEmailMessage(user)` | Делегирует в emailsRepository |
 | `SendForgetPasswordMessage(user)` | Делегирует в emailsRepository |
+| `SendNewMessageByEmail(recipient, message, chat)` | Делегирует в emailsRepository |
+| `SendNewMessageByWebPush(subscription, message)` | Делегирует в webPushRepository |
 
 ## Зависимости
 
 - `EmailsRepository` — SMTP отправка через gomail
+- `WebPushRepository` — отправка Web Push уведомлений через VAPID

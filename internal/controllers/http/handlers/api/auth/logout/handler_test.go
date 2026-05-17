@@ -45,6 +45,7 @@ func TestHandler(t *testing.T) {
 			name: "successful logout",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, uint64(123))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -92,6 +93,7 @@ func TestHandler(t *testing.T) {
 			name: "unauthorized - no userID in context",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return httptest.NewRequest(http.MethodPost, "/logout", http.NoBody)
 			},
 			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
@@ -109,8 +111,14 @@ func TestHandler(t *testing.T) {
 			name: "unauthorized - invalid userID type in context",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				req := httptest.NewRequest(http.MethodPost, "/logout", http.NoBody)
-				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, "not-a-number")
+				ctx := contextlib.WithValue(
+					req.Context(),
+					authmiddleware.UserIDContextKey,
+					"not-a-number",
+				)
+
 				return req.WithContext(ctx)
 			},
 			setupMock:      func(_ *mockusecases.MockAuthUseCases) {},
@@ -128,6 +136,7 @@ func TestHandler(t *testing.T) {
 			name: "internal server error - use case error",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, uint64(123))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -149,6 +158,7 @@ func TestHandler(t *testing.T) {
 			name: "zero user ID",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, uint64(0))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -159,6 +169,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				cookies := rr.Result().Cookies()
 				assert.Len(t, cookies, 2)
 
@@ -181,6 +192,7 @@ func TestHandler(t *testing.T) {
 					Name:  login.RefreshTokenCookieName,
 					Value: "existing_refresh_token",
 				})
+
 				return req
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -191,6 +203,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				cookies := rr.Result().Cookies()
 				assert.Len(t, cookies, 2)
 
@@ -204,8 +217,14 @@ func TestHandler(t *testing.T) {
 			name: "POST method",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				req := httptest.NewRequest(http.MethodPost, "/logout", http.NoBody)
-				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, uint64(123))
+				ctx := contextlib.WithValue(
+					req.Context(),
+					authmiddleware.UserIDContextKey,
+					uint64(123),
+				)
+
 				return req.WithContext(ctx)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -214,6 +233,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				cookies := rr.Result().Cookies()
 				assert.Len(t, cookies, 2)
 			},
@@ -222,8 +242,14 @@ func TestHandler(t *testing.T) {
 			name: "GET method",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				req := httptest.NewRequest(http.MethodGet, "/logout", http.NoBody)
-				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, uint64(123))
+				ctx := contextlib.WithValue(
+					req.Context(),
+					authmiddleware.UserIDContextKey,
+					uint64(123),
+				)
+
 				return req.WithContext(ctx)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -232,6 +258,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				cookies := rr.Result().Cookies()
 				assert.Len(t, cookies, 2)
 			},
@@ -240,8 +267,14 @@ func TestHandler(t *testing.T) {
 			name: "PUT method",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				req := httptest.NewRequest(http.MethodPut, "/logout", http.NoBody)
-				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, uint64(123))
+				ctx := contextlib.WithValue(
+					req.Context(),
+					authmiddleware.UserIDContextKey,
+					uint64(123),
+				)
+
 				return req.WithContext(ctx)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -250,6 +283,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				cookies := rr.Result().Cookies()
 				assert.Len(t, cookies, 2)
 			},
@@ -258,8 +292,14 @@ func TestHandler(t *testing.T) {
 			name: "DELETE method",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				req := httptest.NewRequest(http.MethodDelete, "/logout", http.NoBody)
-				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, uint64(123))
+				ctx := contextlib.WithValue(
+					req.Context(),
+					authmiddleware.UserIDContextKey,
+					uint64(123),
+				)
+
 				return req.WithContext(ctx)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -268,6 +308,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				cookies := rr.Result().Cookies()
 				assert.Len(t, cookies, 2)
 			},
@@ -276,8 +317,14 @@ func TestHandler(t *testing.T) {
 			name: "PATCH method",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				req := httptest.NewRequest(http.MethodPatch, "/logout", http.NoBody)
-				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, uint64(123))
+				ctx := contextlib.WithValue(
+					req.Context(),
+					authmiddleware.UserIDContextKey,
+					uint64(123),
+				)
+
 				return req.WithContext(ctx)
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -286,6 +333,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				cookies := rr.Result().Cookies()
 				assert.Len(t, cookies, 2)
 			},
@@ -294,6 +342,7 @@ func TestHandler(t *testing.T) {
 			name: "logout after successful use case but cookie set fails",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, uint64(123))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -304,6 +353,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				cookies := rr.Result().Cookies()
 				assert.Len(t, cookies, 2)
 
@@ -317,6 +367,7 @@ func TestHandler(t *testing.T) {
 			name: "logout invalidates user session in use case",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, uint64(123))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -326,6 +377,7 @@ func TestHandler(t *testing.T) {
 						if id != uint64(123) {
 							t.Errorf("expected userID 123, got %d", id)
 						}
+
 						return nil
 					})
 			},
@@ -336,6 +388,7 @@ func TestHandler(t *testing.T) {
 			name: "logout with very large user ID",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, uint64(18446744073709551615))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -350,6 +403,7 @@ func TestHandler(t *testing.T) {
 			name: "logout when user doesn't exist",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
+
 				return createRequest(t, uint64(999))
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -360,6 +414,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				cookies := rr.Result().Cookies()
 				assert.Len(t, cookies, 2)
 			},
@@ -371,6 +426,7 @@ func TestHandler(t *testing.T) {
 				req := createRequest(t, uint64(123))
 				req.AddCookie(&http.Cookie{Name: "session_id", Value: "abc123"})
 				req.AddCookie(&http.Cookie{Name: "preferences", Value: "theme=dark"})
+
 				return req
 			},
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
@@ -381,6 +437,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusNoContent,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				t.Helper()
+
 				cookies := rr.Result().Cookies()
 
 				var (

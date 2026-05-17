@@ -60,3 +60,11 @@ func (u *UseCases) GetChatMessages(
 
 	return u.messagesService.GetChatMessages(ctx, userID, chatID, pagination)
 }
+
+func (u *UseCases) GetMessageByID(
+	ctx context.Context,
+	userID uint64,
+	messageID uint64,
+) (*domains.Message, error) {
+	return u.messagesService.GetMessageByID(ctx, userID, messageID)
+}

@@ -19,14 +19,18 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/chat_messages"
 	get_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/get"
 	update_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/update"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/me"
+	me "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/me"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/update"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/user_by_id"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/users"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/web_push/subscribe"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/web_push/unsubscribe"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/web_push/vapid_key"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/ws"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/logging"
+	customnats "github.com/DKhorkov/libs/nats"
 	"github.com/gorilla/mux"
 )
 
@@ -49,18 +53,27 @@ const (
 
 	ChatsURL           = "/chats"
 	GetChatMessagesURL = ChatsURL + "/{%s}/messages"
+
+	WebPushURL            = "/web-push"
+	WebPushSubscribeURL   = WebPushURL + "/subscribe"
+	WebPushUnsubscribeURL = WebPushSubscribeURL + "/{%s}"
+	WebPushVAPIDKeyURL    = WebPushURL + "/vapid-key"
 )
 
 func SetupHandlers(
 	apiMux *mux.Router,
 	cookiesConfig config.CookiesConfig,
+	natsConfig config.NATSConfig,
 	usersUseCases interfaces.UsersUseCases,
 	authUseCases interfaces.AuthUseCases,
 	chatsUseCases interfaces.ChatsUseCases,
 	messagesUseCases interfaces.MessagesUseCases,
 	settingsUseCases interfaces.SettingsUseCases,
+	webPushSubscriptionsUseCases interfaces.WebPushSubscriptionsUseCases,
 	logger logging.Logger,
 	upgrader interfaces.Upgrader,
+	natsPublisher customnats.Publisher,
+	vapidPublicKey string,
 ) {
 	getMux := apiMux.Methods(http.MethodGet).Subrouter()
 	getMux.Handle(UsersURL, users.Handler(usersUseCases))
@@ -76,6 +89,8 @@ func SetupHandlers(
 		chatsUseCases,
 		messagesUseCases,
 		logger,
+		natsPublisher,
+		natsConfig,
 	)
 
 	getMux.Handle(WebsocketURL, http.HandlerFunc(websocketHandler.Handle))
@@ -89,6 +104,7 @@ func SetupHandlers(
 		fmt.Sprintf(VerifyEmailURL, verify_email.TokenRouteKey),
 		verify_email.Handler(authUseCases),
 	)
+	getMux.Handle(WebPushVAPIDKeyURL, vapid_key.Handler(vapidPublicKey))
 
 	postMux := apiMux.Methods(http.MethodPost).Subrouter()
 	postMux.Handle(UsersURL, register.Handler(authUseCases))
@@ -107,6 +123,7 @@ func SetupHandlers(
 		send_forget_password_message.Handler(authUseCases),
 	)
 	postMux.Handle(ChatsURL, create.Handler(chatsUseCases))
+	postMux.Handle(WebPushSubscribeURL, subscribe.Handler(webPushSubscriptionsUseCases))
 
 	putMux := apiMux.Methods(http.MethodPut).Subrouter()
 	putMux.Handle(MeURL, update.Handler(usersUseCases))
@@ -115,4 +132,8 @@ func SetupHandlers(
 
 	deleteMux := apiMux.Methods(http.MethodDelete).Subrouter()
 	deleteMux.Handle(SessionsURL, logout.Handler(authUseCases, cookiesConfig))
+	deleteMux.Handle(
+		fmt.Sprintf(WebPushUnsubscribeURL, common.IDRouteKey),
+		unsubscribe.Handler(webPushSubscriptionsUseCases),
+	)
 }

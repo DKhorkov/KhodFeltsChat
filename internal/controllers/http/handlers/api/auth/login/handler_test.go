@@ -594,7 +594,10 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				dto := domains.LoginDTO{Login: "user+tag@example.com", Password: "SecurePassword123!"}
+				dto := domains.LoginDTO{
+					Login:    "user+tag@example.com",
+					Password: "SecurePassword123!",
+				}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
 
@@ -802,7 +805,10 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				dto := domains.LoginDTO{Login: "user.name+tag@example.com", Password: "SecurePassword123!"}
+				dto := domains.LoginDTO{
+					Login:    "user.name+tag@example.com",
+					Password: "SecurePassword123!",
+				}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
 

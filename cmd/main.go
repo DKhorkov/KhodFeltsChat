@@ -7,6 +7,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/app"
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/contentbuilders/forget_password"
+	newmessage "github.com/DKhorkov/kfc/internal/contentbuilders/new_message"
 	"github.com/DKhorkov/kfc/internal/contentbuilders/verify_email"
 	controllers "github.com/DKhorkov/kfc/internal/controllers/http"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -16,12 +17,15 @@ import (
 	messagesrepository "github.com/DKhorkov/kfc/internal/repositories/messages"
 	settingsrepository "github.com/DKhorkov/kfc/internal/repositories/settings"
 	usersrepository "github.com/DKhorkov/kfc/internal/repositories/users"
+	webpushrepository "github.com/DKhorkov/kfc/internal/repositories/web_push"
+	webpushsubscriptionsrepository "github.com/DKhorkov/kfc/internal/repositories/web_push_subscriptions"
 	authservice "github.com/DKhorkov/kfc/internal/services/auth"
 	chatsservice "github.com/DKhorkov/kfc/internal/services/chats"
 	messagesservice "github.com/DKhorkov/kfc/internal/services/messages"
 	notificationsservice "github.com/DKhorkov/kfc/internal/services/notifications"
 	settingsservice "github.com/DKhorkov/kfc/internal/services/settings"
 	usersservice "github.com/DKhorkov/kfc/internal/services/users"
+	webpushsubscriptionsservice "github.com/DKhorkov/kfc/internal/services/web_push_subscriptions"
 	"github.com/DKhorkov/kfc/internal/uow"
 	authusecases "github.com/DKhorkov/kfc/internal/usecases/auth"
 	chatsusecases "github.com/DKhorkov/kfc/internal/usecases/chats"
@@ -29,9 +33,10 @@ import (
 	notificaionsusecases "github.com/DKhorkov/kfc/internal/usecases/notifications"
 	settingsusecases "github.com/DKhorkov/kfc/internal/usecases/settings"
 	usersusecases "github.com/DKhorkov/kfc/internal/usecases/users"
-	forgetpasswordmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/forget_password"
+	webpushsubscriptionsusecases "github.com/DKhorkov/kfc/internal/usecases/web_push_subscriptions"
+	emailnotificationmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/email_notification"
 	messagehandlerbuildertracingdecorator "github.com/DKhorkov/kfc/internal/workers/handlers/builders/tracing_decorator"
-	verifyemailmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/verify_email"
+	webpushnotificationmessagehandlerbuilder "github.com/DKhorkov/kfc/internal/workers/handlers/builders/web_push_notification"
 	"github.com/DKhorkov/libs/cache"
 	"github.com/DKhorkov/libs/db/postgresql"
 	"github.com/DKhorkov/libs/loadenv"
@@ -120,6 +125,7 @@ func main() {
 		ForgetPassword: forget_password.New(
 			cacheProvider,
 		),
+		NewMessage: newmessage.New(),
 	}
 
 	emailsRepository := emailsrepository.NewTraceDecorator(
@@ -233,10 +239,34 @@ func main() {
 		),
 	)
 
+	webPushSubscriptionsService := webpushsubscriptionsservice.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.Services.WebPushSubscriptions,
+		webpushsubscriptionsservice.New(
+			unitOfWork,
+			func(tx postgresql.Transaction) interfaces.WebPushSubscriptionsRepository {
+				return webpushsubscriptionsrepository.NewTraceDecorator(
+					traceProvider,
+					cfg.Tracing.Spans.Repositories.WebPushSubscriptions,
+					webpushsubscriptionsrepository.New(tx),
+				)
+			},
+		),
+	)
+
+	webPushRepository := webpushrepository.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.Repositories.WebPush,
+		webpushrepository.New(cfg.WebPush, logger),
+	)
+
 	notificationsService := notificationsservice.NewTraceDecorator(
 		traceProvider,
 		cfg.Tracing.Spans.Services.Notifications,
-		notificationsservice.New(emailsRepository),
+		notificationsservice.New(
+			emailsRepository,
+			webPushRepository,
+		),
 	)
 
 	settingsUseCases := settingsusecases.NewTraceDecorator(
@@ -284,21 +314,34 @@ func main() {
 		notificaionsusecases.New(
 			notificationsService,
 			usersService,
+			messagesService,
+			chatsService,
+			webPushSubscriptionsService,
+			logger,
 		),
 	)
 
-	verifyEmailWorker, err := customnats.NewConsumer(
+	webPushSubscriptionsUseCases := webpushsubscriptionsusecases.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.UseCases.WebPushSubscriptions,
+		webpushsubscriptionsusecases.New(
+			webPushSubscriptionsService,
+		),
+	)
+
+	emailNotificationWorker, err := customnats.NewConsumer(
 		cfg.NATS.ClientURL,
-		cfg.NATS.Subjects.VerifyEmail,
+		cfg.NATS.Subjects.EmailNotification,
 		customnats.WithGoroutinesPoolSize(cfg.NATS.GoroutinesPoolSize),
 		customnats.WithMessageChannelBufferSize(cfg.NATS.MessageChannelBufferSize),
-		customnats.WithNatsOptions(nats.Name(cfg.NATS.Workers.VerifyEmail.Name)),
+		customnats.WithNatsOptions(nats.Name(cfg.NATS.Workers.EmailNotification.Name)),
 		customnats.WithMessageHandler(
 			messagehandlerbuildertracingdecorator.New(
 				traceProvider,
-				cfg.Tracing.Spans.Handlers.VerifyEmail,
-				verifyemailmessagehandlerbuilder.New(
+				cfg.Tracing.Spans.Handlers.EmailNotification,
+				emailnotificationmessagehandlerbuilder.New(
 					notificationsUseCases,
+					settingsUseCases,
 					logger,
 				),
 			).MessageHandler(context.Background()),
@@ -308,35 +351,36 @@ func main() {
 		panic(err)
 	}
 
-	if err = verifyEmailWorker.Run(); err != nil {
+	if err = emailNotificationWorker.Run(); err != nil {
 		panic(err)
 	}
 
 	defer func() {
-		if err = verifyEmailWorker.Stop(); err != nil {
+		if err = emailNotificationWorker.Stop(); err != nil {
 			logging.LogError(
 				logger,
 				fmt.Sprintf(
 					"Error shutting down %q worker",
-					cfg.NATS.Workers.VerifyEmail.Name,
+					cfg.NATS.Workers.EmailNotification.Name,
 				),
 				err,
 			)
 		}
 	}()
 
-	forgetPasswordWorker, err := customnats.NewConsumer(
+	webPushNotificationWorker, err := customnats.NewConsumer(
 		cfg.NATS.ClientURL,
-		cfg.NATS.Subjects.ForgetPassword,
+		cfg.NATS.Subjects.WebPushNotification,
 		customnats.WithGoroutinesPoolSize(cfg.NATS.GoroutinesPoolSize),
 		customnats.WithMessageChannelBufferSize(cfg.NATS.MessageChannelBufferSize),
-		customnats.WithNatsOptions(nats.Name(cfg.NATS.Workers.ForgetPassword.Name)),
+		customnats.WithNatsOptions(nats.Name(cfg.NATS.Workers.WebPushNotification.Name)),
 		customnats.WithMessageHandler(
 			messagehandlerbuildertracingdecorator.New(
 				traceProvider,
-				cfg.Tracing.Spans.Handlers.ForgetPassword,
-				forgetpasswordmessagehandlerbuilder.New(
+				cfg.Tracing.Spans.Handlers.WebPushNotification,
+				webpushnotificationmessagehandlerbuilder.New(
 					notificationsUseCases,
+					settingsUseCases,
 					logger,
 				),
 			).MessageHandler(context.Background()),
@@ -346,17 +390,17 @@ func main() {
 		panic(err)
 	}
 
-	if err = forgetPasswordWorker.Run(); err != nil {
+	if err = webPushNotificationWorker.Run(); err != nil {
 		panic(err)
 	}
 
 	defer func() {
-		if err = forgetPasswordWorker.Stop(); err != nil {
+		if err = webPushNotificationWorker.Stop(); err != nil {
 			logging.LogError(
 				logger,
 				fmt.Sprintf(
 					"Error shutting down %q worker",
-					cfg.NATS.Workers.ForgetPassword.Name,
+					cfg.NATS.Workers.WebPushNotification.Name,
 				),
 				err,
 			)
@@ -372,14 +416,17 @@ func main() {
 		cfg.CORS,
 		cfg.Docs,
 		cfg.Cookies,
+		cfg.NATS,
 		usersUseCases,
 		authUseCases,
 		chatsUseCases,
 		messagesUseCases,
 		settingsUseCases,
+		webPushSubscriptionsUseCases,
 		logger,
 		traceProvider,
 		upgrader,
+		natsPublisher,
 		cfg.Tracing.Spans.Root,
 		cfg.Security,
 		[]string{ // Чувствительная информация, которая не должна быть заллогирована
@@ -388,6 +435,7 @@ func main() {
 			"oldPassword",
 			"newPassword",
 		},
+		cfg.WebPush.VAPIDPublicKey,
 	)
 	if err != nil {
 		panic(err)

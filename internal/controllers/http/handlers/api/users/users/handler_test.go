@@ -276,7 +276,11 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return httptest.NewRequest(http.MethodGet, "/users?limit=invalid&offset=0", http.NoBody)
+				return httptest.NewRequest(
+					http.MethodGet,
+					"/users?limit=invalid&offset=0",
+					http.NoBody,
+				)
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
 				m.EXPECT().
@@ -299,7 +303,11 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return httptest.NewRequest(http.MethodGet, "/users?limit=10&offset=invalid", http.NoBody)
+				return httptest.NewRequest(
+					http.MethodGet,
+					"/users?limit=10&offset=invalid",
+					http.NoBody,
+				)
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
 				m.EXPECT().
@@ -472,7 +480,11 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return httptest.NewRequest(http.MethodGet, "/users?username=john%20doe%40example", http.NoBody)
+				return httptest.NewRequest(
+					http.MethodGet,
+					"/users?username=john%20doe%40example",
+					http.NoBody,
+				)
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
 				m.EXPECT().

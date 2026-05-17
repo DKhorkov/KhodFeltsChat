@@ -74,6 +74,7 @@ func TestHandler(t *testing.T) {
 				dto := createUpdateDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
@@ -92,6 +93,7 @@ func TestHandler(t *testing.T) {
 				)
 
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 
@@ -114,6 +116,7 @@ func TestHandler(t *testing.T) {
 				}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
@@ -134,6 +137,7 @@ func TestHandler(t *testing.T) {
 				dto := createUpdateDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return httptest.NewRequest(http.MethodPatch, "/me", bytes.NewReader(requestBody))
 			},
 			setupMock:      func(_ *mockusecases.MockUsersUseCases) {},
@@ -157,6 +161,7 @@ func TestHandler(t *testing.T) {
 			name: "bad request - invalid JSON",
 			setupRequest: func(t *testing.T) *http.Request {
 				invalidJSON := `{"username": "test", "email": invalid}`
+
 				return createRequest(t, 123, bytes.NewReader([]byte(invalidJSON)))
 			},
 			setupMock:      func(_ *mockusecases.MockUsersUseCases) {},
@@ -173,6 +178,7 @@ func TestHandler(t *testing.T) {
 				}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
@@ -195,6 +201,7 @@ func TestHandler(t *testing.T) {
 				dto := createUpdateDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, 999, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
@@ -215,6 +222,7 @@ func TestHandler(t *testing.T) {
 				dto := createUpdateDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
@@ -235,6 +243,7 @@ func TestHandler(t *testing.T) {
 				dto := createUpdateDTO()
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
@@ -253,6 +262,7 @@ func TestHandler(t *testing.T) {
 				dto := domains.UpdateUserDTO{}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
@@ -272,6 +282,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 
@@ -288,6 +299,7 @@ func TestHandler(t *testing.T) {
 				"extraField": "should be ignored",
 				"anotherExtra": 123
 			}`
+
 				return createRequest(t, 123, bytes.NewReader([]byte(jsonWithExtraFields)))
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
@@ -309,9 +321,11 @@ func TestHandler(t *testing.T) {
 				for i := range hugeBody {
 					hugeBody[i] = 'a'
 				}
+
 				hugeJSON := []byte(`{"username":"` + string(hugeBody) + `"}`)
 				req := createRequest(t, 123, bytes.NewReader(hugeJSON))
 				req.Body = http.MaxBytesReader(nil, req.Body, 1024)
+
 				return req
 			},
 			setupMock:      func(_ *mockusecases.MockUsersUseCases) {},
@@ -327,6 +341,7 @@ func TestHandler(t *testing.T) {
 				}
 				requestBody, err := json.Marshal(dto)
 				require.NoError(t, err)
+
 				return createRequest(t, 123, bytes.NewReader(requestBody))
 			},
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
@@ -341,6 +356,7 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
 				var response map[string]any
+
 				err := json.Unmarshal(rr.Body.Bytes(), &response)
 				require.NoError(t, err)
 

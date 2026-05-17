@@ -53,3 +53,17 @@ func (d *TraceDecorator) GetChatMessages(
 
 	return d.base.GetChatMessages(ctx, userID, chatID, pagination)
 }
+
+func (d *TraceDecorator) GetMessageByID(
+	ctx context.Context,
+	userID uint64,
+	messageID uint64,
+) (*domains.Message, error) {
+	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
+	defer span.End()
+
+	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
+	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
+
+	return d.base.GetMessageByID(ctx, userID, messageID)
+}

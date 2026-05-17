@@ -6,13 +6,14 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/default"
+	default_handler "github.com/DKhorkov/kfc/internal/controllers/http/handlers/default"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/docs"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/not_allowed"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/web"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/logging"
 	metricsmiddleware "github.com/DKhorkov/libs/middlewares/http/metrics"
+	customnats "github.com/DKhorkov/libs/nats"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -28,13 +29,17 @@ func SetupHandlers(
 	rootMux *mux.Router,
 	docsConfig config.DocsConfig,
 	cookiesConfig config.CookiesConfig,
+	natsConfig config.NATSConfig,
 	usersUseCases interfaces.UsersUseCases,
 	authUseCases interfaces.AuthUseCases,
 	chatsUseCases interfaces.ChatsUseCases,
 	messagesUseCases interfaces.MessagesUseCases,
 	settingsUseCases interfaces.SettingsUseCases,
+	webPushSubscriptionsUseCases interfaces.WebPushSubscriptionsUseCases,
 	logger logging.Logger,
 	upgrader interfaces.Upgrader,
+	natsPublisher customnats.Publisher,
+	vapidPublicKey string,
 ) {
 	rootMux.NotFoundHandler = http.HandlerFunc(default_handler.Handler)
 	rootMux.MethodNotAllowedHandler = http.HandlerFunc(not_allowed.Handler)
@@ -60,13 +65,17 @@ func SetupHandlers(
 	api.SetupHandlers(
 		apiMux,
 		cookiesConfig,
+		natsConfig,
 		usersUseCases,
 		authUseCases,
 		chatsUseCases,
 		messagesUseCases,
 		settingsUseCases,
+		webPushSubscriptionsUseCases,
 		logger,
 		upgrader,
+		natsPublisher,
+		vapidPublicKey,
 	)
 
 	// WEB subrouter:
