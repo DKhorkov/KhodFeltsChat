@@ -62,6 +62,8 @@ Sentinel-ошибки для каждого домена. Позволяют в�
 | Ошибка | Описание |
 |---|---|
 | `ErrWebPushSubscriptionNotFound` | Push-подписка не найдена |
+| `ErrWebPushSubscriptionExpired` | Push-подписка истекла |
+| `ErrWebPushNotificationRejected` | Push-уведомление отклонено |
 
 ## Зависимости
 

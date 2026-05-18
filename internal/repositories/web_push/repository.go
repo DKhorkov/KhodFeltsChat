@@ -83,7 +83,8 @@ func (repo *Repository) SendNotification(
 	if resp.StatusCode >= http.StatusBadRequest {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf(
-			"web push notification rejected: id=%d, status=%d, endpoint=%s, body=%s",
+			"%w: id=%d, status=%d, endpoint=%s, body=%s",
+			customerrors.ErrWebPushNotificationRejected,
 			subscription.ID,
 			resp.StatusCode,
 			subscription.Endpoint,
