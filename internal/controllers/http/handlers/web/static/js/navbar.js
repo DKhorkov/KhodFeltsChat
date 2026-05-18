@@ -95,7 +95,7 @@ function toggleConsent(mask, bit) {
     return hasConsent(mask, bit) ? mask & ~bit : mask | bit;
 }
 
-function urlBase64ToUint8Array(base64String) {
+function urlBase64ToArrayBuffer(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
     const rawData = atob(base64);
@@ -105,7 +105,7 @@ function urlBase64ToUint8Array(base64String) {
         outputArray[i] = rawData.charCodeAt(i);
     }
 
-    return outputArray;
+    return outputArray.buffer.slice(0);
 }
 
 async function subscribeToWebPush(registration) {
@@ -116,7 +116,7 @@ async function subscribeToWebPush(registration) {
 
     const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
+        applicationServerKey: urlBase64ToArrayBuffer(publicKey),
     });
 
     await sendWebPushSubscriptionToServer(subscription);
