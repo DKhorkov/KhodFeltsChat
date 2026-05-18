@@ -19,6 +19,8 @@
 4. Устанавливает `Urgency: High` — пробуждает устройство на iOS.
 5. При получении 404/410 (подписка истекла) возвращает ошибку
    `ErrWebPushSubscriptionExpired` для удаления невалидной подписки.
+6. При получении любого другого 4xx/5xx возвращает ошибку
+   `ErrWebPushNotificationRejected` с телом ответа для диагностики.
 
 ## Конфигурация
 
@@ -26,10 +28,19 @@
 
 | Поле | Env-переменная | Описание | По умолчанию |
 |------|---------------|----------|--------------|
-| `VAPIDPublicKey` | `WEB_PUSH_VAPID_PUBLIC_KEY` | Публичный VAPID-ключ | — |
-| `VAPIDPrivateKey` | `WEB_PUSH_VAPID_PRIVATE_KEY` | Приватный VAPID-ключ | — |
-| `VAPIDContact` | `WEB_PUSH_VAPID_CONTACT` | Email для VAPID subject | — |
+| `VAPIDPublicKey` | `VAPID_PUBLIC_KEY` | Публичный VAPID-ключ | — |
+| `VAPIDPrivateKey` | `VAPID_PRIVATE_KEY` | Приватный VAPID-ключ | — |
+| `VAPIDContact` | `VAPID_CONTACT` | Email для VAPID subject (**без** `mailto:` — библиотека добавляет его сама) | `admin@example.com` |
 | `TTL` | `WEB_PUSH_TTL` | Время жизни push-уведомления (сек) | `86400` |
+
+### VAPID_CONTACT — важный нюанс
+
+Библиотека `webpush-go` автоматически добавляет `mailto:` к subscriber в JWT
+(см. `vapid.go:76-78`). Если указать `mailto:user@example.com`, в JWT попадёт
+`mailto:mailto:user@example.com` — Chrome это принимает, но Apple APNs
+отвечает `403 BadJwtToken`. Поэтому значение **не должно** содержать `mailto:`.
+
+Генератор ключей: `scripts/vapidgen.go`.
 
 ## Зависимости
 
