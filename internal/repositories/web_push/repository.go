@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/DKhorkov/kfc/internal/config"
@@ -76,6 +77,17 @@ func (repo *Repository) SendNotification(
 			customerrors.ErrWebPushSubscriptionExpired,
 			subscription.ID,
 			resp.StatusCode,
+		)
+	}
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf(
+			"web push notification rejected: id=%d, status=%d, endpoint=%s, body=%s",
+			subscription.ID,
+			resp.StatusCode,
+			subscription.Endpoint,
+			string(body),
 		)
 	}
 
