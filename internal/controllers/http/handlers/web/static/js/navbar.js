@@ -156,6 +156,60 @@ function isStandaloneMode() {
     return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 }
 
+function showWebPushBanner() {
+    // Не показываем повторно и не показываем, если уже отклонили в этой сессии
+    if (document.getElementById('web-push-banner')) return;
+    if (sessionStorage.getItem('webPushBannerDismissed')) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'web-push-banner';
+    banner.className = 'web-push-banner';
+
+    const text = document.createElement('span');
+    text.className = 'web-push-banner__text';
+    text.textContent = 'Разрешите уведомления, чтобы не пропустить новые сообщения';
+
+    const allowBtn = document.createElement('button');
+    allowBtn.className = 'web-push-banner__btn';
+    allowBtn.textContent = 'Включить';
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'web-push-banner__close';
+    closeBtn.setAttribute('aria-label', 'Закрыть');
+    closeBtn.textContent = '\u00D7';
+
+    banner.appendChild(text);
+    banner.appendChild(allowBtn);
+    banner.appendChild(closeBtn);
+    document.body.prepend(banner);
+
+    allowBtn.addEventListener('click', async () => {
+        banner.remove();
+        sessionStorage.setItem('webPushBannerDismissed', '1');
+        const ok = await ensureBrowserWebPushSubscription();
+        if (!ok) {
+            showInfo('Не удалось включить уведомления');
+        }
+    });
+
+    closeBtn.addEventListener('click', () => {
+        banner.remove();
+        sessionStorage.setItem('webPushBannerDismissed', '1');
+    });
+}
+
+async function checkExistingWebPushSubscription() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+
+    try {
+        const registration = await navigator.serviceWorker.register('/web/sw.js');
+        const existing = await registration.pushManager.getSubscription();
+        return !!existing;
+    } catch (err) {
+        return false;
+    }
+}
+
 async function ensureBrowserWebPushSubscription() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
 
@@ -178,10 +232,8 @@ async function ensureBrowserWebPushSubscription() {
             if (permission !== 'granted') return false;
         }
 
-        if (typeof subscribeToWebPush === 'function') {
-            await subscribeToWebPush(registration);
-            return true;
-        }
+        await subscribeToWebPush(registration);
+        return true;
     } catch (err) {
         console.error('Не удалось подписаться на web-push:', err);
     }
@@ -258,7 +310,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (settingsResp.ok) {
                 currentSettings = await settingsResp.json();
                 applyTheme(currentSettings.theme === THEME_DARK);
-                initNotificationToggles(currentSettings);
+                await initNotificationToggles(currentSettings);
             }
         } catch (e) {
             console.error('Не удалось загрузить настройки:', e);
@@ -270,7 +322,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Модалка профиля ---
 
     const modal = document.getElementById('modal-my-profile');
-    const modalContent = document.getElementById('modal-my-profile-content');
     if (!modal) return;
 
     async function openMyProfileModal(user) {
@@ -299,7 +350,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (settingsResp.ok) {
                 currentSettings = await settingsResp.json();
                 applyTheme(currentSettings.theme === THEME_DARK);
-                initNotificationToggles(currentSettings);
+                await initNotificationToggles(currentSettings);
             }
         } catch (e) {
             console.error('Не удалось обновить настройки:', e);
@@ -471,23 +522,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Уведомления — обработчики тоглов
 
-    function initNotificationToggles(settings) {
+    async function initNotificationToggles(settings) {
         const emailToggle = document.getElementById('toggle-email-new-message');
         const webPushToggle = document.getElementById('toggle-webpush-new-message');
 
         updateSwitchUI(emailToggle, hasConsent(settings.emailConsents, CONSENT_NEW_MESSAGE));
         updateSwitchUI(webPushToggle, hasConsent(settings.webPushConsents, CONSENT_NEW_MESSAGE));
 
-        // Авто-синхронизация: если на сервере согласие есть, подписываемся в браузере
+        // Авто-синхронизация: если на сервере согласие есть, проверяем подписку в браузере
         if (hasConsent(settings.webPushConsents, CONSENT_NEW_MESSAGE)) {
-            ensureBrowserWebPushSubscription().then(ok => {
-                if (!ok && Notification.permission === 'denied') {
+            // Проверяем, есть ли уже подписка (без запроса разрешения)
+            const hasSubscription = await checkExistingWebPushSubscription();
+
+            if (!hasSubscription) {
+                if (Notification.permission === 'denied') {
                     // Браузер запретил — сбрасываем серверный бит
                     currentSettings.webPushConsents = currentSettings.webPushConsents & ~CONSENT_NEW_MESSAGE;
                     updateSwitchUI(webPushToggle, false);
-                    return saveSettings({ webPushConsents: currentSettings.webPushConsents });
+                    await saveSettings({ webPushConsents: currentSettings.webPushConsents });
+                } else if (Notification.permission === 'default') {
+                    if (isIOSSafari()) {
+                        // iOS требует user gesture — показываем баннер
+                        showWebPushBanner();
+                    } else {
+                        // Десктоп — запрашиваем разрешение напрямую
+                        ensureBrowserWebPushSubscription()
+                            .catch(err => console.error('Web push subscription failed:', err));
+                    }
+                } else if (Notification.permission === 'granted') {
+                    // Разрешение есть, но подписки нет — пересоздаём
+                    ensureBrowserWebPushSubscription()
+                        .catch(err => console.error('Web push subscription failed:', err));
                 }
-            }).catch(err => console.error('Web push subscription check failed:', err));
+            }
         }
     }
 
@@ -545,7 +612,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             currentSettings = await settingsResp.json();
             applyTheme(currentSettings.theme === THEME_DARK);
-            initNotificationToggles(currentSettings);
+            await initNotificationToggles(currentSettings);
         } catch (e) {
             console.error('Не удалось обновить настройки:', e);
         }

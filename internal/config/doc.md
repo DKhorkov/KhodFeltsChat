@@ -47,7 +47,7 @@ type Config struct {
 | `NATSConfig` | `NATS_HOST`, `NATS_CLIENT_PORT`, `NATS_EMAIL_NOTIFICATION_SUBJECT`, `NATS_EMAIL_NOTIFICATION_WORKER_NAME`, `NATS_PUSH_NOTIFICATION_*` |
 | `TracingConfig` | `TRACING_SERVICE_NAME`, `TRACING_JAEGER_HOST`, `TRACING_API_TRACES_PORT` |
 | `WebsocketConfig` | `WEBSOCKET_HANDSHAKE_TIMEOUT` |
-| `WebPushConfig` | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT` |
+| `WebPushConfig` | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT` (без `mailto:` — библиотека добавит сама), `WEB_PUSH_TTL` |
 
 Путь к файлу логов формируется как `logs/<дата>.log` с использованием `common.Timezone` (Europe/Moscow).
 
