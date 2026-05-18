@@ -161,7 +161,7 @@ func New() Config {
 		WebPush: WebPushConfig{
 			VAPIDPublicKey:  loadenv.GetEnv("VAPID_PUBLIC_KEY", ""),
 			VAPIDPrivateKey: loadenv.GetEnv("VAPID_PRIVATE_KEY", ""),
-			VAPIDContact:    loadenv.GetEnv("VAPID_CONTACT", "mailto:admin@example.com"),
+			VAPIDContact:    loadenv.GetEnv("VAPID_CONTACT", "admin@example.com"),
 			TTL:             loadenv.GetEnvAsInt("WEB_PUSH_TTL", 86400),
 		},
 		NATS: NATSConfig{
