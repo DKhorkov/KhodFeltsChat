@@ -690,6 +690,102 @@ func (s *RepositoryTestSuite) TestChangeMessagesIsReadStatus_NonExistentRecord()
 	s.NoError(err) // UPDATE без найденных строк не возвращает ошибку
 }
 
+func (s *RepositoryTestSuite) TestReadAllChatMessages_Success() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	userID := uint64(1)
+	chatID := uint64(1)
+
+	// Добавляем непрочитанные статусы для user 1 на сообщения от других пользователей в чате 1
+	for _, messageID := range []uint64{2, 3, 5, 14, 15} {
+		_, err := s.tx.ExecContext(
+			s.ctx,
+			`INSERT INTO messages_statuses (message_id, user_id, is_read) VALUES ($1, $2, $3)`,
+			messageID, userID, false,
+		)
+		s.NoError(err)
+	}
+
+	// Проверяем что есть непрочитанные
+	var unreadCount int
+
+	err := s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT COUNT(*) FROM messages_statuses ms
+		 JOIN messages m ON ms.message_id = m.id
+		 WHERE ms.user_id = $1 AND m.chat_id = $2 AND ms.is_read = false`,
+		userID, chatID,
+	).Scan(&unreadCount)
+	s.NoError(err)
+	s.Greater(unreadCount, 0)
+
+	// Помечаем все прочитанными
+	err = s.repository.ReadAllChatMessages(s.ctx, userID, chatID)
+	s.NoError(err)
+
+	// Проверяем что непрочитанных больше нет
+	err = s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT COUNT(*) FROM messages_statuses ms
+		 JOIN messages m ON ms.message_id = m.id
+		 WHERE ms.user_id = $1 AND m.chat_id = $2 AND ms.is_read = false`,
+		userID, chatID,
+	).Scan(&unreadCount)
+	s.NoError(err)
+	s.Equal(0, unreadCount)
+}
+
+func (s *RepositoryTestSuite) TestReadAllChatMessages_DoesNotAffectOtherChats() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	userID := uint64(1)
+
+	// Добавляем непрочитанные статусы для user 1 в чате 1 и чате 2
+	for _, messageID := range []uint64{2, 3} { // чат 1
+		_, err := s.tx.ExecContext(
+			s.ctx,
+			`INSERT INTO messages_statuses (message_id, user_id, is_read) VALUES ($1, $2, $3)`,
+			messageID, userID, false,
+		)
+		s.NoError(err)
+	}
+
+	_, err := s.tx.ExecContext(
+		s.ctx,
+		`INSERT INTO messages_statuses (message_id, user_id, is_read) VALUES ($1, $2, $3)`,
+		7, userID, false, // сообщение в чате 2
+	)
+	s.NoError(err)
+
+	// Помечаем прочитанными только чат 1
+	err = s.repository.ReadAllChatMessages(s.ctx, userID, 1)
+	s.NoError(err)
+
+	// Проверяем что в чате 2 осталось непрочитанное
+	var unreadCount int
+
+	err = s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT COUNT(*) FROM messages_statuses ms
+		 JOIN messages m ON ms.message_id = m.id
+		 WHERE ms.user_id = $1 AND m.chat_id = $2 AND ms.is_read = false`,
+		userID, uint64(2),
+	).Scan(&unreadCount)
+	s.NoError(err)
+	s.Equal(1, unreadCount)
+}
+
+func (s *RepositoryTestSuite) TestReadAllChatMessages_NonExistentChat() {
+	err := s.repository.ReadAllChatMessages(s.ctx, 999, 999)
+	s.NoError(err) // UPDATE без найденных строк не возвращает ошибку
+}
+
 func (s *RepositoryTestSuite) createTestUsers() {
 	// Создаем пользователей
 	users := []struct {

@@ -85,6 +85,20 @@ func (mr *MockMessagesRepositoryMockRecorder) GetMessageByID(ctx, userID, messag
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMessageByID", reflect.TypeOf((*MockMessagesRepository)(nil).GetMessageByID), ctx, userID, messageID)
 }
 
+// ReadAllChatMessages mocks base method.
+func (m *MockMessagesRepository) ReadAllChatMessages(ctx context.Context, userID, chatID uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadAllChatMessages", ctx, userID, chatID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReadAllChatMessages indicates an expected call of ReadAllChatMessages.
+func (mr *MockMessagesRepositoryMockRecorder) ReadAllChatMessages(ctx, userID, chatID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadAllChatMessages", reflect.TypeOf((*MockMessagesRepository)(nil).ReadAllChatMessages), ctx, userID, chatID)
+}
+
 // SaveMessage mocks base method.
 func (m *MockMessagesRepository) SaveMessage(ctx context.Context, message domains.Message) (uint64, error) {
 	m.ctrl.T.Helper()

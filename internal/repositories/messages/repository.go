@@ -362,6 +362,41 @@ func (repo *Repository) ChangeMessagesIsReadStatus(
 	return err
 }
 
+func (repo *Repository) ReadAllChatMessages(
+	ctx context.Context,
+	userID uint64,
+	chatID uint64,
+) error {
+	stmt, params, err := sq.
+		Update(messagesStatusesTableName).
+		Set(isReadColumnName, true).
+		Where(
+			sq.And{
+				sq.Eq{
+					fmt.Sprintf("%s.%s", messagesStatusesTableName, userIDColumnName): userID,
+				},
+				sq.Eq{
+					fmt.Sprintf("%s.%s", messagesStatusesTableName, isReadColumnName): false,
+				},
+				sq.Eq{
+					messageIDColumnName: sq.
+						Select(idColumnName).
+						From(messagesTableName).
+						Where(sq.Eq{chatIDColumnName: chatID}),
+				},
+			},
+		).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.tx.ExecContext(ctx, stmt, params...)
+
+	return err
+}
+
 func pgMessageToDomainMessage(messagePg MessagePg) *domains.Message {
 	return &domains.Message{
 		ID:     messagePg.ID,

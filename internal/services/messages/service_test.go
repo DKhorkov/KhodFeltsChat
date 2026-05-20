@@ -74,6 +74,10 @@ func TestService_SaveMessage(t *testing.T) {
 					mr.EXPECT().
 						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
 						Return(savedMessage, nil)
+
+					mr.EXPECT().
+						ReadAllChatMessages(gomock.Any(), uint64(1), uint64(100)).
+						Return(nil)
 				},
 			},
 			args: args{
@@ -108,6 +112,40 @@ func TestService_SaveMessage(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			err:     errors.New("database error"),
+		},
+		{
+			name: "error reading all chat messages",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
+					mr.EXPECT().
+						SaveMessage(gomock.Any(), messageToSave).
+						Return(savedMessageID, nil)
+
+					mr.EXPECT().
+						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
+						Return(savedMessage, nil)
+
+					mr.EXPECT().
+						ReadAllChatMessages(gomock.Any(), uint64(1), uint64(100)).
+						Return(errors.New("read all error"))
+				},
+			},
+			args: args{
+				ctx:     context.Background(),
+				message: messageToSave,
+			},
+			want:    nil,
+			wantErr: true,
+			err:     errors.New("read all error"),
 		},
 		{
 			name: "error getting saved message",
