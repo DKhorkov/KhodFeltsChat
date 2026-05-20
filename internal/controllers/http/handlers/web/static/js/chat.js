@@ -878,11 +878,16 @@ async function searchUsersForCreate(query, selectedUserIds) {
             return;
         }
 
+        const filteredUsers = users.filter(u => u.id !== currentUser.id);
+
+        if (filteredUsers.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
         container.style.display = '';
 
-        for (const user of users) {
-            if (user.id === currentUser.id) continue;
-
+        for (const user of filteredUsers) {
             const label = document.createElement('label');
             label.className = 'user-item user-item--selectable';
 
