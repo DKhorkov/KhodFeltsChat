@@ -2,6 +2,8 @@ const MESSAGES_PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 300;
 const CHAT_LIST_POLL_INTERVAL_MS = 5000;
 const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 600;
+const SWIPE_CLOSE_THRESHOLD_RATIO = 0.5; // 50% ширины экрана для закрытия чата свайпом
+const SWIPE_LOCK_ANGLE_PX = 15;          // минимальное смещение до определения направления свайпа
 
 let currentUser = null;
 let selectedChatId = null;
@@ -539,28 +541,26 @@ function setupCloseChat() {
 // ═══════════════════════════════════════
 // Свайп вправо → закрытие чата (мобильная версия)
 // ═══════════════════════════════════════
+function lockPageScroll() {
+    document.documentElement.style.overflowX = 'hidden';
+    document.body.style.overflowX = 'hidden';
+}
+
+function unlockPageScroll() {
+    document.documentElement.style.overflowX = '';
+    document.body.style.overflowX = '';
+}
+
 function setupSwipeToCloseChat() {
     const conversation = document.getElementById('conversation');
-    const CLOSE_THRESHOLD_RATIO = 0.5; // 50% ширины экрана для закрытия
-    const LOCK_ANGLE_PX = 15;          // минимальное смещение до определения направления
 
     let touchStartX = 0;
     let touchStartY = 0;
     let isSwiping = false;    // свайп активен
     let directionLocked = false; // направление определено
 
-    function lockPageScroll() {
-        document.documentElement.style.overflowX = 'hidden';
-        document.body.style.overflowX = 'hidden';
-    }
-
-    function unlockPageScroll() {
-        document.documentElement.style.overflowX = '';
-        document.body.style.overflowX = '';
-    }
-
     conversation.addEventListener('touchstart', (e) => {
-        if (!selectedChatId) return;
+        if (!selectedChatId || window.innerWidth > 600) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         isSwiping = false;
@@ -575,7 +575,7 @@ function setupSwipeToCloseChat() {
         const dy = Math.abs(e.touches[0].clientY - touchStartY);
 
         // Определяем направление жеста один раз:
-        if (!directionLocked && (Math.abs(dx) > LOCK_ANGLE_PX || dy > LOCK_ANGLE_PX)) {
+        if (!directionLocked && (Math.abs(dx) > SWIPE_LOCK_ANGLE_PX || dy > SWIPE_LOCK_ANGLE_PX)) {
             directionLocked = true;
             isSwiping = dx > 0 && Math.abs(dx) > dy; // горизонтальный свайп вправо
             if (isSwiping) lockPageScroll();
@@ -596,7 +596,7 @@ function setupSwipeToCloseChat() {
         }
 
         const dx = e.changedTouches[0].clientX - touchStartX;
-        const threshold = window.innerWidth * CLOSE_THRESHOLD_RATIO;
+        const threshold = window.innerWidth * SWIPE_CLOSE_THRESHOLD_RATIO;
 
         conversation.style.transition = 'transform 0.3s ease';
 

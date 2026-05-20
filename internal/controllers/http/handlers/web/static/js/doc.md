@@ -24,6 +24,8 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 | `SEARCH_DEBOUNCE_MS` | Задержка debounce для поиска (300 мс). |
 | `CHAT_LIST_POLL_INTERVAL_MS` | Интервал polling списка чатов (5000 мс). |
 | `IS_MOBILE` | Флаг мобильного устройства (по userAgent или ширине экрана ≤ 600px). |
+| `SWIPE_CLOSE_THRESHOLD_RATIO` | Доля ширины экрана для закрытия чата свайпом (0.5 = 50%). |
+| `SWIPE_LOCK_ANGLE_PX` | Минимальное смещение в пикселях до определения направления свайпа (15px). |
 | `currentUser` | Текущий авторизованный пользователь. |
 | `selectedChatId` / `selectedChat` | ID и объект выбранного чата. |
 | `messages` | Массив сообщений текущего чата. |
@@ -97,7 +99,9 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 | Функция | Описание |
 |---------|----------|
 | `setupCloseChat()` | Обработчик кнопки закрытия чата (`#btn-close-chat`). |
-| `setupSwipeToCloseChat()` | Свайп вправо для закрытия чата на мобильных. Интерактивный: conversation сдвигается по `touchmove` через `translateX`, открывая sidebar под ним. При свайпе ≥ 50% ширины экрана (`CLOSE_THRESHOLD_RATIO`) — чат закрывается с анимацией; иначе — возвращается на место. Направление жеста определяется один раз после 15px смещения (`LOCK_ANGLE_PX`): если горизонтальное смещение больше вертикального — свайп, иначе — обычный скролл. Внутренние хелперы `lockPageScroll()`/`unlockPageScroll()` блокируют `overflowX` на `html` и `body` во время свайпа, предотвращая сдвиг всей страницы (включая navbar). CSS-часть: `.chat-layout--chat-open` получает `overflow: hidden` и `position: relative`, conversation — `position: absolute; z-index: 10`, sidebar остаётся `display: flex` (виден под conversation). |
+| `lockPageScroll()` | Блокирует горизонтальный скролл на `html` и `body` (`overflowX: hidden`). Вызывается при начале свайпа, чтобы `translateX` на conversation не сдвигал всю страницу (включая navbar). |
+| `unlockPageScroll()` | Снимает блокировку горизонтального скролла. Вызывается после завершения анимации свайпа (закрытие или возврат на место). |
+| `setupSwipeToCloseChat()` | Свайп вправо для закрытия чата на мобильных (только при `window.innerWidth ≤ 600`, совпадает с CSS media query). Интерактивный: conversation сдвигается по `touchmove` через `translateX`, открывая sidebar под ним. При свайпе ≥ 50% ширины экрана (`SWIPE_CLOSE_THRESHOLD_RATIO`) — чат закрывается с анимацией; иначе — возвращается на место. Направление жеста определяется один раз после 15px смещения (`SWIPE_LOCK_ANGLE_PX`): если горизонтальное смещение больше вертикального — свайп, иначе — обычный скролл. CSS-часть: `.chat-layout--chat-open` получает `overflow: hidden` и `position: relative`, conversation — `position: absolute; z-index: 10`, sidebar остаётся `display: flex` (виден под conversation). |
 | `closeChat()` | Сбрасывает состояние чата, скрывает панель переписки, убирает класс `chat-layout--chat-open`, закрывает emoji picker. |
 
 **Информация о чате:**
