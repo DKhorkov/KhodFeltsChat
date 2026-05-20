@@ -565,15 +565,25 @@
         display: none !important;
     }
 
-    /* Когда чат выбран — сайдбар скрывается, переписка на весь экран */
+    /* Когда чат выбран — переписка наезжает поверх сайдбара (для swipe-to-close) */
+    .chat-layout--chat-open {
+        position: relative;
+    }
+
     .chat-layout--chat-open .sidebar {
-        display: none;
+        display: flex;
     }
 
     .chat-layout--chat-open .conversation {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
         height: calc(100vh - var(--navbar-height));
         max-height: calc(100vh - var(--navbar-height));
         overflow: hidden;
+        z-index: 10;
+        transition: transform 0.3s ease;
     }
 
     /* Сообщения — компактнее */
