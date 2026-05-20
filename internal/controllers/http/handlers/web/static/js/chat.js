@@ -541,7 +541,7 @@ function setupCloseChat() {
 // ═══════════════════════════════════════
 function setupSwipeToCloseChat() {
     const conversation = document.getElementById('conversation');
-    const CLOSE_THRESHOLD_RATIO = 0.4; // 40% ширины экрана для закрытия
+    const CLOSE_THRESHOLD_RATIO = 0.5; // 50% ширины экрана для закрытия
     const LOCK_ANGLE_PX = 15;          // минимальное смещение до определения направления
 
     let touchStartX = 0;
