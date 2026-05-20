@@ -176,8 +176,7 @@ func (repo *Repository) GetUserChats(
 			sq.Eq{
 				fmt.Sprintf("%s.%s", messagesStatusesTableName, isReadColumnName): false,
 			},
-		).
-		PlaceholderFormat(sq.Dollar)
+		)
 
 	unreadSQL, unreadArgs, err := unreadSubquery.ToSql()
 	if err != nil {
@@ -193,11 +192,11 @@ func (repo *Repository) GetUserChats(
 		fmt.Sprintf("%s.%s", chatsTableName, typeColumnName),
 		fmt.Sprintf("%s.%s", chatsTableName, createdAtColumnName),
 		fmt.Sprintf("%s.%s", chatsTableName, updatedAtColumnName),
-		isReadColumn,
 	}
 
 	builder := sq.
 		Select(columnsForSelect...).
+		Column(isReadColumn, unreadArgs...).
 		From(chatsTableName).
 		Join(
 			fmt.Sprintf(
@@ -245,7 +244,7 @@ func (repo *Repository) GetUserChats(
 	rows, err := repo.tx.QueryContext(
 		ctx,
 		stmt,
-		append(unreadArgs, params...)...,
+		params...,
 	)
 	if err != nil {
 		return nil, err
