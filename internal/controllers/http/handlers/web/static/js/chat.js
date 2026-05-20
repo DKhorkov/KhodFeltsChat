@@ -203,6 +203,15 @@ function renderChatList(chats) {
         titleEl.textContent = title;
         info.appendChild(titleEl);
 
+        if (chat.messages && chat.messages.length > 0) {
+            const lastMsg = chat.messages[chat.messages.length - 1];
+            const preview = document.createElement('div');
+            preview.className = 'chat-item__last-message';
+            const senderName = lastMsg.sender.id === currentUser.id ? 'Вы' : lastMsg.sender.username;
+            preview.textContent = senderName + ': ' + lastMsg.text;
+            info.appendChild(preview);
+        }
+
         item.appendChild(avatar);
         item.appendChild(info);
 
@@ -483,6 +492,8 @@ function sendMessage() {
 
     input.value = '';
     document.getElementById('btn-send').disabled = true;
+
+    loadChats().catch(console.error);
 }
 
 function markAllAsRead() {
@@ -869,11 +880,16 @@ async function searchUsersForCreate(query, selectedUserIds) {
             return;
         }
 
+        const filteredUsers = users.filter(u => u.id !== currentUser.id);
+
+        if (filteredUsers.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
         container.style.display = '';
 
-        for (const user of users) {
-            if (user.id === currentUser.id) continue;
-
+        for (const user of filteredUsers) {
             const label = document.createElement('label');
             label.className = 'user-item user-item--selectable';
 

@@ -79,6 +79,8 @@ scripts/                — Taskfile, скрипты PostgreSQL
 
 ## Тестирование
 
+> **Правило:** при изменении Go-кода **обязательно** напиши или обнови тесты для затронутого кода.
+
 - Unit-тесты с mockgen моками
 - Trace decorator тесты
 - Domain validation тесты
