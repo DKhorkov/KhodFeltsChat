@@ -46,12 +46,6 @@ func TestService_SaveMessage(t *testing.T) {
 		Text:   "Hello, world!",
 	}
 
-	chatMembers := []domains.User{
-		{ID: 1, Username: "user1"},
-		{ID: 2, Username: "user2"},
-		{ID: 3, Username: "user3"},
-	}
-
 	tests := []struct {
 		name    string
 		fields  fields
@@ -61,7 +55,7 @@ func TestService_SaveMessage(t *testing.T) {
 		err     error
 	}{
 		{
-			name: "successfully save message with multiple recipients",
+			name: "successfully save message",
 			fields: fields{
 				mockUOW: func(uow *mockuow.MockUnitOfWork) {
 					uow.EXPECT().
@@ -81,72 +75,10 @@ func TestService_SaveMessage(t *testing.T) {
 						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
 						Return(savedMessage, nil)
 				},
-				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
-					cr.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(100)).
-						Return(chatMembers, nil)
-
-					// Для user2 и user3 меняем статус на непрочитанный
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(2), uint64(100), false).
-						Return(nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(3), uint64(100), false).
-						Return(nil)
-
-					// Для user1 (отправитель) чат прочитан
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(100), true).
-						Return(nil)
-				},
 			},
 			args: args{
 				ctx:     context.Background(),
 				message: messageToSave,
-			},
-			want:    savedMessage,
-			wantErr: false,
-		},
-		{
-			name: "successfully save message with single recipient (sender only)",
-			fields: fields{
-				mockUOW: func(uow *mockuow.MockUnitOfWork) {
-					uow.EXPECT().
-						Do(gomock.Any(), gomock.Any()).
-						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
-							tx := &struct{ pg.Transaction }{}
-
-							return fn(ctx, tx)
-						})
-				},
-				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
-					mr.EXPECT().
-						SaveMessage(gomock.Any(), gomock.AssignableToTypeOf(domains.Message{})).
-						Return(savedMessageID, nil)
-
-					mr.EXPECT().
-						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
-						Return(savedMessage, nil)
-				},
-				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
-					singleMember := []domains.User{{ID: 1, Username: "user1"}}
-					cr.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(100)).
-						Return(singleMember, nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(100), true).
-						Return(nil)
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				message: domains.Message{
-					ChatID: 100,
-					Sender: domains.User{ID: 1},
-					Text:   "Hello!",
-				},
 			},
 			want:    savedMessage,
 			wantErr: false,
@@ -206,180 +138,6 @@ func TestService_SaveMessage(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			err:     errors.New("message not found"),
-		},
-		{
-			name: "error getting chat members",
-			fields: fields{
-				mockUOW: func(uow *mockuow.MockUnitOfWork) {
-					uow.EXPECT().
-						Do(gomock.Any(), gomock.Any()).
-						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
-							tx := &struct{ pg.Transaction }{}
-
-							return fn(ctx, tx)
-						})
-				},
-				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
-					mr.EXPECT().
-						SaveMessage(gomock.Any(), messageToSave).
-						Return(savedMessageID, nil)
-
-					mr.EXPECT().
-						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
-						Return(savedMessage, nil)
-				},
-				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
-					cr.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(100)).
-						Return(nil, errors.New("members error"))
-				},
-			},
-			args: args{
-				ctx:     context.Background(),
-				message: messageToSave,
-			},
-			want:    nil,
-			wantErr: true,
-			err:     errors.New("members error"),
-		},
-		{
-			name: "error changing chat read status",
-			fields: fields{
-				mockUOW: func(uow *mockuow.MockUnitOfWork) {
-					uow.EXPECT().
-						Do(gomock.Any(), gomock.Any()).
-						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
-							tx := &struct{ pg.Transaction }{}
-
-							return fn(ctx, tx)
-						})
-				},
-				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
-					mr.EXPECT().
-						SaveMessage(gomock.Any(), messageToSave).
-						Return(savedMessageID, nil)
-
-					mr.EXPECT().
-						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
-						Return(savedMessage, nil)
-				},
-				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
-					cr.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(100)).
-						Return(chatMembers, nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(100), true).
-						Return(errors.New("status update error"))
-				},
-			},
-			args: args{
-				ctx:     context.Background(),
-				message: messageToSave,
-			},
-			want:    nil,
-			wantErr: true,
-			err:     errors.New("status update error"),
-		},
-		{
-			name: "empty chat members list",
-			fields: fields{
-				mockUOW: func(uow *mockuow.MockUnitOfWork) {
-					uow.EXPECT().
-						Do(gomock.Any(), gomock.Any()).
-						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
-							tx := &struct{ pg.Transaction }{}
-
-							return fn(ctx, tx)
-						})
-				},
-				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
-					mr.EXPECT().
-						SaveMessage(gomock.Any(), messageToSave).
-						Return(savedMessageID, nil)
-
-					mr.EXPECT().
-						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
-						Return(savedMessage, nil)
-				},
-				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
-					cr.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(100)).
-						Return([]domains.User{}, nil)
-					// Нет вызовов ChangeChatIsReadStatus, так как нет участников
-				},
-			},
-			args: args{
-				ctx:     context.Background(),
-				message: messageToSave,
-			},
-			want:    savedMessage,
-			wantErr: false,
-		},
-		{
-			name: "save message in group chat with many members",
-			fields: fields{
-				mockUOW: func(uow *mockuow.MockUnitOfWork) {
-					uow.EXPECT().
-						Do(gomock.Any(), gomock.Any()).
-						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
-							tx := &struct{ pg.Transaction }{}
-
-							return fn(ctx, tx)
-						})
-				},
-				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
-					mr.EXPECT().
-						SaveMessage(gomock.Any(), gomock.AssignableToTypeOf(domains.Message{})).
-						Return(savedMessageID, nil)
-
-					mr.EXPECT().
-						GetMessageByID(gomock.Any(), uint64(1), savedMessageID).
-						Return(savedMessage, nil)
-				},
-				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
-					groupMembers := []domains.User{
-						{ID: 1, Username: "user1"},
-						{ID: 2, Username: "user2"},
-						{ID: 3, Username: "user3"},
-						{ID: 4, Username: "user4"},
-						{ID: 5, Username: "user5"},
-					}
-					cr.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(200)).
-						Return(groupMembers, nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(200), true).
-						Return(nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(2), uint64(200), false).
-						Return(nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(3), uint64(200), false).
-						Return(nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(4), uint64(200), false).
-						Return(nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(5), uint64(200), false).
-						Return(nil)
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				message: domains.Message{
-					ChatID: 200,
-					Sender: domains.User{ID: 1},
-					Text:   "Group message",
-				},
-			},
-			want:    savedMessage,
-			wantErr: false,
 		},
 	}
 
@@ -490,10 +248,6 @@ func TestService_GetChatMessages(t *testing.T) {
 					cr.EXPECT().
 						GetChatByID(gomock.Any(), uint64(100)).
 						Return(chat, nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(100), true).
-						Return(nil)
 				},
 
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
@@ -532,10 +286,6 @@ func TestService_GetChatMessages(t *testing.T) {
 					cr.EXPECT().
 						GetChatByID(gomock.Any(), uint64(100)).
 						Return(chat, nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(100), true).
-						Return(nil)
 				},
 
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
@@ -647,43 +397,6 @@ func TestService_GetChatMessages(t *testing.T) {
 			err:     errors.New("database error"),
 		},
 		{
-			name: "error changing chat read status",
-			fields: fields{
-				mockUOW: func(uow *mockuow.MockUnitOfWork) {
-					uow.EXPECT().
-						Do(gomock.Any(), gomock.Any()).
-						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
-							tx := &struct{ pg.Transaction }{}
-
-							return fn(ctx, tx)
-						})
-				},
-				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
-					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
-						Return(chat, nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(100), true).
-						Return(errors.New("status update error"))
-				},
-				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
-					mr.EXPECT().
-						GetChatMessages(gomock.Any(), uint64(1), uint64(100), pagination).
-						Return(messages, nil)
-				},
-			},
-			args: args{
-				ctx:        context.Background(),
-				userID:     1,
-				chatID:     100,
-				pagination: pagination,
-			},
-			want:    nil,
-			wantErr: true,
-			err:     errors.New("status update error"),
-		},
-		{
 			name: "empty messages list",
 			fields: fields{
 				mockUOW: func(uow *mockuow.MockUnitOfWork) {
@@ -700,10 +413,6 @@ func TestService_GetChatMessages(t *testing.T) {
 					cr.EXPECT().
 						GetChatByID(gomock.Any(), uint64(101)).
 						Return(&domains.Chat{ID: 101}, nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(101), true).
-						Return(nil)
 				},
 
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
@@ -742,10 +451,6 @@ func TestService_GetChatMessages(t *testing.T) {
 					cr.EXPECT().
 						GetChatByID(gomock.Any(), uint64(100)).
 						Return(chat, nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(1), uint64(100), true).
-						Return(nil)
 				},
 
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
@@ -792,10 +497,6 @@ func TestService_GetChatMessages(t *testing.T) {
 					cr.EXPECT().
 						GetChatByID(gomock.Any(), uint64(100)).
 						Return(chat, nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(2), uint64(100), true).
-						Return(nil)
 				},
 
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
@@ -834,10 +535,6 @@ func TestService_GetChatMessages(t *testing.T) {
 					cr.EXPECT().
 						GetChatByID(gomock.Any(), uint64(100)).
 						Return(chat, nil)
-
-					cr.EXPECT().
-						ChangeChatIsReadStatus(gomock.Any(), uint64(2), uint64(100), true).
-						Return(nil)
 				},
 
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {

@@ -57,12 +57,6 @@ type ChatsRepository interface {
 	) ([]domains.Chat, error)
 	CreateChat(ctx context.Context, chat domains.Chat) (uint64, error)
 	GetChatByID(ctx context.Context, id uint64) (*domains.Chat, error)
-	ChangeChatIsReadStatus(
-		ctx context.Context,
-		userID uint64,
-		chatID uint64,
-		isRead bool,
-	) error
 	PrivateChatExists(ctx context.Context, members []domains.User) (bool, error)
 }
 

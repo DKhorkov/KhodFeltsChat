@@ -13,16 +13,18 @@ import (
 )
 
 const (
-	chatsTableName        = "chats"
-	chatsMembersTableName = "chats_members"
-	usersTableName        = "users"
-	messagesTableName     = "messages"
+	chatsTableName            = "chats"
+	chatsMembersTableName     = "chats_members"
+	usersTableName            = "users"
+	messagesTableName         = "messages"
+	messagesStatusesTableName = "messages_statuses"
 
 	titleColumnName          = "title"
 	descriptionColumnName    = "description"
 	typeColumnName           = "type"
 	chatIDColumnName         = "chat_id"
 	isReadColumnName         = "is_read"
+	messageIDColumnName      = "message_id"
 	idColumnName             = "id"
 	usernameColumnName       = "username"
 	emailColumnName          = "email"
@@ -141,6 +143,21 @@ func (repo *Repository) GetUserChats(
 	userID uint64,
 	pagination *domains.Pagination,
 ) ([]domains.Chat, error) {
+	isReadSubquery := fmt.Sprintf(
+		"NOT EXISTS (SELECT 1 FROM %s ms JOIN %s m ON ms.%s = m.%s WHERE m.%s = %s.%s AND ms.%s = %d AND ms.%s = false) AS %s",
+		messagesStatusesTableName,
+		messagesTableName,
+		messageIDColumnName,
+		idColumnName,
+		chatIDColumnName,
+		chatsTableName,
+		idColumnName,
+		userIDColumnName,
+		userID,
+		isReadColumnName,
+		isReadColumnName,
+	)
+
 	columnsForSelect := []string{
 		fmt.Sprintf("%s.%s", chatsTableName, idColumnName),
 		fmt.Sprintf("%s.%s", chatsTableName, titleColumnName),
@@ -148,7 +165,7 @@ func (repo *Repository) GetUserChats(
 		fmt.Sprintf("%s.%s", chatsTableName, typeColumnName),
 		fmt.Sprintf("%s.%s", chatsTableName, createdAtColumnName),
 		fmt.Sprintf("%s.%s", chatsTableName, updatedAtColumnName),
-		fmt.Sprintf("%s.%s", chatsMembersTableName, isReadColumnName),
+		isReadSubquery,
 	}
 
 	builder := sq.
@@ -263,13 +280,12 @@ func (repo *Repository) CreateChat(
 	}
 
 	builder := sq.Insert(chatsMembersTableName).
-		Columns(chatIDColumnName, userIDColumnName, isReadColumnName)
+		Columns(chatIDColumnName, userIDColumnName)
 
 	for _, member := range chat.Members {
 		builder = builder.Values(
 			chatID,
 			member.ID,
-			false, // При создании чат непрочитан для всех участников
 		)
 	}
 
@@ -310,32 +326,6 @@ func (repo *Repository) GetChatByID(
 	}
 
 	return chat, nil
-}
-
-func (repo *Repository) ChangeChatIsReadStatus(
-	ctx context.Context,
-	userID uint64,
-	chatID uint64,
-	isRead bool,
-) error {
-	stmt, params, err := sq.
-		Update(chatsMembersTableName).
-		Where(
-			sq.Eq{
-				userIDColumnName: userID,
-				chatIDColumnName: chatID,
-			},
-		).
-		Set(isReadColumnName, isRead).
-		PlaceholderFormat(sq.Dollar). // pq postgres driver works only with $ placeholders
-		ToSql()
-	if err != nil {
-		return err
-	}
-
-	_, err = repo.tx.ExecContext(ctx, stmt, params...)
-
-	return err
 }
 
 func (repo *Repository) PrivateChatExists(

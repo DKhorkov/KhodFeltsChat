@@ -342,29 +342,22 @@ func (s *RepositoryTestSuite) TestCreateChat_Success() {
 	// Проверяем участников чата
 	rows, err := s.tx.QueryContext(
 		s.ctx,
-		`SELECT user_id, is_read FROM chats_members WHERE chat_id = $1 ORDER BY user_id`,
+		`SELECT user_id FROM chats_members WHERE chat_id = $1 ORDER BY user_id`,
 		chatID,
 	)
 	s.NoError(err)
 
 	defer rows.Close()
 
-	var (
-		memberIDs    []uint64
-		isReadStatus []bool
-	)
+	var memberIDs []uint64
 
 	for rows.Next() {
-		var (
-			userID uint64
-			isRead bool
-		)
+		var userID uint64
 
-		err = rows.Scan(&userID, &isRead)
+		err = rows.Scan(&userID)
 		s.NoError(err)
 
 		memberIDs = append(memberIDs, userID)
-		isReadStatus = append(isReadStatus, isRead)
 	}
 
 	s.NoError(rows.Err())
@@ -373,11 +366,6 @@ func (s *RepositoryTestSuite) TestCreateChat_Success() {
 	s.Equal(uint64(1), memberIDs[0])
 	s.Equal(uint64(2), memberIDs[1])
 	s.Equal(uint64(3), memberIDs[2])
-
-	// Проверяем, что все участники имеют is_read = false при создании
-	for _, isRead := range isReadStatus {
-		s.False(isRead, "All members should have is_read = false when chat is created")
-	}
 }
 
 func (s *RepositoryTestSuite) TestCreateChat_EmptyTitle() {
@@ -541,49 +529,6 @@ func (s *RepositoryTestSuite) TestGetChatByID_ZeroID() {
 	s.Nil(chat)
 }
 
-func (s *RepositoryTestSuite) TestChangeChatIsReadStatus_Success() {
-	s.createTestUsers()
-	s.createTestChats()
-	s.createTestChatMembers()
-
-	// Тест: Успешное изменение статуса прочтения
-	userID := uint64(1)
-	chatID := uint64(1)
-	newIsRead := true
-
-	// Проверяем начальное состояние (должно быть false)
-	var initialIsRead bool
-
-	err := s.tx.QueryRowContext(
-		s.ctx,
-		`SELECT is_read FROM chats_members WHERE user_id = $1 AND chat_id = $2`,
-		userID, chatID,
-	).Scan(&initialIsRead)
-	s.NoError(err)
-	s.False(initialIsRead, "Initial is_read should be false")
-
-	// Изменяем статус
-	err = s.repository.ChangeChatIsReadStatus(s.ctx, userID, chatID, newIsRead)
-	s.NoError(err)
-
-	// Проверяем конечное состояние
-	var finalIsRead bool
-
-	err = s.tx.QueryRowContext(
-		s.ctx,
-		`SELECT is_read FROM chats_members WHERE user_id = $1 AND chat_id = $2`,
-		userID, chatID,
-	).Scan(&finalIsRead)
-	s.NoError(err)
-	s.True(finalIsRead, "Final is_read should be true")
-}
-
-func (s *RepositoryTestSuite) TestChangeChatIsReadStatus_NonExistentRecord() {
-	// Тест: Попытка изменить статус для несуществующей записи
-	err := s.repository.ChangeChatIsReadStatus(s.ctx, 999, 999, true)
-	s.NoError(err) // UPDATE без найденных строк не возвращает ошибку
-}
-
 func (s *RepositoryTestSuite) TestPrivateChatExists_True() {
 	s.createTestUsers()
 	s.createTestChats()
@@ -730,42 +675,40 @@ func (s *RepositoryTestSuite) createTestChatMembers() {
 	chatMembers := []struct {
 		chatID uint64
 		userID uint64
-		isRead bool
 	}{
 		// General Chat (id=1) - много участников
-		{1, 1, false},
-		{1, 2, false},
-		{1, 3, false},
-		{1, 4, false},
-		{1, 5, false},
+		{1, 1},
+		{1, 2},
+		{1, 3},
+		{1, 4},
+		{1, 5},
 
 		// Private Chat 1-4 (id=2) - приватный чат
-		{2, 1, true},
-		{2, 4, true},
+		{2, 1},
+		{2, 4},
 
 		// Project Chat (id=3)
-		{3, 1, true},
-		{3, 2, false},
-		{3, 3, true},
+		{3, 1},
+		{3, 2},
+		{3, 3},
 
 		// Private Chat 2-3 (id=4)
-		{4, 2, false},
-		{4, 3, true},
+		{4, 2},
+		{4, 3},
 
 		// Team Chat (id=5)
-		{5, 4, true},
-		{5, 5, false},
-		{5, 6, true},
+		{5, 4},
+		{5, 5},
+		{5, 6},
 	}
 
 	for _, cm := range chatMembers {
 		_, err := s.tx.ExecContext(
 			s.ctx,
-			`INSERT INTO chats_members (chat_id, user_id, is_read, created_at, updated_at) 
-			 VALUES ($1, $2, $3, $4, $4)`,
+			`INSERT INTO chats_members (chat_id, user_id, created_at, updated_at)
+			 VALUES ($1, $2, $3, $3)`,
 			cm.chatID,
 			cm.userID,
-			cm.isRead,
 			time.Now().UTC(),
 		)
 		s.NoError(err)
