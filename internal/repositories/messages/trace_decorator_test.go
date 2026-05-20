@@ -893,3 +893,92 @@ func TestTraceDecorator_ChangeMessagesIsReadStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestTraceDecorator_ReadAllChatMessages(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		userID        uint64
+		chatID        uint64
+		setupMocks    func(*mocktracing.MockProvider, *mockrepositories.MockMessagesRepository, *mocktracing.MockSpan)
+		expectedError error
+	}{
+		{
+			name:   "successful read all chat messages with tracing",
+			userID: 1,
+			chatID: 100,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockrepositories.MockMessagesRepository,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					ReadAllChatMessages(gomock.Any(), uint64(1), uint64(100)).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:   "database error",
+			userID: 1,
+			chatID: 100,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockrepositories.MockMessagesRepository,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					ReadAllChatMessages(gomock.Any(), uint64(1), uint64(100)).
+					Return(errors.New("database connection failed"))
+			},
+			expectedError: errors.New("database connection failed"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockrepositories.NewMockMessagesRepository(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			spanConfig := tracing.SpanConfig{
+				Name: "test-span",
+				Events: tracing.SpanEventsConfig{
+					Start: tracing.SpanEventConfig{Name: "start"},
+					End:   tracing.SpanEventConfig{Name: "end"},
+				},
+			}
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockProvider, mockBase, mockSpan)
+			}
+
+			decorator := messages.NewTraceDecorator(mockProvider, spanConfig, mockBase)
+
+			ctx := context.Background()
+			err := decorator.ReadAllChatMessages(ctx, tt.userID, tt.chatID)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

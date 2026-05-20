@@ -57,12 +57,6 @@ type ChatsRepository interface {
 	) ([]domains.Chat, error)
 	CreateChat(ctx context.Context, chat domains.Chat) (uint64, error)
 	GetChatByID(ctx context.Context, id uint64) (*domains.Chat, error)
-	ChangeChatIsReadStatus(
-		ctx context.Context,
-		userID uint64,
-		chatID uint64,
-		isRead bool,
-	) error
 	PrivateChatExists(ctx context.Context, members []domains.User) (bool, error)
 }
 
@@ -82,6 +76,7 @@ type MessagesRepository interface {
 		messages []domains.Message,
 		isRead bool,
 	) error
+	ReadAllChatMessages(ctx context.Context, userID uint64, chatID uint64) error
 }
 
 //go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/settings_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,UsersRepository,EmailsRepository,MessagesRepository,ChatsRepository,WebPushSubscriptionsRepository,WebPushRepository

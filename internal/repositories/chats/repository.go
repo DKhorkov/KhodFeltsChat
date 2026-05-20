@@ -13,16 +13,18 @@ import (
 )
 
 const (
-	chatsTableName        = "chats"
-	chatsMembersTableName = "chats_members"
-	usersTableName        = "users"
-	messagesTableName     = "messages"
+	chatsTableName            = "chats"
+	chatsMembersTableName     = "chats_members"
+	usersTableName            = "users"
+	messagesTableName         = "messages"
+	messagesStatusesTableName = "messages_statuses"
 
 	titleColumnName          = "title"
 	descriptionColumnName    = "description"
 	typeColumnName           = "type"
 	chatIDColumnName         = "chat_id"
 	isReadColumnName         = "is_read"
+	messageIDColumnName      = "message_id"
 	idColumnName             = "id"
 	usernameColumnName       = "username"
 	emailColumnName          = "email"
@@ -141,6 +143,48 @@ func (repo *Repository) GetUserChats(
 	userID uint64,
 	pagination *domains.Pagination,
 ) ([]domains.Chat, error) {
+	unreadSubquery := sq.
+		Select(selectExists).
+		From(messagesStatusesTableName).
+		Join(
+			fmt.Sprintf(
+				"%s ON %s.%s = %s.%s",
+				messagesTableName,
+				messagesStatusesTableName,
+				messageIDColumnName,
+				messagesTableName,
+				idColumnName,
+			),
+		).
+		Where(
+			sq.Expr(
+				fmt.Sprintf(
+					"%s.%s = %s.%s",
+					messagesTableName,
+					chatIDColumnName,
+					chatsTableName,
+					idColumnName,
+				),
+			),
+		).
+		Where(
+			sq.Eq{
+				fmt.Sprintf("%s.%s", messagesStatusesTableName, userIDColumnName): userID,
+			},
+		).
+		Where(
+			sq.Eq{
+				fmt.Sprintf("%s.%s", messagesStatusesTableName, isReadColumnName): false,
+			},
+		)
+
+	unreadSQL, unreadArgs, err := unreadSubquery.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	isReadColumn := fmt.Sprintf("NOT EXISTS (%s) AS %s", unreadSQL, isReadColumnName)
+
 	columnsForSelect := []string{
 		fmt.Sprintf("%s.%s", chatsTableName, idColumnName),
 		fmt.Sprintf("%s.%s", chatsTableName, titleColumnName),
@@ -148,11 +192,11 @@ func (repo *Repository) GetUserChats(
 		fmt.Sprintf("%s.%s", chatsTableName, typeColumnName),
 		fmt.Sprintf("%s.%s", chatsTableName, createdAtColumnName),
 		fmt.Sprintf("%s.%s", chatsTableName, updatedAtColumnName),
-		fmt.Sprintf("%s.%s", chatsMembersTableName, isReadColumnName),
 	}
 
 	builder := sq.
 		Select(columnsForSelect...).
+		Column(isReadColumn, unreadArgs...).
 		From(chatsTableName).
 		Join(
 			fmt.Sprintf(
@@ -263,13 +307,12 @@ func (repo *Repository) CreateChat(
 	}
 
 	builder := sq.Insert(chatsMembersTableName).
-		Columns(chatIDColumnName, userIDColumnName, isReadColumnName)
+		Columns(chatIDColumnName, userIDColumnName)
 
 	for _, member := range chat.Members {
 		builder = builder.Values(
 			chatID,
 			member.ID,
-			false, // При создании чат непрочитан для всех участников
 		)
 	}
 
@@ -310,32 +353,6 @@ func (repo *Repository) GetChatByID(
 	}
 
 	return chat, nil
-}
-
-func (repo *Repository) ChangeChatIsReadStatus(
-	ctx context.Context,
-	userID uint64,
-	chatID uint64,
-	isRead bool,
-) error {
-	stmt, params, err := sq.
-		Update(chatsMembersTableName).
-		Where(
-			sq.Eq{
-				userIDColumnName: userID,
-				chatIDColumnName: chatID,
-			},
-		).
-		Set(isReadColumnName, isRead).
-		PlaceholderFormat(sq.Dollar). // pq postgres driver works only with $ placeholders
-		ToSql()
-	if err != nil {
-		return err
-	}
-
-	_, err = repo.tx.ExecContext(ctx, stmt, params...)
-
-	return err
 }
 
 func (repo *Repository) PrivateChatExists(

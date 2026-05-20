@@ -82,3 +82,17 @@ func (d *TraceDecorator) ChangeMessagesIsReadStatus(
 
 	return d.base.ChangeMessagesIsReadStatus(ctx, userID, messages, isRead)
 }
+
+func (d *TraceDecorator) ReadAllChatMessages(
+	ctx context.Context,
+	userID uint64,
+	chatID uint64,
+) error {
+	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
+	defer span.End()
+
+	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
+	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
+
+	return d.base.ReadAllChatMessages(ctx, userID, chatID)
+}

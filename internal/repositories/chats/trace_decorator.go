@@ -79,21 +79,6 @@ func (d *TraceDecorator) GetChatByID(
 	return d.base.GetChatByID(ctx, id)
 }
 
-func (d *TraceDecorator) ChangeChatIsReadStatus(
-	ctx context.Context,
-	userID uint64,
-	chatID uint64,
-	isRead bool,
-) error {
-	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
-	defer span.End()
-
-	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
-	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
-
-	return d.base.ChangeChatIsReadStatus(ctx, userID, chatID, isRead)
-}
-
 func (d *TraceDecorator) PrivateChatExists(
 	ctx context.Context,
 	members []domains.User,

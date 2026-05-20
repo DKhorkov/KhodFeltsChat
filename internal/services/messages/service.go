@@ -52,25 +52,8 @@ func (s *Service) SaveMessage(
 				return err
 			}
 
-			chatsRepository := s.newChatsRepositoryFunc(tx)
-
-			members, err := chatsRepository.GetChatMembers(ctx, message.ChatID)
-			if err != nil {
+			if err = messagesRepository.ReadAllChatMessages(ctx, message.Sender.ID, message.ChatID); err != nil {
 				return err
-			}
-
-			for _, member := range members {
-				// Если пользователь отправитель - то чат для него явно отмечаем прочитанным
-				isRead := member.ID == message.Sender.ID
-
-				if err = chatsRepository.ChangeChatIsReadStatus(
-					ctx,
-					member.ID,
-					message.ChatID,
-					isRead,
-				); err != nil {
-					return err
-				}
 			}
 
 			return nil
@@ -108,15 +91,6 @@ func (s *Service) GetChatMessages(
 				userID,
 				chatID,
 				pagination,
-			); err != nil {
-				return err
-			}
-
-			if err = chatsRepository.ChangeChatIsReadStatus(
-				ctx,
-				userID,
-				chatID,
-				true, // При получении сообщений чат считается просмотренным для текущего пользователя
 			); err != nil {
 				return err
 			}

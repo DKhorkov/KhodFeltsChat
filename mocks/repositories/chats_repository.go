@@ -41,20 +41,6 @@ func (m *MockChatsRepository) EXPECT() *MockChatsRepositoryMockRecorder {
 	return m.recorder
 }
 
-// ChangeChatIsReadStatus mocks base method.
-func (m *MockChatsRepository) ChangeChatIsReadStatus(ctx context.Context, userID, chatID uint64, isRead bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ChangeChatIsReadStatus", ctx, userID, chatID, isRead)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ChangeChatIsReadStatus indicates an expected call of ChangeChatIsReadStatus.
-func (mr *MockChatsRepositoryMockRecorder) ChangeChatIsReadStatus(ctx, userID, chatID, isRead any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeChatIsReadStatus", reflect.TypeOf((*MockChatsRepository)(nil).ChangeChatIsReadStatus), ctx, userID, chatID, isRead)
-}
-
 // CreateChat mocks base method.
 func (m *MockChatsRepository) CreateChat(ctx context.Context, chat domains.Chat) (uint64, error) {
 	m.ctrl.T.Helper()
