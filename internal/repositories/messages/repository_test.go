@@ -778,7 +778,7 @@ func (s *RepositoryTestSuite) TestReadAllChatMessages_DoesNotAffectOtherChats() 
 		userID, uint64(2),
 	).Scan(&unreadCount)
 	s.NoError(err)
-	s.Equal(1, unreadCount)
+	s.Equal(3, unreadCount)
 }
 
 func (s *RepositoryTestSuite) TestReadAllChatMessages_NonExistentChat() {
@@ -866,11 +866,10 @@ func (s *RepositoryTestSuite) createTestChatMembers() {
 	for _, cm := range chatMembers {
 		_, err := s.tx.ExecContext(
 			s.ctx,
-			`INSERT INTO chats_members (chat_id, user_id, is_read, created_at, updated_at) 
-			 VALUES ($1, $2, $3, $4, $4)`,
+			`INSERT INTO chats_members (chat_id, user_id, created_at, updated_at) 
+			 VALUES ($1, $2, $3, $3)`,
 			cm.chatID,
 			cm.userID,
-			cm.isRead,
 			time.Now().UTC(),
 		)
 		s.NoError(err)

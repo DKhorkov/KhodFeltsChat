@@ -52,7 +52,11 @@ func (s *Service) SaveMessage(
 				return err
 			}
 
-			if err = messagesRepository.ReadAllChatMessages(ctx, message.Sender.ID, message.ChatID); err != nil {
+			if err = messagesRepository.ReadAllChatMessages(
+				ctx,
+				message.Sender.ID,
+				message.ChatID,
+			); err != nil {
 				return err
 			}
 

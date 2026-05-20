@@ -233,7 +233,7 @@ func (s *RepositoryTestSuite) createTestData() {
 	for _, ts := range testSubscriptions {
 		_, err := s.tx.ExecContext(
 			s.ctx,
-			`INSERT INTO push_subscriptions (user_id, endpoint, encryption_key, auth, created_at)
+			`INSERT INTO web_push_subscriptions (user_id, endpoint, encryption_key, auth, created_at)
 			 VALUES ($1, $2, $3, $4, $5)`,
 			ts.userID,
 			ts.endpoint,
