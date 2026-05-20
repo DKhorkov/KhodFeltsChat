@@ -2,6 +2,8 @@ const MESSAGES_PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 300;
 const CHAT_LIST_POLL_INTERVAL_MS = 5000;
 const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 600;
+const SWIPE_CLOSE_THRESHOLD_RATIO = 0.5; // 50% ширины экрана для закрытия чата свайпом
+const SWIPE_LOCK_ANGLE_PX = 15;          // минимальное смещение до определения направления свайпа
 
 let currentUser = null;
 let selectedChatId = null;
@@ -29,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupSendMessage();
     setupEmojiPicker();
     setupCloseChat();
+    setupSwipeToCloseChat();
     setupCreateChatModal();
     setupSearchUsersModal();
     setupMemberProfileModal();
@@ -533,6 +536,94 @@ function setupCloseChat() {
         closeChat();
         debouncedLoadChats();
     });
+}
+
+// ═══════════════════════════════════════
+// Свайп вправо → закрытие чата (мобильная версия)
+// ═══════════════════════════════════════
+function lockPageScroll() {
+    document.documentElement.style.overflowX = 'hidden';
+    document.body.style.overflowX = 'hidden';
+}
+
+function unlockPageScroll() {
+    document.documentElement.style.overflowX = '';
+    document.body.style.overflowX = '';
+}
+
+function setupSwipeToCloseChat() {
+    const conversation = document.getElementById('conversation');
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isSwiping = false;    // свайп активен
+    let directionLocked = false; // направление определено
+
+    conversation.addEventListener('touchstart', (e) => {
+        if (!selectedChatId || window.innerWidth > 600) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isSwiping = false;
+        directionLocked = false;
+        conversation.style.transition = 'none';
+    }, { passive: true });
+
+    conversation.addEventListener('touchmove', (e) => {
+        if (!selectedChatId) return;
+
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = Math.abs(e.touches[0].clientY - touchStartY);
+
+        // Определяем направление жеста один раз:
+        if (!directionLocked && (Math.abs(dx) > SWIPE_LOCK_ANGLE_PX || dy > SWIPE_LOCK_ANGLE_PX)) {
+            directionLocked = true;
+            isSwiping = dx > 0 && Math.abs(dx) > dy; // горизонтальный свайп вправо
+            if (isSwiping) lockPageScroll();
+        }
+
+        if (!isSwiping) return;
+
+        // Сдвигаем conversation вправо (только положительное направление):
+        const offset = Math.max(0, dx);
+        conversation.style.transform = `translateX(${offset}px)`;
+    }, { passive: true });
+
+    conversation.addEventListener('touchend', (e) => {
+        if (!selectedChatId || !isSwiping) {
+            conversation.style.transition = '';
+            conversation.style.transform = '';
+            return;
+        }
+
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const threshold = window.innerWidth * SWIPE_CLOSE_THRESHOLD_RATIO;
+
+        conversation.style.transition = 'transform 0.3s ease';
+
+        if (dx >= threshold) {
+            // Доводим до конца экрана, затем закрываем:
+            conversation.style.transform = `translateX(100%)`;
+            conversation.addEventListener('transitionend', function handler() {
+                conversation.removeEventListener('transitionend', handler);
+                conversation.style.transition = '';
+                conversation.style.transform = '';
+                unlockPageScroll();
+                closeChat();
+                debouncedLoadChats();
+            });
+        } else {
+            // Возвращаем на место:
+            conversation.style.transform = 'translateX(0)';
+            conversation.addEventListener('transitionend', function handler() {
+                conversation.removeEventListener('transitionend', handler);
+                conversation.style.transition = '';
+                conversation.style.transform = '';
+                unlockPageScroll();
+            });
+        }
+
+        isSwiping = false;
+    }, { passive: true });
 }
 
 function closeChat() {
