@@ -568,6 +568,7 @@
     /* Когда чат выбран — переписка наезжает поверх сайдбара (для swipe-to-close) */
     .chat-layout--chat-open {
         position: relative;
+        overflow: hidden;
     }
 
     .chat-layout--chat-open .sidebar {

@@ -549,6 +549,16 @@ function setupSwipeToCloseChat() {
     let isSwiping = false;    // свайп активен
     let directionLocked = false; // направление определено
 
+    function lockPageScroll() {
+        document.documentElement.style.overflowX = 'hidden';
+        document.body.style.overflowX = 'hidden';
+    }
+
+    function unlockPageScroll() {
+        document.documentElement.style.overflowX = '';
+        document.body.style.overflowX = '';
+    }
+
     conversation.addEventListener('touchstart', (e) => {
         if (!selectedChatId) return;
         touchStartX = e.touches[0].clientX;
@@ -568,6 +578,7 @@ function setupSwipeToCloseChat() {
         if (!directionLocked && (Math.abs(dx) > LOCK_ANGLE_PX || dy > LOCK_ANGLE_PX)) {
             directionLocked = true;
             isSwiping = dx > 0 && Math.abs(dx) > dy; // горизонтальный свайп вправо
+            if (isSwiping) lockPageScroll();
         }
 
         if (!isSwiping) return;
@@ -596,6 +607,7 @@ function setupSwipeToCloseChat() {
                 conversation.removeEventListener('transitionend', handler);
                 conversation.style.transition = '';
                 conversation.style.transform = '';
+                unlockPageScroll();
                 closeChat();
                 debouncedLoadChats();
             });
@@ -606,6 +618,7 @@ function setupSwipeToCloseChat() {
                 conversation.removeEventListener('transitionend', handler);
                 conversation.style.transition = '';
                 conversation.style.transform = '';
+                unlockPageScroll();
             });
         }
 
