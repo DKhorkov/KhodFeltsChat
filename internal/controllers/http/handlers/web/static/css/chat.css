@@ -123,6 +123,15 @@
     font-weight: 600;
 }
 
+.chat-item__last-message {
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 2px;
+}
+
 .chat-item__unread-dot {
     width: 8px;
     height: 8px;
@@ -558,6 +567,13 @@
 
     .sidebar__list {
         max-height: calc(100vh - var(--navbar-height) - 60px);
+    }
+
+    .chat-item__last-message {
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
     }
 
     /* Плейсхолдер скрыт на мобильном */

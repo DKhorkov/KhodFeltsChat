@@ -203,6 +203,15 @@ function renderChatList(chats) {
         titleEl.textContent = title;
         info.appendChild(titleEl);
 
+        if (chat.messages && chat.messages.length > 0) {
+            const lastMsg = chat.messages[chat.messages.length - 1];
+            const preview = document.createElement('div');
+            preview.className = 'chat-item__last-message';
+            const senderName = lastMsg.sender.id === currentUser.id ? 'Вы' : lastMsg.sender.username;
+            preview.textContent = senderName + ': ' + lastMsg.text;
+            info.appendChild(preview);
+        }
+
         item.appendChild(avatar);
         item.appendChild(info);
 
