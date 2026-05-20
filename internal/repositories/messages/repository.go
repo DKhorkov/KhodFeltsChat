@@ -367,6 +367,16 @@ func (repo *Repository) ReadAllChatMessages(
 	userID uint64,
 	chatID uint64,
 ) error {
+	chatMessagesSubquery := sq.
+		Select(idColumnName).
+		From(messagesTableName).
+		Where(sq.Eq{chatIDColumnName: chatID})
+
+	chatMessagesSQL, chatMessagesArgs, err := chatMessagesSubquery.ToSql()
+	if err != nil {
+		return err
+	}
+
 	stmt, params, err := sq.
 		Update(messagesStatusesTableName).
 		Set(isReadColumnName, true).
@@ -378,12 +388,10 @@ func (repo *Repository) ReadAllChatMessages(
 				sq.Eq{
 					fmt.Sprintf("%s.%s", messagesStatusesTableName, isReadColumnName): false,
 				},
-				sq.Eq{
-					messageIDColumnName: sq.
-						Select(idColumnName).
-						From(messagesTableName).
-						Where(sq.Eq{chatIDColumnName: chatID}),
-				},
+				sq.Expr(
+					fmt.Sprintf("%s IN (%s)", messageIDColumnName, chatMessagesSQL),
+					chatMessagesArgs...,
+				),
 			},
 		).
 		PlaceholderFormat(sq.Dollar).
