@@ -53,7 +53,7 @@ func (repo *Repository) SendNotification(
 				Auth:   subscription.Auth,
 			},
 		},
-		&webpush.Options{ //nolint:exhaustruct // остальные поля библиотеки имеют разумные значения по умолчанию
+		&webpush.Options{
 			VAPIDPublicKey:  repo.webPushConfig.VAPIDPublicKey,
 			VAPIDPrivateKey: repo.webPushConfig.VAPIDPrivateKey,
 			Subscriber:      repo.webPushConfig.VAPIDContact,
@@ -82,6 +82,7 @@ func (repo *Repository) SendNotification(
 
 	if resp.StatusCode >= http.StatusBadRequest {
 		body, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf(
 			"%w: id=%d, status=%d, endpoint=%s, body=%s",
 			customerrors.ErrWebPushNotificationRejected,
