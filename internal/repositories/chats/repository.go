@@ -143,20 +143,48 @@ func (repo *Repository) GetUserChats(
 	userID uint64,
 	pagination *domains.Pagination,
 ) ([]domains.Chat, error) {
-	isReadSubquery := fmt.Sprintf(
-		"NOT EXISTS (SELECT 1 FROM %s ms JOIN %s m ON ms.%s = m.%s WHERE m.%s = %s.%s AND ms.%s = %d AND ms.%s = false) AS %s",
-		messagesStatusesTableName,
-		messagesTableName,
-		messageIDColumnName,
-		idColumnName,
-		chatIDColumnName,
-		chatsTableName,
-		idColumnName,
-		userIDColumnName,
-		userID,
-		isReadColumnName,
-		isReadColumnName,
-	)
+	unreadSubquery := sq.
+		Select(selectExists).
+		From(messagesStatusesTableName).
+		Join(
+			fmt.Sprintf(
+				"%s ON %s.%s = %s.%s",
+				messagesTableName,
+				messagesStatusesTableName,
+				messageIDColumnName,
+				messagesTableName,
+				idColumnName,
+			),
+		).
+		Where(
+			sq.Expr(
+				fmt.Sprintf(
+					"%s.%s = %s.%s",
+					messagesTableName,
+					chatIDColumnName,
+					chatsTableName,
+					idColumnName,
+				),
+			),
+		).
+		Where(
+			sq.Eq{
+				fmt.Sprintf("%s.%s", messagesStatusesTableName, userIDColumnName): userID,
+			},
+		).
+		Where(
+			sq.Eq{
+				fmt.Sprintf("%s.%s", messagesStatusesTableName, isReadColumnName): false,
+			},
+		).
+		PlaceholderFormat(sq.Dollar)
+
+	unreadSQL, unreadArgs, err := unreadSubquery.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	isReadColumn := fmt.Sprintf("NOT EXISTS (%s) AS %s", unreadSQL, isReadColumnName)
 
 	columnsForSelect := []string{
 		fmt.Sprintf("%s.%s", chatsTableName, idColumnName),
@@ -165,7 +193,7 @@ func (repo *Repository) GetUserChats(
 		fmt.Sprintf("%s.%s", chatsTableName, typeColumnName),
 		fmt.Sprintf("%s.%s", chatsTableName, createdAtColumnName),
 		fmt.Sprintf("%s.%s", chatsTableName, updatedAtColumnName),
-		isReadSubquery,
+		isReadColumn,
 	}
 
 	builder := sq.
@@ -217,7 +245,7 @@ func (repo *Repository) GetUserChats(
 	rows, err := repo.tx.QueryContext(
 		ctx,
 		stmt,
-		params...,
+		append(unreadArgs, params...)...,
 	)
 	if err != nil {
 		return nil, err
