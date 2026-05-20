@@ -492,6 +492,8 @@ function sendMessage() {
 
     input.value = '';
     document.getElementById('btn-send').disabled = true;
+
+    loadChats().catch(console.error);
 }
 
 function markAllAsRead() {
