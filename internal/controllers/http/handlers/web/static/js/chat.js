@@ -590,7 +590,7 @@ function setupSwipeToCloseChat() {
         if (!directionLocked && (Math.abs(dx) > SWIPE_LOCK_ANGLE_PX || dy > SWIPE_LOCK_ANGLE_PX)) {
             directionLocked = true;
             isSwiping = dx > 0 && Math.abs(dx) > dy; // горизонтальный свайп вправо
-            if (isSwiping) lockPageScroll();
+            // if (isSwiping) lockPageScroll(); // TODO: временно отключено для диагностики iOS
         }
 
         if (!isSwiping) return;
@@ -613,20 +613,16 @@ function setupSwipeToCloseChat() {
         conversation.style.transition = 'transform 0.3s ease';
 
         if (dx >= threshold) {
-            // Сбрасываем состояние сразу, чтобы не блокировать тапы:
-            selectedChatId = null;
-            selectedChat = null;
-            unlockPageScroll();
-            conversation.style.pointerEvents = 'none';
+            // Доводим до конца экрана, затем закрываем:
             conversation.style.transform = `translateX(100%)`;
             conversation.addEventListener('transitionend', function handler() {
                 conversation.removeEventListener('transitionend', handler);
                 conversation.style.transition = '';
                 conversation.style.transform = '';
-                conversation.style.pointerEvents = '';
+                unlockPageScroll();
                 closeChat();
+                debouncedLoadChats();
             });
-            debouncedLoadChats();
         } else {
             // Возвращаем на место:
             conversation.style.transform = 'translateX(0)';
