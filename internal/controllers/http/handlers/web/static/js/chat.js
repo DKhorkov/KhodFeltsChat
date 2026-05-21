@@ -620,8 +620,8 @@ function setupSwipeToCloseChat() {
                 conversation.style.transition = '';
                 conversation.style.transform = '';
                 unlockPageScroll();
-                closeChat();
-                debouncedLoadChats();
+                // closeChat(); // TODO: диагностика iOS — проверяем влияние перерендера
+                // debouncedLoadChats(); // TODO: диагностика iOS — проверяем влияние перерендера
             });
         } else {
             // Возвращаем на место:
