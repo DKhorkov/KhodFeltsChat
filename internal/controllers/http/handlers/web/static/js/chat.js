@@ -615,27 +615,21 @@ function setupSwipeToCloseChat() {
         if (dx >= threshold) {
             // Доводим до конца экрана, затем закрываем:
             conversation.style.transform = `translateX(100%)`;
-            conversation.addEventListener('transitionend', function handler() {
-                conversation.removeEventListener('transitionend', handler);
+            setTimeout(() => {
                 conversation.style.transition = '';
                 conversation.style.transform = '';
                 unlockPageScroll();
-                // requestAnimationFrame выводит DOM-изменения из контекста transitionend,
-                // иначе iOS Safari "проглатывает" первый тап после display:none в transitionend.
-                requestAnimationFrame(() => {
-                    closeChat();
-                    debouncedLoadChats();
-                });
-            });
+                closeChat();
+                debouncedLoadChats();
+            }, 350);
         } else {
             // Возвращаем на место:
             conversation.style.transform = 'translateX(0)';
-            conversation.addEventListener('transitionend', function handler() {
-                conversation.removeEventListener('transitionend', handler);
+            setTimeout(() => {
                 conversation.style.transition = '';
                 conversation.style.transform = '';
                 unlockPageScroll();
-            });
+            }, 350);
         }
 
         isSwiping = false;
