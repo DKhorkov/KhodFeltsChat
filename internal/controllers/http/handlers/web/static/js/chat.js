@@ -13,6 +13,7 @@ let ws = null;
 let isLoadingMore = false;
 let hasMoreMessages = true;
 let returnToGroupChat = null;
+let chatsList = [];
 
 // ═══════════════════════════════════════
 // Инициализация
@@ -37,6 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupMemberProfileModal();
     setupGroupChatModal();
     setupEscapeHandler();
+    setupChatListDelegation();
 
     // Открытие чата из push-уведомления (по query-параметру):
     const params = new URLSearchParams(window.location.search);
@@ -172,28 +174,30 @@ async function loadChats() {
 }
 
 let loadChatsTimer = null;
+
 function debouncedLoadChats() {
     if (loadChatsTimer) clearTimeout(loadChatsTimer);
     loadChatsTimer = setTimeout(loadChats, 300);
 }
 
 function renderChatList(chats) {
+    chatsList = chats;
+
     const list = document.getElementById('chat-list');
     list.innerHTML = '';
 
     for (const chat of chats) {
         const item = document.createElement('div');
         item.className = 'chat-item' + (selectedChatId === chat.id ? ' chat-item--active' : '');
+        item.dataset.chatId = chat.id;
 
         const title = getChatTitle(chat);
 
         const avatar = document.createElement('div');
         avatar.className = 'chat-item__avatar';
+        avatar.dataset.chatId = chat.id;
+        avatar.dataset.action = 'avatar';
         avatar.textContent = title.charAt(0).toUpperCase();
-        avatar.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openChatInfo(chat);
-        });
 
         const info = document.createElement('div');
         info.className = 'chat-item__info';
@@ -221,9 +225,29 @@ function renderChatList(chats) {
             item.appendChild(dot);
         }
 
-        item.addEventListener('click', () => selectChat(chat));
         list.appendChild(item);
     }
+}
+
+function setupChatListDelegation() {
+    const list = document.getElementById('chat-list');
+    list.addEventListener('click', (e) => {
+        const avatarEl = e.target.closest('[data-action="avatar"]');
+        if (avatarEl) {
+            e.stopPropagation();
+            const chatId = Number(avatarEl.dataset.chatId);
+            const chat = chatsList.find(c => c.id === chatId);
+            if (chat) openChatInfo(chat);
+            return;
+        }
+
+        const itemEl = e.target.closest('.chat-item');
+        if (itemEl) {
+            const chatId = Number(itemEl.dataset.chatId);
+            const chat = chatsList.find(c => c.id === chatId);
+            if (chat) selectChat(chat).catch(console.error);
+        }
+    });
 }
 
 function getChatTitle(chat) {
@@ -470,7 +494,7 @@ function sendMessage() {
     const text = input.value.trim();
     if (!text || !selectedChatId || !ws || ws.readyState !== WebSocket.OPEN) return;
 
-    ws.send(JSON.stringify({ chatId: selectedChatId, text }));
+    ws.send(JSON.stringify({chatId: selectedChatId, text}));
 
     // Помечаем все сообщения как прочитанные и убираем разделитель:
     markAllAsRead();
@@ -481,7 +505,7 @@ function sendMessage() {
         chatId: selectedChatId,
         text,
         createdAt: new Date().toISOString(),
-        sender: { id: currentUser.id, username: currentUser.username },
+        sender: {id: currentUser.id, username: currentUser.username},
         isRead: true,
         optimistic: true,
     };
@@ -578,7 +602,7 @@ function setupSwipeToCloseChat() {
         isSwiping = false;
         directionLocked = false;
         conversation.style.transition = 'none';
-    }, { passive: true });
+    }, {passive: true});
 
     conversation.addEventListener('touchmove', (e) => {
         if (!selectedChatId) return;
@@ -598,7 +622,7 @@ function setupSwipeToCloseChat() {
         // Сдвигаем conversation вправо (только положительное направление):
         const offset = Math.max(0, dx);
         conversation.style.transform = `translateX(${offset}px)`;
-    }, { passive: true });
+    }, {passive: true});
 
     conversation.addEventListener('touchend', (e) => {
         if (!selectedChatId || !isSwiping) {
@@ -621,7 +645,7 @@ function setupSwipeToCloseChat() {
                 conversation.style.transform = '';
                 unlockPageScroll();
                 closeChat();
-                // debouncedLoadChats(); // TODO: диагностика iOS
+                debouncedLoadChats();
             });
         } else {
             // Возвращаем на место:
@@ -635,7 +659,7 @@ function setupSwipeToCloseChat() {
         }
 
         isSwiping = false;
-    }, { passive: true });
+    }, {passive: true});
 }
 
 function closeChat() {
@@ -817,7 +841,7 @@ function setupCreateChatModal() {
 
         const body = {
             type: typeSelect.value,
-            members: Array.from(selectedUserIds).map(id => ({ id })),
+            members: Array.from(selectedUserIds).map(id => ({id})),
         };
 
         if (typeSelect.value === 'group') {
@@ -830,7 +854,7 @@ function setupCreateChatModal() {
         try {
             const resp = await fetchWithAuth('/api/chats', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(body),
             });
 
