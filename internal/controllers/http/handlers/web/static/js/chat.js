@@ -620,8 +620,12 @@ function setupSwipeToCloseChat() {
                 conversation.style.transition = '';
                 conversation.style.transform = '';
                 unlockPageScroll();
-                closeChat();
-                debouncedLoadChats();
+                // requestAnimationFrame выводит DOM-изменения из контекста transitionend,
+                // иначе iOS Safari "проглатывает" первый тап после display:none в transitionend.
+                requestAnimationFrame(() => {
+                    closeChat();
+                    debouncedLoadChats();
+                });
             });
         } else {
             // Возвращаем на место:
