@@ -615,21 +615,23 @@ function setupSwipeToCloseChat() {
         if (dx >= threshold) {
             // Доводим до конца экрана, затем закрываем:
             conversation.style.transform = `translateX(100%)`;
-            setTimeout(() => {
+            conversation.addEventListener('transitionend', function handler() {
+                conversation.removeEventListener('transitionend', handler);
                 conversation.style.transition = '';
                 conversation.style.transform = '';
                 unlockPageScroll();
                 closeChat();
                 debouncedLoadChats();
-            }, 350);
+            });
         } else {
             // Возвращаем на место:
             conversation.style.transform = 'translateX(0)';
-            setTimeout(() => {
+            conversation.addEventListener('transitionend', function handler() {
+                conversation.removeEventListener('transitionend', handler);
                 conversation.style.transition = '';
                 conversation.style.transform = '';
                 unlockPageScroll();
-            }, 350);
+            });
         }
 
         isSwiping = false;
