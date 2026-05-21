@@ -572,6 +572,7 @@ function setupSwipeToCloseChat() {
 
     conversation.addEventListener('touchstart', (e) => {
         if (!selectedChatId || window.innerWidth > 600) return;
+        if (e.target.closest('button, a, input, textarea')) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         isSwiping = false;
@@ -613,11 +614,13 @@ function setupSwipeToCloseChat() {
 
         if (dx >= threshold) {
             // Доводим до конца экрана, затем закрываем:
+            conversation.style.pointerEvents = 'none';
             conversation.style.transform = `translateX(100%)`;
             conversation.addEventListener('transitionend', function handler() {
                 conversation.removeEventListener('transitionend', handler);
                 conversation.style.transition = '';
                 conversation.style.transform = '';
+                conversation.style.pointerEvents = '';
                 unlockPageScroll();
                 closeChat();
                 debouncedLoadChats();
