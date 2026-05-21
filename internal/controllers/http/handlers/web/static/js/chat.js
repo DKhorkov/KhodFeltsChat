@@ -613,7 +613,10 @@ function setupSwipeToCloseChat() {
         conversation.style.transition = 'transform 0.3s ease';
 
         if (dx >= threshold) {
-            // Доводим до конца экрана, затем закрываем:
+            // Сбрасываем состояние сразу, чтобы не блокировать тапы:
+            selectedChatId = null;
+            selectedChat = null;
+            unlockPageScroll();
             conversation.style.pointerEvents = 'none';
             conversation.style.transform = `translateX(100%)`;
             conversation.addEventListener('transitionend', function handler() {
@@ -621,10 +624,9 @@ function setupSwipeToCloseChat() {
                 conversation.style.transition = '';
                 conversation.style.transform = '';
                 conversation.style.pointerEvents = '';
-                unlockPageScroll();
                 closeChat();
-                debouncedLoadChats();
             });
+            debouncedLoadChats();
         } else {
             // Возвращаем на место:
             conversation.style.transform = 'translateX(0)';
