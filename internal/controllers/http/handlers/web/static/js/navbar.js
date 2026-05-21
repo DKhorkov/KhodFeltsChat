@@ -1,4 +1,34 @@
 // ═══════════════════════════════════════
+// Утилиты модалок (блокировка скролла фона)
+// ═══════════════════════════════════════
+const MODAL_IDS = [
+    'modal-member-profile',
+    'modal-group-chat',
+    'modal-search-users',
+    'modal-create-chat',
+    'modal-my-profile',
+];
+
+function openModal(modalEl) {
+    modalEl.style.display = '';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(modalEl) {
+    modalEl.style.display = 'none';
+
+    // Снимаем блокировку скролла, если не осталось открытых модалок:
+    const anyOpen = MODAL_IDS.some(id => {
+        const el = document.getElementById(id);
+        return el && el !== modalEl && el.style.display !== 'none';
+    });
+
+    if (!anyOpen) {
+        document.body.style.overflow = '';
+    }
+}
+
+// ═══════════════════════════════════════
 // Тема: управление через серверные настройки пользователя
 // ═══════════════════════════════════════
 
@@ -342,7 +372,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 year: 'numeric',
             });
 
-        modal.style.display = '';
+        openModal(modal);
 
         // Перезапрашиваем настройки при открытии модалки (синхронизация с другими устройствами)
         try {
@@ -358,7 +388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function closeMyProfileModal() {
-        modal.style.display = 'none';
+        closeModal(modal);
 
         // Сбрасываем формы и закрываем секции
         const editForm = document.getElementById('my-profile-edit-form');

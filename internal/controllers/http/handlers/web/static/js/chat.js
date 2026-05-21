@@ -89,7 +89,7 @@ function setupEscapeHandler() {
         for (const id of modals) {
             const modal = document.getElementById(id);
             if (modal && modal.style.display !== 'none') {
-                modal.style.display = 'none';
+                closeModal(modal);
 
                 // Если закрыли профиль участника и нужно вернуться к модалке группового чата:
                 if (id === 'modal-member-profile' && returnToGroupChat) {
@@ -702,7 +702,7 @@ function setupMemberProfileModal() {
 }
 
 function closeMemberProfile() {
-    document.getElementById('modal-member-profile').style.display = 'none';
+    closeModal(document.getElementById('modal-member-profile'));
 
     // Если пришли из модалки группового чата — возвращаемся к ней:
     if (returnToGroupChat) {
@@ -722,7 +722,7 @@ function showMemberProfile(user) {
         (user.emailConfirmed ? 'profile-modal__value--success' : 'profile-modal__value--warning');
 
     document.getElementById('member-created-at').textContent = formatDate(user.createdAt);
-    document.getElementById('modal-member-profile').style.display = '';
+    openModal(document.getElementById('modal-member-profile'));
 }
 
 // ═══════════════════════════════════════
@@ -732,11 +732,11 @@ function setupGroupChatModal() {
     const overlay = document.getElementById('modal-group-chat');
 
     document.getElementById('btn-close-group-chat').addEventListener('click', () => {
-        overlay.style.display = 'none';
+        closeModal(overlay);
     });
 
     overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) overlay.style.display = 'none';
+        if (e.target === overlay) closeModal(overlay);
     });
 }
 
@@ -763,7 +763,7 @@ function showGroupChatInfo(chat) {
         item.addEventListener('click', () => {
             // Запоминаем чат, чтобы вернуться после закрытия профиля:
             returnToGroupChat = chat;
-            document.getElementById('modal-group-chat').style.display = 'none';
+            closeModal(document.getElementById('modal-group-chat'));
             showMemberProfile(member);
         });
 
@@ -796,7 +796,7 @@ function showGroupChatInfo(chat) {
         list.appendChild(item);
     }
 
-    document.getElementById('modal-group-chat').style.display = '';
+    openModal(document.getElementById('modal-group-chat'));
 }
 
 // ═══════════════════════════════════════
@@ -809,16 +809,16 @@ function setupCreateChatModal() {
     const selectedUserIds = new Set();
 
     document.getElementById('btn-create-chat').addEventListener('click', () => {
-        overlay.style.display = '';
+        openModal(overlay);
         resetCreateChatModal();
     });
 
     document.getElementById('btn-close-create-chat').addEventListener('click', () => {
-        overlay.style.display = 'none';
+        closeModal(overlay);
     });
 
     overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) overlay.style.display = 'none';
+        if (e.target === overlay) closeModal(overlay);
     });
 
     typeSelect.addEventListener('change', () => {
@@ -864,7 +864,7 @@ function setupCreateChatModal() {
                 return;
             }
 
-            overlay.style.display = 'none';
+            closeModal(overlay);
             await loadChats();
         } catch (err) {
             showError('Ошибка сети: ' + err.message);
@@ -965,7 +965,7 @@ function setupSearchUsersModal() {
     const input = document.getElementById('search-users-input');
 
     document.getElementById('btn-search-users').addEventListener('click', () => {
-        overlay.style.display = '';
+        openModal(overlay);
         input.value = '';
         document.getElementById('search-users-list').style.display = 'none';
         document.getElementById('search-users-list').innerHTML = '';
@@ -973,11 +973,11 @@ function setupSearchUsersModal() {
     });
 
     document.getElementById('btn-close-search-users').addEventListener('click', () => {
-        overlay.style.display = 'none';
+        closeModal(overlay);
     });
 
     overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) overlay.style.display = 'none';
+        if (e.target === overlay) closeModal(overlay);
     });
 
     let searchTimeout;
@@ -1018,7 +1018,7 @@ async function searchUsersGlobal(query) {
             const item = document.createElement('div');
             item.className = 'user-item user-item--clickable';
             item.addEventListener('click', () => {
-                document.getElementById('modal-search-users').style.display = 'none';
+                closeModal(document.getElementById('modal-search-users'));
                 showMemberProfile(user);
             });
 
