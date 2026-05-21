@@ -590,7 +590,7 @@ function setupSwipeToCloseChat() {
         if (!directionLocked && (Math.abs(dx) > SWIPE_LOCK_ANGLE_PX || dy > SWIPE_LOCK_ANGLE_PX)) {
             directionLocked = true;
             isSwiping = dx > 0 && Math.abs(dx) > dy; // горизонтальный свайп вправо
-            // if (isSwiping) lockPageScroll(); // TODO: временно отключено для диагностики iOS
+            if (isSwiping) lockPageScroll();
         }
 
         if (!isSwiping) return;
