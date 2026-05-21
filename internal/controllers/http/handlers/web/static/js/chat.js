@@ -517,6 +517,9 @@ function sendMessage() {
     input.value = '';
     document.getElementById('btn-send').disabled = true;
 
+    // Возвращаем фокус на поле ввода, чтобы клавиатура не закрывалась на мобильных:
+    input.focus();
+
     loadChats().catch(console.error);
 }
 

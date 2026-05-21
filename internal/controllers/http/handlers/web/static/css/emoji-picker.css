@@ -95,17 +95,8 @@
    Адаптивность
    ═══════════════════════════════════════ */
 @media (max-width: 600px) {
+    .conversation__emoji-toggle,
     .emoji-picker {
-        position: fixed;
-        right: var(--space-md);
-        left: var(--space-md);
-        bottom: 80px;
-        width: auto;
-        margin-bottom: 0;
-        z-index: 900;
-    }
-
-    .emoji-picker__grid {
-        grid-template-columns: repeat(7, 1fr);
+        display: none !important;
     }
 }

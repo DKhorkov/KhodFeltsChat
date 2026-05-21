@@ -339,8 +339,7 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 
 ### Мобильная адаптация (`@media max-width: 600px`)
 
-- `.emoji-picker` → `position: fixed`, на всю ширину, z-index: 900
-- Сетка → 7 колонок
+- `.conversation__emoji-toggle` и `.emoji-picker` — скрыты (`display: none !important`). На мобильных устройствах используется встроенная клавиатура с эмодзи (iOS, Android).
 
 ---
 
