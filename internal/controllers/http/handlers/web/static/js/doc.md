@@ -106,6 +106,13 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 | `setupSwipeToCloseChat()` | Свайп вправо для закрытия чата на мобильных (только при `window.innerWidth ≤ 600`, совпадает с CSS media query). Интерактивный: conversation сдвигается по `touchmove` через `translateX`, открывая sidebar под ним. При свайпе ≥ 50% ширины экрана (`SWIPE_CLOSE_THRESHOLD_RATIO`) — чат закрывается с анимацией; иначе — возвращается на место. Направление жеста определяется один раз после 15px смещения (`SWIPE_LOCK_ANGLE_PX`): если горизонтальное смещение больше вертикального — свайп, иначе — обычный скролл. CSS-часть: `.chat-layout--chat-open` получает `overflow: hidden` и `position: relative`, conversation — `position: absolute; z-index: 10`, sidebar остаётся `display: flex` (виден под conversation). |
 | `closeChat()` | Сбрасывает состояние чата, скрывает панель переписки, убирает класс `chat-layout--chat-open`, закрывает emoji picker. |
 
+**Мобильная клавиатура:**
+
+| Функция | Описание |
+|---------|----------|
+| `setupMobileKeyboardDismiss()` | Закрытие виртуальной клавиатуры при тапе в любом месте экрана, кроме textarea (`#message-input`) и кнопки «Отправить» (`#btn-send`). Глобальный `touchstart` на `document`. Только для мобильных (`IS_MOBILE`). |
+| `setupMobileViewportResize()` | Динамическая подстройка высоты `.chat-layout` через `visualViewport.resize` — при появлении/скрытии клавиатуры сужается только область сообщений, navbar и заголовок чата остаются на месте. Fallback для браузеров без поддержки `interactive-widget=resizes-content`. |
+
 **Информация о чате:**
 
 | Функция | Описание |
