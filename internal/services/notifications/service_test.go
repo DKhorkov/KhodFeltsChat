@@ -316,3 +316,95 @@ func TestService_SendNewMessageByEmail(t *testing.T) {
 		})
 	}
 }
+
+func TestService_SendNewMessageByWebPush(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+
+	tests := []struct {
+		name          string
+		subscription  domains.WebPushSubscription
+		message       domains.Message
+		setupMocks    func(*mockrepositories.MockWebPushRepository)
+		expectedError error
+	}{
+		{
+			name: "successful send web push notification",
+			subscription: domains.WebPushSubscription{
+				ID:            1,
+				UserID:        1,
+				Endpoint:      "https://push.example.com/sub1",
+				EncryptionKey: "p256dh_key",
+				Auth:          "auth_key",
+			},
+			message: domains.Message{
+				ID:     10,
+				ChatID: 5,
+				Text:   "Hello!",
+				Sender: domains.User{
+					ID:       2,
+					Username: "alice",
+				},
+				CreatedAt: now,
+			},
+			setupMocks: func(mockWebPushRepo *mockrepositories.MockWebPushRepository) {
+				mockWebPushRepo.EXPECT().
+					SendNotification(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "repository returns error",
+			subscription: domains.WebPushSubscription{
+				ID:            1,
+				UserID:        1,
+				Endpoint:      "https://push.example.com/sub1",
+				EncryptionKey: "p256dh_key",
+				Auth:          "auth_key",
+			},
+			message: domains.Message{
+				ID:     10,
+				ChatID: 5,
+				Text:   "Hello!",
+			},
+			setupMocks: func(mockWebPushRepo *mockrepositories.MockWebPushRepository) {
+				mockWebPushRepo.EXPECT().
+					SendNotification(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("web push error"))
+			},
+			expectedError: errors.New("web push error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockEmailsRepo := mockrepositories.NewMockEmailsRepository(ctrl)
+			mockWebPushRepo := mockrepositories.NewMockWebPushRepository(ctrl)
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockWebPushRepo)
+			}
+
+			service := notifications.New(
+				mockEmailsRepo,
+				mockWebPushRepo,
+			)
+
+			ctx := context.Background()
+			err := service.SendNewMessageByWebPush(ctx, tt.subscription, tt.message)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

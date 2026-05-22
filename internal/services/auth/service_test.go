@@ -212,6 +212,57 @@ func TestService_RegisterUser(t *testing.T) {
 			err:     errors.New("database error"),
 		},
 		{
+			name: "error creating settings",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
+					// Первая проверка - email не существует
+					ur.EXPECT().
+						GetUserByEmail(gomock.Any(), "test@example.com").
+						Return(nil, sql.ErrNoRows)
+
+					// Вторая проверка - username не существует
+					ur.EXPECT().
+						GetUserByUsername(gomock.Any(), "testuser").
+						Return(nil, sql.ErrNoRows)
+
+					// После регистрации получаем пользователя
+					ur.EXPECT().
+						GetUserByEmail(gomock.Any(), "test@example.com").
+						Return(newUser, nil)
+				},
+				mockAuthRepository: func(ar *mockrepositories.MockAuthRepository) {
+					ar.EXPECT().
+						RegisterUser(gomock.Any(), gomock.Any()).
+						Return(uint64(1), nil)
+				},
+				mockSettingsRepository: func(sr *mockrepositories.MockSettingsRepository) {
+					sr.EXPECT().
+						CreateSettings(gomock.Any(), gomock.Any()).
+						Return(errors.New("settings error"))
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				userData: domains.RegisterDTO{
+					Username: "testuser",
+					Email:    "test@example.com",
+					Password: "Password123!",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+			err:     errors.New("settings error"),
+		},
+		{
 			name: "error getting user after registration",
 			fields: fields{
 				mockUOW: func(uow *mockuow.MockUnitOfWork) {

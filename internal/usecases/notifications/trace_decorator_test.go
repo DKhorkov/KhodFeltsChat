@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/DKhorkov/kfc/internal/domains"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/kfc/internal/usecases/notifications"
 	mockusecases "github.com/DKhorkov/kfc/mocks/usecases"
@@ -198,6 +199,194 @@ func TestTraceDecorator_SendVerifyEmailMessage(t *testing.T) {
 
 			ctx := context.Background()
 			err := decorator.SendVerifyEmailMessage(ctx, tt.userID)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestTraceDecorator_SendNewMessageByEmail(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		userID        uint64
+		payload       domains.NewMessagePayload
+		setupMocks    func(*mocktracing.MockProvider, *mockusecases.MockNotificationsUseCases, *mocktracing.MockSpan)
+		expectedError error
+	}{
+		{
+			name:   "successful send new message by email with tracing",
+			userID: 1,
+			payload: domains.NewMessagePayload{
+				MessageID: 10,
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockNotificationsUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					SendNewMessageByEmail(gomock.Any(), uint64(1), domains.NewMessagePayload{MessageID: 10}).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:   "error sending new message by email",
+			userID: 1,
+			payload: domains.NewMessagePayload{
+				MessageID: 10,
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockNotificationsUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					SendNewMessageByEmail(gomock.Any(), uint64(1), gomock.Any()).
+					Return(errors.New("email service error"))
+			},
+			expectedError: errors.New("email service error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockusecases.NewMockNotificationsUseCases(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			spanConfig := tracing.SpanConfig{
+				Name: "test-span",
+				Opts: []trace.SpanStartOption{},
+				Events: tracing.SpanEventsConfig{
+					Start: tracing.SpanEventConfig{Name: "start"},
+					End:   tracing.SpanEventConfig{Name: "end"},
+				},
+			}
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockProvider, mockBase, mockSpan)
+			}
+
+			decorator := notifications.NewTraceDecorator(mockProvider, spanConfig, mockBase)
+
+			ctx := context.Background()
+			err := decorator.SendNewMessageByEmail(ctx, tt.userID, tt.payload)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestTraceDecorator_SendNewMessageByWebPush(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		userID        uint64
+		payload       domains.NewMessagePayload
+		setupMocks    func(*mocktracing.MockProvider, *mockusecases.MockNotificationsUseCases, *mocktracing.MockSpan)
+		expectedError error
+	}{
+		{
+			name:   "successful send new message by web push with tracing",
+			userID: 1,
+			payload: domains.NewMessagePayload{
+				MessageID: 10,
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockNotificationsUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					SendNewMessageByWebPush(gomock.Any(), uint64(1), domains.NewMessagePayload{MessageID: 10}).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:   "error sending new message by web push",
+			userID: 1,
+			payload: domains.NewMessagePayload{
+				MessageID: 10,
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockNotificationsUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					SendNewMessageByWebPush(gomock.Any(), uint64(1), gomock.Any()).
+					Return(errors.New("web push error"))
+			},
+			expectedError: errors.New("web push error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockusecases.NewMockNotificationsUseCases(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			spanConfig := tracing.SpanConfig{
+				Name: "test-span",
+				Opts: []trace.SpanStartOption{},
+				Events: tracing.SpanEventsConfig{
+					Start: tracing.SpanEventConfig{Name: "start"},
+					End:   tracing.SpanEventConfig{Name: "end"},
+				},
+			}
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockProvider, mockBase, mockSpan)
+			}
+
+			decorator := notifications.NewTraceDecorator(mockProvider, spanConfig, mockBase)
+
+			ctx := context.Background()
+			err := decorator.SendNewMessageByWebPush(ctx, tt.userID, tt.payload)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

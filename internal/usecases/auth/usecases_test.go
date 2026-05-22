@@ -377,6 +377,36 @@ func TestUseCases_LoginUser(t *testing.T) {
 			err:       customerrors.ErrEmailNotConfirmed,
 		},
 		{
+			name: "error creating refresh token",
+			fields: fields{
+				mockUsersService: func(us *mockservices.MockUsersService) {
+					us.EXPECT().
+						GetUserByEmail(gomock.Any(), "sometest@gmail.com").
+						Return(user, nil)
+				},
+				mockAuthService: func(as *mockservices.MockAuthService) {
+					as.EXPECT().
+						CreateRefreshToken(
+							gomock.Any(),
+							uint64(123),
+							gomock.Any(),
+							gomock.Any(),
+						).
+						Return(nil, errors.New("database error"))
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.LoginDTO{
+					Login:    "sometest@gmail.com",
+					Password: pass,
+				},
+			},
+			wantToken: false,
+			wantErr:   true,
+			err:       errors.New("database error"),
+		},
+		{
 			name: "wrong password",
 			fields: fields{
 				mockUsersService: func(us *mockservices.MockUsersService) {
