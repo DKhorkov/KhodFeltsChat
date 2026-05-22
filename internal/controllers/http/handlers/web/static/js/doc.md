@@ -94,7 +94,7 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 
 | Функция | Описание |
 |---------|----------|
-| `setupEmojiPicker()` | Настраивает toggle-кнопку emoji picker. Lazy-init: `createEmojiPicker` вызывается при первом открытии. Выбранный emoji вставляется в позицию курсора в textarea. |
+| `setupEmojiPicker()` | Настраивает emoji picker с показом при наведении курсора (mouseenter/mouseleave с задержкой 500 мс). Lazy-init: `createEmojiPicker` вызывается при первом показе. Выбранный emoji вставляется в позицию курсора в textarea. |
 
 **Закрытие чата:**
 
@@ -264,5 +264,5 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 
 | Функция | Описание |
 |---------|----------|
-| `EMOJI_CATEGORIES` | Массив категорий: Смайлы, Жесты, Сердца, Объекты — каждая со списком emoji. |
-| `createEmojiPicker(container, onSelect)` | Создаёт picker с табами категорий и гридом emoji. При клике по emoji вызывает `onSelect(emoji)`. |
+| `ALL_EMOJIS` | Плоский массив всех emoji (Смайлы, Жесты, Сердца, Объекты) без разделения по категориям. |
+| `createEmojiPicker(container, onSelect)` | Создаёт picker с одной прокручиваемой сеткой emoji. При клике по emoji вызывает `onSelect(emoji)`. |

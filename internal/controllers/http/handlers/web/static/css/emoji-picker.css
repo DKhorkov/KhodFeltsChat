@@ -8,37 +8,7 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     width: min(320px, calc(100vw - var(--space-3xl) * 2));
-    display: flex;
-    flex-direction: column;
     overflow: hidden;
-}
-
-.emoji-picker__tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border);
-    padding: var(--space-xs);
-    gap: var(--space-xs);
-    flex-shrink: 0;
-}
-
-.emoji-picker__tab {
-    flex: 1;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: var(--space-xs);
-    font-size: var(--font-lg);
-    cursor: pointer;
-    line-height: 1;
-    text-align: center;
-}
-
-.emoji-picker__tab:hover {
-    background: transparent;
-}
-
-.emoji-picker__tab--active {
-    background: transparent;
 }
 
 .emoji-picker__grid {
@@ -46,7 +16,7 @@
     grid-template-columns: repeat(8, 1fr);
     gap: 2px;
     padding: var(--space-sm);
-    max-height: min(200px, 40vh);
+    max-height: min(260px, 40vh);
     overflow-y: auto;
     overflow-x: hidden;
 }
