@@ -557,6 +557,7 @@
     .chat-layout {
         flex-direction: column;
         height: calc(var(--vh, 1vh) * 100 - var(--navbar-height));
+        margin-top: var(--navbar-height);
     }
 
     .sidebar {
