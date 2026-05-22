@@ -13,6 +13,7 @@ HTTP-обработчики REST API, сгруппированные по пре
 | register            | POST   | /api/users                            |
 | login               | POST   | /api/sessions                         |
 | logout              | DELETE | /api/sessions                         |
+| logout_all          | DELETE | /api/sessions/all                     |
 | refresh             | PUT    | /api/sessions                         |
 | verify_email        | GET    | /api/users/email/verify/{token}       |
 | forget_password     | POST   | /api/users/password/forget/{token}    |

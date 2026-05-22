@@ -103,14 +103,14 @@ func (repo *Repository) CreateRefreshToken(
 	return refreshTokenID, nil
 }
 
-func (repo *Repository) GetRefreshTokenByUserID(
+func (repo *Repository) GetRefreshTokenByValue(
 	ctx context.Context,
-	userID uint64,
+	value string,
 ) (*domains.RefreshToken, error) {
 	stmt, params, err := sq.
 		Select(selectAllColumns).
 		From(refreshTokensTableName).
-		Where(sq.Eq{userIDColumnName: userID}).
+		Where(sq.Eq{refreshTokenValueColumnName: value}).
 		Where(
 			sq.Expr(
 				refreshTokenTTLColumnName + " > CURRENT_TIMESTAMP",
@@ -137,6 +137,25 @@ func (repo *Repository) ExpireRefreshToken(ctx context.Context, refreshTokenID u
 		Delete(refreshTokensTableName).
 		Where(sq.Eq{idColumnName: refreshTokenID}).
 		PlaceholderFormat(sq.Dollar). // pq postgres driver works only with $ placeholders
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.tx.ExecContext(
+		ctx,
+		stmt,
+		params...,
+	)
+
+	return err
+}
+
+func (repo *Repository) ExpireAllUserRefreshTokens(ctx context.Context, userID uint64) error {
+	stmt, params, err := sq.
+		Delete(refreshTokensTableName).
+		Where(sq.Eq{userIDColumnName: userID}).
+		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
 		return err

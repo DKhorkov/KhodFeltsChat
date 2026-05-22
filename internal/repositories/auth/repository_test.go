@@ -303,13 +303,13 @@ func (s *RepositoryTestSuite) TestCreateRefreshToken_ZeroTTL() {
 	s.WithinDuration(time.Now().UTC(), dbTTL, time.Second)
 }
 
-func (s *RepositoryTestSuite) TestGetRefreshTokenByUserID_Success() {
+func (s *RepositoryTestSuite) TestGetRefreshTokenByValue_Success() {
 	s.createTestUsers()
 
-	// Тест: Получение валидного refresh token
+	// Тест: Получение валидного refresh token по значению
 	s.createTestRefreshTokens()
 
-	token, err := s.repository.GetRefreshTokenByUserID(s.ctx, 1)
+	token, err := s.repository.GetRefreshTokenByValue(s.ctx, "valid_refresh_token_1")
 	s.NoError(err)
 	s.NotNil(token)
 	s.Equal(uint64(1), token.ID)
@@ -318,57 +318,37 @@ func (s *RepositoryTestSuite) TestGetRefreshTokenByUserID_Success() {
 	s.True(token.TTL.After(time.Now().UTC())) // Должен быть валидным
 	s.NotZero(token.CreatedAt)
 	s.NotZero(token.UpdatedAt)
-
-	// Проверяем, что возвращается именно валидный токен (не истекший)
-	s.True(token.TTL.After(time.Now().UTC()))
 }
 
-func (s *RepositoryTestSuite) TestGetRefreshTokenByUserID_OnlyValidToken() {
+func (s *RepositoryTestSuite) TestGetRefreshTokenByValue_AnotherUser() {
 	s.createTestUsers()
-
-	// Тест: Должен возвращаться только неистекший токен
 	s.createTestRefreshTokens()
 
-	// Для пользователя 1 есть и валидный и истекший токен
-	// Должен вернуться только валидный
-	token, err := s.repository.GetRefreshTokenByUserID(s.ctx, 1)
+	// Тест: Получение токена другого пользователя по значению
+	token, err := s.repository.GetRefreshTokenByValue(s.ctx, "valid_refresh_token_2")
 	s.NoError(err)
 	s.NotNil(token)
-	s.Equal("valid_refresh_token_1", token.Value)    // Должен быть валидный токен
-	s.NotEqual("expired_refresh_token", token.Value) // Не должен быть истекший
+	s.Equal(uint64(2), token.UserID)
+	s.Equal("valid_refresh_token_2", token.Value)
 }
 
-func (s *RepositoryTestSuite) TestGetRefreshTokenByUserID_NotFound() {
-	// Тест 1: Пользователь без refresh token
-	token, err := s.repository.GetRefreshTokenByUserID(s.ctx, 3) // У пользователя 3 нет токенов
-	s.Error(err)
-	s.Nil(token)
-	s.Contains(err.Error(), "no rows")
+func (s *RepositoryTestSuite) TestGetRefreshTokenByValue_NotFound() {
+	s.createTestUsers()
+	s.createTestRefreshTokens()
 
-	// Тест 2: Несуществующий пользователь
-	token, err = s.repository.GetRefreshTokenByUserID(s.ctx, 999)
+	// Тест: Несуществующий токен
+	token, err := s.repository.GetRefreshTokenByValue(s.ctx, "nonexistent_token")
 	s.Error(err)
 	s.Nil(token)
 	s.Contains(err.Error(), "no rows")
 }
 
-func (s *RepositoryTestSuite) TestGetRefreshTokenByUserID_AllTokensExpired() {
-	// Создаем пользователя только с истекшим токеном
-	_, err := s.tx.ExecContext(
-		s.ctx,
-		`INSERT INTO users (id, username, email, email_confirmed, password) 
-		 VALUES (4, 'expired_user', 'expired@example.com', true, 'hashed')`,
-	)
-	s.NoError(err)
+func (s *RepositoryTestSuite) TestGetRefreshTokenByValue_ExpiredToken() {
+	s.createTestUsers()
+	s.createTestRefreshTokens()
 
-	_, err = s.tx.ExecContext(
-		s.ctx,
-		`INSERT INTO refresh_tokens (user_id, value, ttl) 
-		 VALUES (4, 'expired_only', NOW() - INTERVAL '1 day')`,
-	)
-	s.NoError(err)
-
-	token, err := s.repository.GetRefreshTokenByUserID(s.ctx, 4)
+	// Тест: Истёкший токен не возвращается
+	token, err := s.repository.GetRefreshTokenByValue(s.ctx, "expired_refresh_token")
 	s.Error(err)
 	s.Nil(token)
 	s.Contains(err.Error(), "no rows")
@@ -443,6 +423,62 @@ func (s *RepositoryTestSuite) TestExpireRefreshToken_AlreadyExpired() {
 		refreshTokenID,
 	).Scan(&id)
 	s.Error(err)
+}
+
+func (s *RepositoryTestSuite) TestExpireAllUserRefreshTokens_Success() {
+	s.createTestUsers()
+	s.createTestRefreshTokens()
+
+	// У пользователя 1 есть 2 токена (valid_refresh_token_1 и expired_refresh_token)
+	var countBefore int
+
+	err := s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT COUNT(*) FROM refresh_tokens WHERE user_id = $1`,
+		uint64(1),
+	).Scan(&countBefore)
+	s.NoError(err)
+	s.Equal(2, countBefore)
+
+	// Удаляем все токены пользователя 1
+	err = s.repository.ExpireAllUserRefreshTokens(s.ctx, 1)
+	s.NoError(err)
+
+	// Проверяем, что все токены пользователя 1 удалены
+	var countAfter int
+
+	err = s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT COUNT(*) FROM refresh_tokens WHERE user_id = $1`,
+		uint64(1),
+	).Scan(&countAfter)
+	s.NoError(err)
+	s.Equal(0, countAfter)
+
+	// Проверяем, что токены пользователя 2 не затронуты
+	var countUser2 int
+
+	err = s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT COUNT(*) FROM refresh_tokens WHERE user_id = $1`,
+		uint64(2),
+	).Scan(&countUser2)
+	s.NoError(err)
+	s.Equal(1, countUser2)
+}
+
+func (s *RepositoryTestSuite) TestExpireAllUserRefreshTokens_NoTokens() {
+	s.createTestUsers()
+
+	// У пользователя 3 нет токенов — не должно быть ошибки
+	err := s.repository.ExpireAllUserRefreshTokens(s.ctx, 3)
+	s.NoError(err)
+}
+
+func (s *RepositoryTestSuite) TestExpireAllUserRefreshTokens_NonexistentUser() {
+	// Несуществующий пользователь — не должно быть ошибки
+	err := s.repository.ExpireAllUserRefreshTokens(s.ctx, 999)
+	s.NoError(err)
 }
 
 func (s *RepositoryTestSuite) TestVerifyEmail_Success() {

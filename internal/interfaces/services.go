@@ -29,8 +29,9 @@ type AuthService interface {
 		value string,
 		ttl time.Duration,
 	) (*domains.RefreshToken, error)
-	GetRefreshTokenByUserID(ctx context.Context, userID uint64) (*domains.RefreshToken, error)
+	GetRefreshTokenByValue(ctx context.Context, value string) (*domains.RefreshToken, error)
 	ExpireRefreshToken(ctx context.Context, refreshTokenID uint64) error
+	ExpireAllUserRefreshTokens(ctx context.Context, userID uint64) error
 	VerifyEmail(ctx context.Context, userID uint64) error
 	ForgetPassword(ctx context.Context, userID uint64, newPassword string) error
 	ChangePassword(ctx context.Context, userID uint64, newPassword string) error

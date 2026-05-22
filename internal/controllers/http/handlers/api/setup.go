@@ -9,6 +9,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/auth/forget_password"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/auth/login"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/auth/logout"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/auth/logout_all"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/auth/refresh_tokens"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/auth/register"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/auth/send_forget_password_message"
@@ -35,7 +36,8 @@ import (
 )
 
 const (
-	SessionsURL = "/sessions"
+	SessionsURL    = "/sessions"
+	AllSessionsURL = SessionsURL + "/all"
 
 	UsersURL                  = "/users"
 	MeURL                     = UsersURL + "/me"
@@ -131,6 +133,7 @@ func SetupHandlers(
 	putMux.Handle(SessionsURL, refresh_tokens.Handler(authUseCases, cookiesConfig))
 
 	deleteMux := apiMux.Methods(http.MethodDelete).Subrouter()
+	deleteMux.Handle(AllSessionsURL, logout_all.Handler(authUseCases, cookiesConfig))
 	deleteMux.Handle(SessionsURL, logout.Handler(authUseCases, cookiesConfig))
 	deleteMux.Handle(
 		fmt.Sprintf(WebPushUnsubscribeURL, common.IDRouteKey),

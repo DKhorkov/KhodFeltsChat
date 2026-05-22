@@ -674,11 +674,23 @@ func TestCacheDecorator_PassthroughMethods(t *testing.T) {
 			name: "LogoutUser",
 			setupMocks: func(mockBase *mockusecases.MockAuthUseCases) {
 				mockBase.EXPECT().
-					LogoutUser(gomock.Any(), uint64(1)).
+					LogoutUser(gomock.Any(), "refresh_token").
 					Return(nil)
 			},
 			testFunc: func(d *auth.CacheDecorator, ctx context.Context) error {
-				return d.LogoutUser(ctx, 1)
+				return d.LogoutUser(ctx, "refresh_token")
+			},
+			expectedError: nil,
+		},
+		{
+			name: "LogoutUserFromAllSessions",
+			setupMocks: func(mockBase *mockusecases.MockAuthUseCases) {
+				mockBase.EXPECT().
+					LogoutUserFromAllSessions(gomock.Any(), uint64(1)).
+					Return(nil)
+			},
+			testFunc: func(d *auth.CacheDecorator, ctx context.Context) error {
+				return d.LogoutUserFromAllSessions(ctx, 1)
 			},
 			expectedError: nil,
 		},

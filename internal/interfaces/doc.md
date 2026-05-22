@@ -11,7 +11,7 @@
 
 ### Repositories
 - **UsersRepository** — CRUD пользователей
-- **AuthRepository** — регистрация, токены, verify email, change password
+- **AuthRepository** — регистрация, токены (мультисессионность: GetRefreshTokenByValue, ExpireAllUserRefreshTokens), verify email, change password
 - **ChatsRepository** — чаты, участники, is_read статусы, `GetChatByID`
 - **MessagesRepository** — сообщения, статусы прочтения
 - **EmailsRepository** — SMTP отправка: `SendVerifyEmailMessage(user)`, `SendForgetPasswordMessage(user)`, `SendNewMessageEmail(recipient, message, chat)` — принимает доменные объекты

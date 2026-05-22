@@ -344,21 +344,21 @@ func TestTraceDecorator_CreateRefreshToken(t *testing.T) {
 	}
 }
 
-func TestTraceDecorator_GetRefreshTokenByUserID(t *testing.T) {
+func TestTraceDecorator_GetRefreshTokenByValue(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
 
 	tests := []struct {
 		name          string
-		userID        uint64
+		value         string
 		setupMocks    func(*mocktracing.MockProvider, *mockservices.MockAuthService, *mocktracing.MockSpan)
 		expectedToken *domains.RefreshToken
 		expectedError error
 	}{
 		{
-			name:   "successful get refresh token with tracing",
-			userID: 1,
+			name:  "successful get refresh token with tracing",
+			value: "refresh_token_123",
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockservices.MockAuthService,
@@ -371,11 +371,11 @@ func TestTraceDecorator_GetRefreshTokenByUserID(t *testing.T) {
 					})
 
 				mockBase.EXPECT().
-					GetRefreshTokenByUserID(gomock.Any(), uint64(1)).
+					GetRefreshTokenByValue(gomock.Any(), "refresh_token_123").
 					Return(&domains.RefreshToken{
 						ID:        1,
 						UserID:    1,
-						Value:     "refresh_token",
+						Value:     "refresh_token_123",
 						TTL:       now.Add(24 * time.Hour),
 						CreatedAt: now,
 					}, nil)
@@ -383,15 +383,15 @@ func TestTraceDecorator_GetRefreshTokenByUserID(t *testing.T) {
 			expectedToken: &domains.RefreshToken{
 				ID:        1,
 				UserID:    1,
-				Value:     "refresh_token",
+				Value:     "refresh_token_123",
 				TTL:       now.Add(24 * time.Hour),
 				CreatedAt: now,
 			},
 			expectedError: nil,
 		},
 		{
-			name:   "refresh token not found",
-			userID: 999,
+			name:  "refresh token not found",
+			value: "nonexistent_token",
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockservices.MockAuthService,
@@ -402,15 +402,15 @@ func TestTraceDecorator_GetRefreshTokenByUserID(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					GetRefreshTokenByUserID(gomock.Any(), uint64(999)).
+					GetRefreshTokenByValue(gomock.Any(), "nonexistent_token").
 					Return(nil, errors.New("refresh token not found"))
 			},
 			expectedToken: nil,
 			expectedError: errors.New("refresh token not found"),
 		},
 		{
-			name:   "expired token",
-			userID: 1,
+			name:  "expired token",
+			value: "expired_token",
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockservices.MockAuthService,
@@ -421,7 +421,7 @@ func TestTraceDecorator_GetRefreshTokenByUserID(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					GetRefreshTokenByUserID(gomock.Any(), uint64(1)).
+					GetRefreshTokenByValue(gomock.Any(), "expired_token").
 					Return(&domains.RefreshToken{
 						ID:        1,
 						UserID:    1,
@@ -466,7 +466,7 @@ func TestTraceDecorator_GetRefreshTokenByUserID(t *testing.T) {
 			decorator := auth.NewTraceDecorator(mockProvider, spanConfig, mockBase)
 
 			ctx := context.Background()
-			token, err := decorator.GetRefreshTokenByUserID(ctx, tt.userID)
+			token, err := decorator.GetRefreshTokenByValue(ctx, tt.value)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)
@@ -573,6 +573,92 @@ func TestTraceDecorator_ExpireRefreshToken(t *testing.T) {
 
 			ctx := context.Background()
 			err := decorator.ExpireRefreshToken(ctx, tt.refreshTokenID)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestTraceDecorator_ExpireAllUserRefreshTokens(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		userID        uint64
+		setupMocks    func(*mocktracing.MockProvider, *mockservices.MockAuthService, *mocktracing.MockSpan)
+		expectedError error
+	}{
+		{
+			name:   "successful expire all user refresh tokens with tracing",
+			userID: 1,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockAuthService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					ExpireAllUserRefreshTokens(gomock.Any(), uint64(1)).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:   "database error",
+			userID: 1,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockAuthService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					ExpireAllUserRefreshTokens(gomock.Any(), uint64(1)).
+					Return(errors.New("database error"))
+			},
+			expectedError: errors.New("database error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockservices.NewMockAuthService(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			spanConfig := tracing.SpanConfig{
+				Name: "test-span",
+				Events: tracing.SpanEventsConfig{
+					Start: tracing.SpanEventConfig{Name: "start"},
+					End:   tracing.SpanEventConfig{Name: "end"},
+				},
+			}
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockProvider, mockBase, mockSpan)
+			}
+
+			decorator := auth.NewTraceDecorator(mockProvider, spanConfig, mockBase)
+
+			ctx := context.Background()
+			err := decorator.ExpireAllUserRefreshTokens(ctx, tt.userID)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

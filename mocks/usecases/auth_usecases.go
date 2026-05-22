@@ -85,17 +85,31 @@ func (mr *MockAuthUseCasesMockRecorder) LoginUser(ctx, dto any) *gomock.Call {
 }
 
 // LogoutUser mocks base method.
-func (m *MockAuthUseCases) LogoutUser(ctx context.Context, userID uint64) error {
+func (m *MockAuthUseCases) LogoutUser(ctx context.Context, refreshToken string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LogoutUser", ctx, userID)
+	ret := m.ctrl.Call(m, "LogoutUser", ctx, refreshToken)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // LogoutUser indicates an expected call of LogoutUser.
-func (mr *MockAuthUseCasesMockRecorder) LogoutUser(ctx, userID any) *gomock.Call {
+func (mr *MockAuthUseCasesMockRecorder) LogoutUser(ctx, refreshToken any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogoutUser", reflect.TypeOf((*MockAuthUseCases)(nil).LogoutUser), ctx, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogoutUser", reflect.TypeOf((*MockAuthUseCases)(nil).LogoutUser), ctx, refreshToken)
+}
+
+// LogoutUserFromAllSessions mocks base method.
+func (m *MockAuthUseCases) LogoutUserFromAllSessions(ctx context.Context, userID uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LogoutUserFromAllSessions", ctx, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LogoutUserFromAllSessions indicates an expected call of LogoutUserFromAllSessions.
+func (mr *MockAuthUseCasesMockRecorder) LogoutUserFromAllSessions(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogoutUserFromAllSessions", reflect.TypeOf((*MockAuthUseCases)(nil).LogoutUserFromAllSessions), ctx, userID)
 }
 
 // RefreshTokens mocks base method.

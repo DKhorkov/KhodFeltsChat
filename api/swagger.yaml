@@ -404,8 +404,22 @@ paths:
                 - chats
     /api/sessions:
         delete:
-            description: Logout User and deletes access and refresh tokens.
+            description: Logout User from the current session and deletes access and refresh tokens.
             operationId: Logout
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: Logout
+            tags:
+                - sessions
+    /api/sessions/all:
+        delete:
+            description: Logout User from all sessions and deletes access and refresh tokens.
+            operationId: LogoutAll
             responses:
                 "204":
                     $ref: '#/responses/NoContent'
@@ -416,7 +430,7 @@ paths:
             security:
                 - cookieAuth:
                     - '[]'
-            summary: Logout
+            summary: LogoutAll
             tags:
                 - sessions
         post:
