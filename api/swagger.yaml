@@ -413,6 +413,9 @@ paths:
                     $ref: '#/responses/Unauthorized'
                 "500":
                     $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
             summary: Logout
             tags:
                 - sessions

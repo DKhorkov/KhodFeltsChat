@@ -15,6 +15,9 @@ import (
 //
 // Logout User from the current session and deletes access and refresh tokens.
 //
+// Security:
+// - cookieAuth: []
+//
 // Responses:
 //	204: NoContent
 //	401: Unauthorized
