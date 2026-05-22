@@ -1059,10 +1059,24 @@ async function searchUsersGlobal(query) {
 function setupMobileKeyboardDismiss() {
     if (!IS_MOBILE) return;
 
-    // Закрытие клавиатуры при тапе в любом месте, кроме textarea и кнопки «Отправить».
-    // Используем touchend, чтобы не конфликтовать со свайпом и кнопкой отправки:
+    // Отличаем тап от скролла: если палец сдвинулся — это скролл, не закрываем клавиатуру.
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const TAP_THRESHOLD = 10; // px — максимальное смещение, чтобы считать жест тапом
+
+    document.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, {passive: true});
+
     document.addEventListener('touchend', (e) => {
         if (e.target.closest('#message-input, #btn-send')) return;
+
+        // Проверяем, был ли это тап (не скролл):
+        const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
+        const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+        if (dx > TAP_THRESHOLD || dy > TAP_THRESHOLD) return;
+
         document.activeElement?.blur();
     }, {passive: true});
 }
@@ -1070,9 +1084,6 @@ function setupMobileKeyboardDismiss() {
 function setupMobileViewportResize() {
     if (!IS_MOBILE) return;
 
-    // CSS-переменная --vh, отражающая реальную высоту viewport (с учётом клавиатуры).
-    // На iOS window.innerHeight не меняется при появлении клавиатуры,
-    // а visualViewport.height — меняется.
     function updateVh() {
         const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) / 100;
         document.documentElement.style.setProperty('--vh', vh + 'px');
@@ -1082,15 +1093,28 @@ function setupMobileViewportResize() {
 
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', () => {
+            // Запоминаем позицию скролла сообщений до изменения размера:
+            const msgList = document.getElementById('messages-list');
+            const wasAtBottom = msgList.scrollHeight - msgList.scrollTop - msgList.clientHeight < 30;
+            const prevScrollBottom = msgList.scrollHeight - msgList.scrollTop;
+
             updateVh();
-            // Предотвращаем сдвиг страницы — прокручиваем к началу:
             window.scrollTo(0, 0);
+
+            // Восстанавливаем позицию скролла после перестроения layout:
+            requestAnimationFrame(() => {
+                if (wasAtBottom) {
+                    msgList.scrollTop = msgList.scrollHeight;
+                } else {
+                    // Сохраняем ту же позицию относительно низа (контейнер сжался снизу):
+                    msgList.scrollTop = msgList.scrollHeight - prevScrollBottom;
+                }
+            });
         });
     } else {
         window.addEventListener('resize', updateVh);
     }
 
-    // Предотвращаем скролл страницы при появлении клавиатуры:
     window.addEventListener('scroll', () => {
         if (window.scrollY !== 0) window.scrollTo(0, 0);
     });

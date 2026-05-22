@@ -110,8 +110,8 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 
 | Функция | Описание |
 |---------|----------|
-| `setupMobileKeyboardDismiss()` | Закрытие виртуальной клавиатуры при тапе в любом месте экрана, кроме textarea (`#message-input`) и кнопки «Отправить» (`#btn-send`). Глобальный `touchend` на `document` (touchend вместо touchstart, чтобы не конфликтовать со свайпом и click-ом на кнопке). Только для мобильных (`IS_MOBILE`). |
-| `setupMobileViewportResize()` | Устанавливает CSS-переменную `--vh` (1% реальной высоты viewport) через `visualViewport.height` (fallback на `window.innerHeight`). Обновляется при `visualViewport.resize`. Предотвращает скролл страницы при появлении клавиатуры (`window.scrollTo(0, 0)`). CSS использует `calc(var(--vh) * 100)` вместо `100vh` для корректной высоты на мобильных. |
+| `setupMobileKeyboardDismiss()` | Закрытие виртуальной клавиатуры при тапе в любом месте экрана, кроме textarea (`#message-input`) и кнопки «Отправить» (`#btn-send`). Отличает тап от скролла: запоминает координаты `touchstart`, при `touchend` проверяет смещение (порог 10px). Скролл списка сообщений не закрывает клавиатуру. Только для мобильных (`IS_MOBILE`). |
+| `setupMobileViewportResize()` | Устанавливает CSS-переменную `--vh` (1% реальной высоты viewport) через `visualViewport.height` (fallback на `window.innerHeight`). При resize сохраняет позицию скролла сообщений: если был внизу — прокручивает до конца, иначе сохраняет позицию относительно низа. Предотвращает скролл страницы при появлении клавиатуры (`window.scrollTo(0, 0)`). |
 
 **Информация о чате:**
 
