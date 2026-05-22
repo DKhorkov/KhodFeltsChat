@@ -193,8 +193,8 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 
 ### Мобильная адаптация (`@media max-width: 600px`)
 
-- `.chat-layout` → column, sidebar на всю ширину
-- `.conversation` → absolute позиционирование поверх sidebar (для swipe-to-close)
+- `.chat-layout` → column, sidebar на всю ширину, `position: fixed` (top: navbar, left/right: 0, bottom: 0) — фиксирует layout, чтобы виртуальная клавиатура не сдвигала страницу
+- `.conversation` → absolute позиционирование поверх sidebar (для swipe-to-close), высота через `100dvh` (реагирует на клавиатуру)
 - `.chat-item__last-message` → многострочное превью (до 2 строк, `-webkit-line-clamp: 2`)
 - `.message-bubble` → max-width: 85%
 - textarea и input → `font-size: 16px` (предотвращает zoom на iOS)
@@ -256,7 +256,7 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 
 ### Мобильная адаптация (`@media max-width: 600px`)
 
-- `.navbar` → уменьшенные padding
+- `.navbar` → уменьшенные padding, `position: fixed` (top: 0, z-index: 100) — фиксирует навбар при появлении виртуальной клавиатуры
 - `.modal-content`, `.profile-modal` → ширина `calc(100vw - 40px)`
 
 ---
@@ -339,8 +339,7 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 
 ### Мобильная адаптация (`@media max-width: 600px`)
 
-- `.emoji-picker` → `position: fixed`, на всю ширину, z-index: 900
-- Сетка → 7 колонок
+- `.conversation__emoji-toggle` и `.emoji-picker` — скрыты (`display: none !important`). На мобильных устройствах используется встроенная клавиатура с эмодзи (iOS, Android).
 
 ---
 

@@ -39,6 +39,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupGroupChatModal();
     setupEscapeHandler();
     setupChatListDelegation();
+    setupMobileKeyboardDismiss();
+    setupMobileViewportResize();
 
     // Открытие чата из push-уведомления (по query-параметру):
     const params = new URLSearchParams(window.location.search);
@@ -516,6 +518,9 @@ function sendMessage() {
 
     input.value = '';
     document.getElementById('btn-send').disabled = true;
+
+    // Возвращаем фокус на поле ввода, чтобы клавиатура не закрывалась на мобильных:
+    input.focus();
 
     loadChats().catch(console.error);
 }
@@ -1046,6 +1051,33 @@ async function searchUsersGlobal(query) {
     } catch (err) {
         console.error(err);
     }
+}
+
+// ═══════════════════════════════════════
+// Мобильная клавиатура
+// ═══════════════════════════════════════
+function setupMobileKeyboardDismiss() {
+    if (!IS_MOBILE) return;
+
+    // Закрытие клавиатуры при тапе в любом месте, кроме textarea и кнопки «Отправить»:
+    document.addEventListener('touchstart', (e) => {
+        if (e.target.closest('#message-input, #btn-send')) return;
+        document.activeElement?.blur();
+    }, {passive: true});
+}
+
+function setupMobileViewportResize() {
+    if (!IS_MOBILE || !window.visualViewport) return;
+
+    const chatLayout = document.querySelector('.chat-layout');
+
+    window.visualViewport.addEventListener('resize', () => {
+        // Высота видимой области минус navbar:
+        const navbarHeight = document.querySelector('.navbar')?.offsetHeight || 49;
+        const availableHeight = window.visualViewport.height - navbarHeight;
+        chatLayout.style.height = availableHeight + 'px';
+        chatLayout.style.bottom = 'auto';
+    });
 }
 
 // ═══════════════════════════════════════
