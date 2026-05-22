@@ -106,7 +106,7 @@ func (u *UseCases) LoginUser(
 	}
 
 	refreshToken, err := security.GenerateJWT(
-		user.ID,
+		accessToken,
 		u.securityConfig.JWT.SecretKey,
 		u.securityConfig.JWT.RefreshTokenTTL,
 		u.securityConfig.JWT.Algorithm,
@@ -171,7 +171,7 @@ func (u *UseCases) RefreshTokens(
 	}
 
 	newRefreshToken, err := security.GenerateJWT(
-		userID,
+		newAccessToken,
 		u.securityConfig.JWT.SecretKey,
 		u.securityConfig.JWT.RefreshTokenTTL,
 		u.securityConfig.JWT.Algorithm,
