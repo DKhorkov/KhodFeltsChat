@@ -1059,24 +1059,40 @@ async function searchUsersGlobal(query) {
 function setupMobileKeyboardDismiss() {
     if (!IS_MOBILE) return;
 
-    // Закрытие клавиатуры при тапе в любом месте, кроме textarea и кнопки «Отправить»:
-    document.addEventListener('touchstart', (e) => {
+    // Закрытие клавиатуры при тапе в любом месте, кроме textarea и кнопки «Отправить».
+    // Используем touchend, чтобы не конфликтовать со свайпом и кнопкой отправки:
+    document.addEventListener('touchend', (e) => {
         if (e.target.closest('#message-input, #btn-send')) return;
         document.activeElement?.blur();
     }, {passive: true});
 }
 
 function setupMobileViewportResize() {
-    if (!IS_MOBILE || !window.visualViewport) return;
+    if (!IS_MOBILE) return;
 
-    const chatLayout = document.querySelector('.chat-layout');
+    // CSS-переменная --vh, отражающая реальную высоту viewport (с учётом клавиатуры).
+    // На iOS window.innerHeight не меняется при появлении клавиатуры,
+    // а visualViewport.height — меняется.
+    function updateVh() {
+        const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) / 100;
+        document.documentElement.style.setProperty('--vh', vh + 'px');
+    }
 
-    window.visualViewport.addEventListener('resize', () => {
-        // Высота видимой области минус navbar:
-        const navbarHeight = document.querySelector('.navbar')?.offsetHeight || 49;
-        const availableHeight = window.visualViewport.height - navbarHeight;
-        chatLayout.style.height = availableHeight + 'px';
-        chatLayout.style.bottom = 'auto';
+    updateVh();
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            updateVh();
+            // Предотвращаем сдвиг страницы — прокручиваем к началу:
+            window.scrollTo(0, 0);
+        });
+    } else {
+        window.addEventListener('resize', updateVh);
+    }
+
+    // Предотвращаем скролл страницы при появлении клавиатуры:
+    window.addEventListener('scroll', () => {
+        if (window.scrollY !== 0) window.scrollTo(0, 0);
     });
 }
 

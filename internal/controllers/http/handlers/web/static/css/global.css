@@ -5,6 +5,9 @@
     /* Navbar */
     --navbar-height: 49px;
 
+    /* Viewport height (переопределяется JS на мобильных через visualViewport) */
+    --vh: 1vh;
+
     /* Радиусы */
     --radius-sm:  6px;
     --radius-md:  8px;

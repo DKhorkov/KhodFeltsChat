@@ -556,12 +556,7 @@
     /* Сайдбар на мобильном — на всю ширину */
     .chat-layout {
         flex-direction: column;
-        position: fixed;
-        top: var(--navbar-height);
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: auto;
+        height: calc(var(--vh, 1vh) * 100 - var(--navbar-height));
     }
 
     .sidebar {
@@ -604,8 +599,8 @@
         top: 0;
         left: 0;
         width: 100%;
-        height: calc(100dvh - var(--navbar-height));
-        max-height: calc(100dvh - var(--navbar-height));
+        height: calc(var(--vh, 1vh) * 100 - var(--navbar-height));
+        max-height: calc(var(--vh, 1vh) * 100 - var(--navbar-height));
         overflow: hidden;
         z-index: 10;
         transition: transform 0.3s ease;

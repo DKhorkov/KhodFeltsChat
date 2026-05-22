@@ -193,8 +193,8 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 
 ### Мобильная адаптация (`@media max-width: 600px`)
 
-- `.chat-layout` → column, sidebar на всю ширину, `position: fixed` (top: navbar, left/right: 0, bottom: 0) — фиксирует layout, чтобы виртуальная клавиатура не сдвигала страницу
-- `.conversation` → absolute позиционирование поверх sidebar (для swipe-to-close), высота через `100dvh` (реагирует на клавиатуру)
+- `.chat-layout` → column, sidebar на всю ширину, высота через CSS-переменную `--vh` (устанавливается JS из `visualViewport.height`)
+- `.conversation` → absolute позиционирование поверх sidebar (для swipe-to-close), высота через `--vh` (реагирует на клавиатуру)
 - `.chat-item__last-message` → многострочное превью (до 2 строк, `-webkit-line-clamp: 2`)
 - `.message-bubble` → max-width: 85%
 - textarea и input → `font-size: 16px` (предотвращает zoom на iOS)
@@ -256,7 +256,7 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 
 ### Мобильная адаптация (`@media max-width: 600px`)
 
-- `.navbar` → уменьшенные padding, `position: fixed` (top: 0, z-index: 100) — фиксирует навбар при появлении виртуальной клавиатуры
+- `.navbar` → уменьшенные padding
 - `.modal-content`, `.profile-modal` → ширина `calc(100vw - 40px)`
 
 ---

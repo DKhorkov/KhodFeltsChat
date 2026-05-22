@@ -110,8 +110,8 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 
 | Функция | Описание |
 |---------|----------|
-| `setupMobileKeyboardDismiss()` | Закрытие виртуальной клавиатуры при тапе в любом месте экрана, кроме textarea (`#message-input`) и кнопки «Отправить» (`#btn-send`). Глобальный `touchstart` на `document`. Только для мобильных (`IS_MOBILE`). |
-| `setupMobileViewportResize()` | Динамическая подстройка высоты `.chat-layout` через `visualViewport.resize` — при появлении/скрытии клавиатуры сужается только область сообщений, navbar и заголовок чата остаются на месте. Fallback для браузеров без поддержки `interactive-widget=resizes-content`. |
+| `setupMobileKeyboardDismiss()` | Закрытие виртуальной клавиатуры при тапе в любом месте экрана, кроме textarea (`#message-input`) и кнопки «Отправить» (`#btn-send`). Глобальный `touchend` на `document` (touchend вместо touchstart, чтобы не конфликтовать со свайпом и click-ом на кнопке). Только для мобильных (`IS_MOBILE`). |
+| `setupMobileViewportResize()` | Устанавливает CSS-переменную `--vh` (1% реальной высоты viewport) через `visualViewport.height` (fallback на `window.innerHeight`). Обновляется при `visualViewport.resize`. Предотвращает скролл страницы при появлении клавиатуры (`window.scrollTo(0, 0)`). CSS использует `calc(var(--vh) * 100)` вместо `100vh` для корректной высоты на мобильных. |
 
 **Информация о чате:**
 
