@@ -21,7 +21,8 @@ type UsersUseCases interface {
 type AuthUseCases interface {
 	RegisterUser(ctx context.Context, dto domains.RegisterDTO) (*domains.User, error)
 	LoginUser(ctx context.Context, dto domains.LoginDTO) (*domains.TokensDTO, error)
-	LogoutUser(ctx context.Context, userID uint64) error
+	LogoutUser(ctx context.Context, refreshToken string) error
+	LogoutUserFromAllSessions(ctx context.Context, userID uint64) error
 	RefreshTokens(ctx context.Context, refreshToken string) (*domains.TokensDTO, error)
 	VerifyEmail(ctx context.Context, verifyEmailToken string) error
 	ForgetPassword(ctx context.Context, forgetPasswordToken, newPassword string) error

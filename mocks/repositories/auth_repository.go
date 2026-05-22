@@ -71,6 +71,20 @@ func (mr *MockAuthRepositoryMockRecorder) CreateRefreshToken(ctx, userID, value,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRefreshToken", reflect.TypeOf((*MockAuthRepository)(nil).CreateRefreshToken), ctx, userID, value, ttl)
 }
 
+// ExpireAllUserRefreshTokens mocks base method.
+func (m *MockAuthRepository) ExpireAllUserRefreshTokens(ctx context.Context, userID uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExpireAllUserRefreshTokens", ctx, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExpireAllUserRefreshTokens indicates an expected call of ExpireAllUserRefreshTokens.
+func (mr *MockAuthRepositoryMockRecorder) ExpireAllUserRefreshTokens(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExpireAllUserRefreshTokens", reflect.TypeOf((*MockAuthRepository)(nil).ExpireAllUserRefreshTokens), ctx, userID)
+}
+
 // ExpireRefreshToken mocks base method.
 func (m *MockAuthRepository) ExpireRefreshToken(ctx context.Context, refreshTokenID uint64) error {
 	m.ctrl.T.Helper()
@@ -85,19 +99,19 @@ func (mr *MockAuthRepositoryMockRecorder) ExpireRefreshToken(ctx, refreshTokenID
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExpireRefreshToken", reflect.TypeOf((*MockAuthRepository)(nil).ExpireRefreshToken), ctx, refreshTokenID)
 }
 
-// GetRefreshTokenByUserID mocks base method.
-func (m *MockAuthRepository) GetRefreshTokenByUserID(ctx context.Context, userID uint64) (*domains.RefreshToken, error) {
+// GetRefreshTokenByValue mocks base method.
+func (m *MockAuthRepository) GetRefreshTokenByValue(ctx context.Context, value string) (*domains.RefreshToken, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRefreshTokenByUserID", ctx, userID)
+	ret := m.ctrl.Call(m, "GetRefreshTokenByValue", ctx, value)
 	ret0, _ := ret[0].(*domains.RefreshToken)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetRefreshTokenByUserID indicates an expected call of GetRefreshTokenByUserID.
-func (mr *MockAuthRepositoryMockRecorder) GetRefreshTokenByUserID(ctx, userID any) *gomock.Call {
+// GetRefreshTokenByValue indicates an expected call of GetRefreshTokenByValue.
+func (mr *MockAuthRepositoryMockRecorder) GetRefreshTokenByValue(ctx, value any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRefreshTokenByUserID", reflect.TypeOf((*MockAuthRepository)(nil).GetRefreshTokenByUserID), ctx, userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRefreshTokenByValue", reflect.TypeOf((*MockAuthRepository)(nil).GetRefreshTokenByValue), ctx, value)
 }
 
 // RegisterUser mocks base method.

@@ -54,8 +54,12 @@ func (d *CacheDecorator) RefreshTokens(
 	return d.base.RefreshTokens(ctx, refreshToken)
 }
 
-func (d *CacheDecorator) LogoutUser(ctx context.Context, userID uint64) error {
-	return d.base.LogoutUser(ctx, userID)
+func (d *CacheDecorator) LogoutUser(ctx context.Context, refreshToken string) error {
+	return d.base.LogoutUser(ctx, refreshToken)
+}
+
+func (d *CacheDecorator) LogoutUserFromAllSessions(ctx context.Context, userID uint64) error {
+	return d.base.LogoutUserFromAllSessions(ctx, userID)
 }
 
 func (d *CacheDecorator) VerifyEmail(ctx context.Context, verifyEmailToken string) error {

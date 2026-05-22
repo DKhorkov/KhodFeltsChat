@@ -1,4 +1,4 @@
-package logout
+package logout_all
 
 import (
 	"net/http"
@@ -6,14 +6,16 @@ import (
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/auth/login"
 	"github.com/DKhorkov/kfc/internal/interfaces"
+	"github.com/DKhorkov/libs/contextlib"
 	"github.com/DKhorkov/libs/cookies"
+	authmiddleware "github.com/DKhorkov/libs/middlewares/http/auth"
 )
 
-// swagger:route DELETE /api/sessions sessions Logout
+// swagger:route DELETE /api/sessions/all sessions LogoutAll
 //
-// Logout
+// LogoutAll
 //
-// Logout User from the current session and deletes access and refresh tokens.
+// Logout User from all sessions and deletes access and refresh tokens.
 //
 // Security:
 // - cookieAuth: []
@@ -23,17 +25,20 @@ import (
 //	401: Unauthorized
 //	500: InternalServerError
 
-// Handler logouts User from current session.
+// Handler logouts User from all sessions.
 func Handler(u interfaces.AuthUseCases, cookiesConfig config.CookiesConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		refreshTokenCookie, err := r.Cookie(login.RefreshTokenCookieName)
+		userID, err := contextlib.ValueFromContext[uint64](
+			r.Context(),
+			authmiddleware.UserIDContextKey,
+		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 
 			return
 		}
 
-		if err = u.LogoutUser(r.Context(), refreshTokenCookie.Value); err != nil {
+		if err = u.LogoutUserFromAllSessions(r.Context(), userID); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return

@@ -16,8 +16,9 @@
 |-------|----------|
 | `RegisterUser(ctx, RegisterDTO)` | Вставляет нового пользователя в `users`, возвращает `id` |
 | `CreateRefreshToken(ctx, userID, value, ttl)` | Создаёт запись в `refresh_tokens` с вычисленным временем истечения |
-| `GetRefreshTokenByUserID(ctx, userID)` | Возвращает актуальный токен (TTL > CURRENT_TIMESTAMP) |
+| `GetRefreshTokenByValue(ctx, value)` | Возвращает актуальный токен по значению (TTL > CURRENT_TIMESTAMP) |
 | `ExpireRefreshToken(ctx, refreshTokenID)` | Удаляет токен из таблицы (одноразовость) |
+| `ExpireAllUserRefreshTokens(ctx, userID)` | Удаляет все токены пользователя (logout из всех сессий) |
 | `VerifyEmail(ctx, userID)` | Устанавливает `email_confirmed = true` для пользователя |
 | `ChangePassword(ctx, userID, newPassword)` | Обновляет поле `password` пользователя |
 

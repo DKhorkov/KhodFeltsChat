@@ -247,6 +247,163 @@ func TestService_GetChatMembers(t *testing.T) {
 	}
 }
 
+func TestService_GetChatByID(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		mockUOW             func(*mockuow.MockUnitOfWork)
+		mockChatsRepository func(*mockrepositories.MockChatsRepository)
+	}
+
+	type args struct {
+		ctx    context.Context
+		chatID uint64
+	}
+
+	chat := &domains.Chat{ID: 100, Title: pointers.New("Test Chat")}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *domains.Chat
+		wantErr bool
+		err     error
+	}{
+		{
+			name: "successfully get chat by id",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
+					cr.EXPECT().
+						GetChatByID(gomock.Any(), uint64(100)).
+						Return(chat, nil)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				chatID: 100,
+			},
+			want:    chat,
+			wantErr: false,
+		},
+		{
+			name: "chat not found",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
+					cr.EXPECT().
+						GetChatByID(gomock.Any(), uint64(999)).
+						Return(nil, sql.ErrNoRows)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				chatID: 999,
+			},
+			want:    nil,
+			wantErr: true,
+			err:     customerrors.ErrChatNotFound,
+		},
+		{
+			name: "database error",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
+					cr.EXPECT().
+						GetChatByID(gomock.Any(), uint64(100)).
+						Return(nil, errors.New("database error"))
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				chatID: 100,
+			},
+			want:    nil,
+			wantErr: true,
+			err:     customerrors.ErrChatNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange
+			ctrl := gomock.NewController(t)
+
+			mockUOW := mockuow.NewMockUnitOfWork(ctrl)
+			mockChatsRepo := mockrepositories.NewMockChatsRepository(ctrl)
+			mockMessagesRepo := mockrepositories.NewMockMessagesRepository(ctrl)
+
+			if tt.fields.mockUOW != nil {
+				tt.fields.mockUOW(mockUOW)
+			}
+
+			if tt.fields.mockChatsRepository != nil {
+				tt.fields.mockChatsRepository(mockChatsRepo)
+			}
+
+			newChatsRepoFunc := func(_ pg.Transaction) interfaces.ChatsRepository {
+				return mockChatsRepo
+			}
+
+			newMessagesRepoFunc := func(_ pg.Transaction) interfaces.MessagesRepository {
+				return mockMessagesRepo
+			}
+
+			s := service.New(
+				mockUOW,
+				newChatsRepoFunc,
+				newMessagesRepoFunc,
+			)
+
+			// Act
+			got, err := s.GetChatByID(tt.args.ctx, tt.args.chatID)
+
+			// Assert
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				if tt.err != nil {
+					if errors.Is(tt.err, customerrors.ErrChatNotFound) {
+						assert.ErrorIs(t, err, tt.err)
+					} else {
+						assert.Contains(t, err.Error(), tt.err.Error())
+					}
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
 func TestService_GetUserChats(t *testing.T) {
 	t.Parallel()
 

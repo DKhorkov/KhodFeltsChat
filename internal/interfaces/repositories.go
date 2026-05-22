@@ -41,8 +41,9 @@ type AuthRepository interface {
 		value string,
 		ttl time.Duration,
 	) (refreshTokenID uint64, err error)
-	GetRefreshTokenByUserID(ctx context.Context, userID uint64) (*domains.RefreshToken, error)
+	GetRefreshTokenByValue(ctx context.Context, value string) (*domains.RefreshToken, error)
 	ExpireRefreshToken(ctx context.Context, refreshTokenID uint64) error
+	ExpireAllUserRefreshTokens(ctx context.Context, userID uint64) error
 	VerifyEmail(ctx context.Context, userID uint64) error
 	ChangePassword(ctx context.Context, userID uint64, newPassword string) error
 }

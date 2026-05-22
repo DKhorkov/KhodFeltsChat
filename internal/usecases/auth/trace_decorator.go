@@ -65,14 +65,24 @@ func (d *TraceDecorator) RefreshTokens(
 	return d.base.RefreshTokens(ctx, refreshToken)
 }
 
-func (d *TraceDecorator) LogoutUser(ctx context.Context, userID uint64) error {
+func (d *TraceDecorator) LogoutUser(ctx context.Context, refreshToken string) error {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
 
 	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
 	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
 
-	return d.base.LogoutUser(ctx, userID)
+	return d.base.LogoutUser(ctx, refreshToken)
+}
+
+func (d *TraceDecorator) LogoutUserFromAllSessions(ctx context.Context, userID uint64) error {
+	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
+	defer span.End()
+
+	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
+	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
+
+	return d.base.LogoutUserFromAllSessions(ctx, userID)
 }
 
 func (d *TraceDecorator) VerifyEmail(ctx context.Context, verifyEmailToken string) error {

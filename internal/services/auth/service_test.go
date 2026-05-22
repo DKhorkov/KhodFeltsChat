@@ -212,6 +212,57 @@ func TestService_RegisterUser(t *testing.T) {
 			err:     errors.New("database error"),
 		},
 		{
+			name: "error creating settings",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
+					// Первая проверка - email не существует
+					ur.EXPECT().
+						GetUserByEmail(gomock.Any(), "test@example.com").
+						Return(nil, sql.ErrNoRows)
+
+					// Вторая проверка - username не существует
+					ur.EXPECT().
+						GetUserByUsername(gomock.Any(), "testuser").
+						Return(nil, sql.ErrNoRows)
+
+					// После регистрации получаем пользователя
+					ur.EXPECT().
+						GetUserByEmail(gomock.Any(), "test@example.com").
+						Return(newUser, nil)
+				},
+				mockAuthRepository: func(ar *mockrepositories.MockAuthRepository) {
+					ar.EXPECT().
+						RegisterUser(gomock.Any(), gomock.Any()).
+						Return(uint64(1), nil)
+				},
+				mockSettingsRepository: func(sr *mockrepositories.MockSettingsRepository) {
+					sr.EXPECT().
+						CreateSettings(gomock.Any(), gomock.Any()).
+						Return(errors.New("settings error"))
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				userData: domains.RegisterDTO{
+					Username: "testuser",
+					Email:    "test@example.com",
+					Password: "Password123!",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+			err:     errors.New("settings error"),
+		},
+		{
 			name: "error getting user after registration",
 			fields: fields{
 				mockUOW: func(uow *mockuow.MockUnitOfWork) {
@@ -433,7 +484,7 @@ func TestService_CreateRefreshToken(t *testing.T) {
 						Return(uint64(1), nil)
 
 					ar.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
+						GetRefreshTokenByValue(gomock.Any(), "token_value").
 						Return(refreshToken, nil)
 				},
 			},
@@ -492,7 +543,7 @@ func TestService_CreateRefreshToken(t *testing.T) {
 						Return(uint64(1), nil)
 
 					ar.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), gomock.Any()).
+						GetRefreshTokenByValue(gomock.Any(), "token_value").
 						Return(nil, errors.New("not found"))
 				},
 			},
@@ -562,7 +613,7 @@ func TestService_CreateRefreshToken(t *testing.T) {
 	}
 }
 
-func TestService_GetRefreshTokenByUserID(t *testing.T) {
+func TestService_GetRefreshTokenByValue(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
@@ -571,8 +622,8 @@ func TestService_GetRefreshTokenByUserID(t *testing.T) {
 	}
 
 	type args struct {
-		ctx    context.Context
-		userID uint64
+		ctx   context.Context
+		value string
 	}
 
 	refreshToken := &domains.RefreshToken{
@@ -603,13 +654,13 @@ func TestService_GetRefreshTokenByUserID(t *testing.T) {
 				},
 				mockAuthRepository: func(ar *mockrepositories.MockAuthRepository) {
 					ar.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
+						GetRefreshTokenByValue(gomock.Any(), "refresh_token_value").
 						Return(refreshToken, nil)
 				},
 			},
 			args: args{
-				ctx:    context.Background(),
-				userID: 123,
+				ctx:   context.Background(),
+				value: "refresh_token_value",
 			},
 			want:    refreshToken,
 			wantErr: false,
@@ -628,17 +679,17 @@ func TestService_GetRefreshTokenByUserID(t *testing.T) {
 				},
 				mockAuthRepository: func(ar *mockrepositories.MockAuthRepository) {
 					ar.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(999)).
-						Return(nil, sql.ErrNoRows)
+						GetRefreshTokenByValue(gomock.Any(), "nonexistent_value").
+						Return(nil, errors.New("not found"))
 				},
 			},
 			args: args{
-				ctx:    context.Background(),
-				userID: 999,
+				ctx:   context.Background(),
+				value: "nonexistent_value",
 			},
 			want:    nil,
 			wantErr: true,
-			err:     sql.ErrNoRows,
+			err:     errors.New("not found"),
 		},
 		{
 			name: "database error",
@@ -654,13 +705,13 @@ func TestService_GetRefreshTokenByUserID(t *testing.T) {
 				},
 				mockAuthRepository: func(ar *mockrepositories.MockAuthRepository) {
 					ar.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
+						GetRefreshTokenByValue(gomock.Any(), "refresh_token_value").
 						Return(nil, errors.New("database connection failed"))
 				},
 			},
 			args: args{
-				ctx:    context.Background(),
-				userID: 123,
+				ctx:   context.Background(),
+				value: "refresh_token_value",
 			},
 			want:    nil,
 			wantErr: true,
@@ -699,14 +750,14 @@ func TestService_GetRefreshTokenByUserID(t *testing.T) {
 			)
 
 			// Act
-			got, err := service.GetRefreshTokenByUserID(tt.args.ctx, tt.args.userID)
+			got, err := service.GetRefreshTokenByValue(tt.args.ctx, tt.args.value)
 
 			// Assert
 			if tt.wantErr {
 				assert.Error(t, err)
 
 				if tt.err != nil {
-					assert.ErrorIs(t, err, tt.err)
+					assert.Contains(t, err.Error(), tt.err.Error())
 				}
 			} else {
 				assert.NoError(t, err)
@@ -820,6 +871,125 @@ func TestService_ExpireRefreshToken(t *testing.T) {
 
 			// Act
 			err := service.ExpireRefreshToken(tt.args.ctx, tt.args.refreshTokenID)
+
+			// Assert
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				if tt.err != nil {
+					assert.Contains(t, err.Error(), tt.err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestService_ExpireAllUserRefreshTokens(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		mockUOW            func(*mockuow.MockUnitOfWork)
+		mockAuthRepository func(*mockrepositories.MockAuthRepository)
+	}
+
+	type args struct {
+		ctx    context.Context
+		userID uint64
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+		err     error
+	}{
+		{
+			name: "successfully expire all user refresh tokens",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockAuthRepository: func(ar *mockrepositories.MockAuthRepository) {
+					ar.EXPECT().
+						ExpireAllUserRefreshTokens(gomock.Any(), uint64(123)).
+						Return(nil)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: 123,
+			},
+			wantErr: false,
+		},
+		{
+			name: "error expiring all user refresh tokens",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockAuthRepository: func(ar *mockrepositories.MockAuthRepository) {
+					ar.EXPECT().
+						ExpireAllUserRefreshTokens(gomock.Any(), uint64(123)).
+						Return(errors.New("database error"))
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: 123,
+			},
+			wantErr: true,
+			err:     errors.New("database error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange
+			ctrl := gomock.NewController(t)
+
+			mockUOW := mockuow.NewMockUnitOfWork(ctrl)
+			mockAuthRepo := mockrepositories.NewMockAuthRepository(ctrl)
+
+			if tt.fields.mockUOW != nil {
+				tt.fields.mockUOW(mockUOW)
+			}
+
+			if tt.fields.mockAuthRepository != nil {
+				tt.fields.mockAuthRepository(mockAuthRepo)
+			}
+
+			newAuthRepoFunc := func(_ pg.Transaction) interfaces.AuthRepository {
+				return mockAuthRepo
+			}
+
+			service := auth.New(
+				mockUOW,
+				newAuthRepoFunc,
+				nil,
+				nil,
+				nil,
+				natsConfig,
+			)
+
+			// Act
+			err := service.ExpireAllUserRefreshTokens(tt.args.ctx, tt.args.userID)
 
 			// Assert
 			if tt.wantErr {
@@ -968,12 +1138,6 @@ func TestService_ForgetPassword(t *testing.T) {
 		newPassword string
 	}
 
-	refreshToken := &domains.RefreshToken{
-		ID:     1,
-		UserID: 123,
-		Value:  "refresh_token_value",
-	}
-
 	tests := []struct {
 		name    string
 		fields  fields
@@ -982,7 +1146,7 @@ func TestService_ForgetPassword(t *testing.T) {
 		err     error
 	}{
 		{
-			name: "successfully reset password with existing refresh token",
+			name: "successfully reset password and expire all sessions",
 			fields: fields{
 				mockUOW: func(uow *mockuow.MockUnitOfWork) {
 					uow.EXPECT().
@@ -999,42 +1163,8 @@ func TestService_ForgetPassword(t *testing.T) {
 						Return(nil)
 
 					ar.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
-						Return(refreshToken, nil)
-
-					ar.EXPECT().
-						ExpireRefreshToken(gomock.Any(), refreshToken.ID).
+						ExpireAllUserRefreshTokens(gomock.Any(), uint64(123)).
 						Return(nil)
-				},
-			},
-			args: args{
-				ctx:         context.Background(),
-				userID:      123,
-				newPassword: "new_hashed_password",
-			},
-			wantErr: false,
-		},
-		{
-			name: "successfully reset password without refresh token",
-			fields: fields{
-				mockUOW: func(uow *mockuow.MockUnitOfWork) {
-					uow.EXPECT().
-						Do(gomock.Any(), gomock.Any()).
-						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
-							tx := &struct{ pg.Transaction }{}
-
-							return fn(ctx, tx)
-						})
-				},
-				mockAuthRepository: func(ar *mockrepositories.MockAuthRepository) {
-					ar.EXPECT().
-						ChangePassword(gomock.Any(), uint64(123), "new_hashed_password").
-						Return(nil)
-
-					ar.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
-						Return(nil, sql.ErrNoRows)
-					// No ExpireRefreshToken call expected
 				},
 			},
 			args: args{
@@ -1071,7 +1201,7 @@ func TestService_ForgetPassword(t *testing.T) {
 			err:     errors.New("database error"),
 		},
 		{
-			name: "error getting refresh token",
+			name: "error expiring all refresh tokens",
 			fields: fields{
 				mockUOW: func(uow *mockuow.MockUnitOfWork) {
 					uow.EXPECT().
@@ -1088,41 +1218,7 @@ func TestService_ForgetPassword(t *testing.T) {
 						Return(nil)
 
 					ar.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
-						Return(nil, errors.New("database connection failed"))
-				},
-			},
-			args: args{
-				ctx:         context.Background(),
-				userID:      123,
-				newPassword: "new_hashed_password",
-			},
-			wantErr: true,
-			err:     errors.New("database connection failed"),
-		},
-		{
-			name: "error expiring refresh token",
-			fields: fields{
-				mockUOW: func(uow *mockuow.MockUnitOfWork) {
-					uow.EXPECT().
-						Do(gomock.Any(), gomock.Any()).
-						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
-							tx := &struct{ pg.Transaction }{}
-
-							return fn(ctx, tx)
-						})
-				},
-				mockAuthRepository: func(ar *mockrepositories.MockAuthRepository) {
-					ar.EXPECT().
-						ChangePassword(gomock.Any(), uint64(123), "new_hashed_password").
-						Return(nil)
-
-					ar.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
-						Return(refreshToken, nil)
-
-					ar.EXPECT().
-						ExpireRefreshToken(gomock.Any(), refreshToken.ID).
+						ExpireAllUserRefreshTokens(gomock.Any(), uint64(123)).
 						Return(errors.New("expire error"))
 				},
 			},

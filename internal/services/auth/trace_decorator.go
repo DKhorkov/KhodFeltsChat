@@ -55,9 +55,9 @@ func (d *TraceDecorator) CreateRefreshToken(
 	return d.base.CreateRefreshToken(ctx, userID, value, ttl)
 }
 
-func (d *TraceDecorator) GetRefreshTokenByUserID(
+func (d *TraceDecorator) GetRefreshTokenByValue(
 	ctx context.Context,
-	userID uint64,
+	value string,
 ) (*domains.RefreshToken, error) {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
@@ -65,7 +65,7 @@ func (d *TraceDecorator) GetRefreshTokenByUserID(
 	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
 	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
 
-	return d.base.GetRefreshTokenByUserID(ctx, userID)
+	return d.base.GetRefreshTokenByValue(ctx, value)
 }
 
 func (d *TraceDecorator) ExpireRefreshToken(ctx context.Context, refreshTokenID uint64) error {
@@ -76,6 +76,16 @@ func (d *TraceDecorator) ExpireRefreshToken(ctx context.Context, refreshTokenID 
 	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
 
 	return d.base.ExpireRefreshToken(ctx, refreshTokenID)
+}
+
+func (d *TraceDecorator) ExpireAllUserRefreshTokens(ctx context.Context, userID uint64) error {
+	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
+	defer span.End()
+
+	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
+	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
+
+	return d.base.ExpireAllUserRefreshTokens(ctx, userID)
 }
 
 func (d *TraceDecorator) VerifyEmail(ctx context.Context, userID uint64) error {

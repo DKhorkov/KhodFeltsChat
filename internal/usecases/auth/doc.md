@@ -15,15 +15,20 @@
 - Ищет пользователя по email; при неудаче — по username.
 - Проверяет флаг `EmailConfirmed`.
 - Валидирует пароль.
-- Ротирует refresh-токен, возвращает пару JWT (access + base64-refresh).
+- Создаёт новую сессию (refresh-токен), не удаляя существующие (мультисессионность).
+- Возвращает пару JWT (access + base64-refresh).
 
 ### RefreshTokens
 - Декодирует refresh-токен из base64.
-- Извлекает access-токен, проверяет запись в БД.
+- Находит токен в БД по значению, получает userID из записи.
 - Ротирует пару токенов.
 
 ### LogoutUser
-- Инвалидирует refresh-токен (устанавливает срок истечения).
+- Декодирует refresh-токен, находит в БД по значению.
+- Инвалидирует конкретный refresh-токен (текущая сессия).
+
+### LogoutUserFromAllSessions
+- Инвалидирует все refresh-токены пользователя (все сессии).
 
 ### VerifyEmail / ForgetPassword
 - Декодируют base64-токен формата `salt:userID`.
@@ -41,4 +46,4 @@
 - `internal/interfaces` — `AuthService`, `UsersService`.
 - `internal/domains` — `User`, `AuthTokens`.
 - Redis-клиент (через `internal/common/cache`).
-- `golang-jwt/jwt`, `golang.org/x/crypto/bcrypt`.
+- `golang.org/x/crypto/bcrypt`.

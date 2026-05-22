@@ -249,6 +249,245 @@ func TestTraceDecorator_SendForgetPasswordMessage(t *testing.T) {
 	}
 }
 
+func TestTraceDecorator_SendNewMessageByEmail(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+
+	tests := []struct {
+		name          string
+		recipient     domains.User
+		message       domains.Message
+		chat          domains.Chat
+		setupMocks    func(*mocktracing.MockProvider, *mockservices.MockNotificationsService, *mocktracing.MockSpan)
+		expectedError error
+	}{
+		{
+			name: "successful send new message by email with tracing",
+			recipient: domains.User{
+				ID:       1,
+				Username: "john_doe",
+				Email:    "john@example.com",
+			},
+			message: domains.Message{
+				ID:     10,
+				ChatID: 5,
+				Text:   "Hello!",
+				Sender: domains.User{
+					ID:       2,
+					Username: "alice",
+				},
+				CreatedAt: now,
+			},
+			chat: domains.Chat{
+				ID: 5,
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockNotificationsService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					SendNewMessageByEmail(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "error sending new message by email",
+			recipient: domains.User{
+				ID:       1,
+				Username: "john_doe",
+				Email:    "john@example.com",
+			},
+			message: domains.Message{
+				ID:     10,
+				ChatID: 5,
+				Text:   "Hello!",
+			},
+			chat: domains.Chat{
+				ID: 5,
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockNotificationsService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					SendNewMessageByEmail(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("smtp error"))
+			},
+			expectedError: errors.New("smtp error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockservices.NewMockNotificationsService(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			spanConfig := tracing.SpanConfig{
+				Name: "test-span",
+				Opts: []trace.SpanStartOption{},
+				Events: tracing.SpanEventsConfig{
+					Start: tracing.SpanEventConfig{Name: "start"},
+					End:   tracing.SpanEventConfig{Name: "end"},
+				},
+			}
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockProvider, mockBase, mockSpan)
+			}
+
+			decorator := notifications.NewTraceDecorator(mockProvider, spanConfig, mockBase)
+
+			ctx := context.Background()
+			err := decorator.SendNewMessageByEmail(ctx, tt.recipient, tt.message, tt.chat)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestTraceDecorator_SendNewMessageByWebPush(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+
+	tests := []struct {
+		name          string
+		subscription  domains.WebPushSubscription
+		message       domains.Message
+		setupMocks    func(*mocktracing.MockProvider, *mockservices.MockNotificationsService, *mocktracing.MockSpan)
+		expectedError error
+	}{
+		{
+			name: "successful send new message by web push with tracing",
+			subscription: domains.WebPushSubscription{
+				ID:            1,
+				UserID:        1,
+				Endpoint:      "https://push.example.com/sub1",
+				EncryptionKey: "p256dh_key",
+				Auth:          "auth_key",
+				CreatedAt:     now,
+			},
+			message: domains.Message{
+				ID:     10,
+				ChatID: 5,
+				Text:   "Hello!",
+				Sender: domains.User{
+					ID:       2,
+					Username: "alice",
+				},
+				CreatedAt: now,
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockNotificationsService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					SendNewMessageByWebPush(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "error sending web push notification",
+			subscription: domains.WebPushSubscription{
+				ID:            1,
+				UserID:        1,
+				Endpoint:      "https://push.example.com/sub1",
+				EncryptionKey: "p256dh_key",
+				Auth:          "auth_key",
+				CreatedAt:     now,
+			},
+			message: domains.Message{
+				ID:     10,
+				ChatID: 5,
+				Text:   "Hello!",
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockNotificationsService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					SendNewMessageByWebPush(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("web push error"))
+			},
+			expectedError: errors.New("web push error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockservices.NewMockNotificationsService(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			spanConfig := tracing.SpanConfig{
+				Name: "test-span",
+				Opts: []trace.SpanStartOption{},
+				Events: tracing.SpanEventsConfig{
+					Start: tracing.SpanEventConfig{Name: "start"},
+					End:   tracing.SpanEventConfig{Name: "end"},
+				},
+			}
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockProvider, mockBase, mockSpan)
+			}
+
+			decorator := notifications.NewTraceDecorator(mockProvider, spanConfig, mockBase)
+
+			ctx := context.Background()
+			err := decorator.SendNewMessageByWebPush(ctx, tt.subscription, tt.message)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestTraceDecorator_SendVerifyEmailMessage(t *testing.T) {
 	t.Parallel()
 

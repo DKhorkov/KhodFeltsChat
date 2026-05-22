@@ -2,9 +2,7 @@ package auth
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -144,7 +142,7 @@ func (s *Service) CreateRefreshToken(
 				return err
 			}
 
-			if refreshToken, err = authRepository.GetRefreshTokenByUserID(ctx, userID); err != nil {
+			if refreshToken, err = authRepository.GetRefreshTokenByValue(ctx, value); err != nil {
 				return err
 			}
 
@@ -158,9 +156,9 @@ func (s *Service) CreateRefreshToken(
 	return refreshToken, nil
 }
 
-func (s *Service) GetRefreshTokenByUserID(
+func (s *Service) GetRefreshTokenByValue(
 	ctx context.Context,
-	userID uint64,
+	value string,
 ) (*domains.RefreshToken, error) {
 	var (
 		refreshToken *domains.RefreshToken
@@ -171,7 +169,7 @@ func (s *Service) GetRefreshTokenByUserID(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
 			authRepository := s.newAuthRepositoryFunc(tx)
-			if refreshToken, err = authRepository.GetRefreshTokenByUserID(ctx, userID); err != nil {
+			if refreshToken, err = authRepository.GetRefreshTokenByValue(ctx, value); err != nil {
 				return err
 			}
 
@@ -192,6 +190,17 @@ func (s *Service) ExpireRefreshToken(ctx context.Context, refreshTokenID uint64)
 			authRepository := s.newAuthRepositoryFunc(tx)
 
 			return authRepository.ExpireRefreshToken(ctx, refreshTokenID)
+		},
+	)
+}
+
+func (s *Service) ExpireAllUserRefreshTokens(ctx context.Context, userID uint64) error {
+	return s.uow.Do(
+		ctx,
+		func(ctx context.Context, tx pg.Transaction) error {
+			authRepository := s.newAuthRepositoryFunc(tx)
+
+			return authRepository.ExpireAllUserRefreshTokens(ctx, userID)
 		},
 	)
 }
@@ -220,16 +229,7 @@ func (s *Service) ForgetPassword(
 				return err
 			}
 
-			refreshToken, err := authRepository.GetRefreshTokenByUserID(ctx, userID)
-
-			switch {
-			case errors.Is(err, sql.ErrNoRows): // Если токена нет - то ничего удалять не нужно, фактической ошибки нет:
-				return nil
-			case err != nil:
-				return err
-			}
-
-			return authRepository.ExpireRefreshToken(ctx, refreshToken.ID)
+			return authRepository.ExpireAllUserRefreshTokens(ctx, userID)
 		},
 	)
 }

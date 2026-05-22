@@ -291,6 +291,125 @@ func TestTraceDecorator_GetChatMembers(t *testing.T) {
 	}
 }
 
+func TestTraceDecorator_GetChatByID(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		chatID        uint64
+		setupMocks    func(*mocktracing.MockProvider, *mockservices.MockChatsService, *mocktracing.MockSpan)
+		expectedChat  *domains.Chat
+		expectedError error
+	}{
+		{
+			name:   "successful get chat by id with tracing",
+			chatID: 1,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockChatsService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					GetChatByID(gomock.Any(), uint64(1)).
+					Return(&domains.Chat{
+						ID:    1,
+						Title: pointers.New("Test Chat"),
+						Type:  domains.ChatTypeGroup,
+					}, nil)
+			},
+			expectedChat: &domains.Chat{
+				ID:    1,
+				Title: pointers.New("Test Chat"),
+				Type:  domains.ChatTypeGroup,
+			},
+			expectedError: nil,
+		},
+		{
+			name:   "chat not found",
+			chatID: 999,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockChatsService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					GetChatByID(gomock.Any(), uint64(999)).
+					Return(nil, errors.New("chat not found"))
+			},
+			expectedChat:  nil,
+			expectedError: errors.New("chat not found"),
+		},
+		{
+			name:   "database error",
+			chatID: 1,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockChatsService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					GetChatByID(gomock.Any(), uint64(1)).
+					Return(nil, errors.New("database connection failed"))
+			},
+			expectedChat:  nil,
+			expectedError: errors.New("database connection failed"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockservices.NewMockChatsService(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			spanConfig := tracing.SpanConfig{
+				Name: "test-span",
+				Opts: []trace.SpanStartOption{},
+				Events: tracing.SpanEventsConfig{
+					Start: tracing.SpanEventConfig{Name: "start"},
+					End:   tracing.SpanEventConfig{Name: "end"},
+				},
+			}
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockProvider, mockBase, mockSpan)
+			}
+
+			decorator := chats.NewTraceDecorator(mockProvider, spanConfig, mockBase)
+
+			ctx := context.Background()
+			chat, err := decorator.GetChatByID(ctx, tt.chatID)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.expectedChat, chat)
+		})
+	}
+}
+
 func TestTraceDecorator_GetUserChats(t *testing.T) {
 	t.Parallel()
 

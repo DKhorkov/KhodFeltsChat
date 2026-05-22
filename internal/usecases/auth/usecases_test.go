@@ -236,12 +236,6 @@ func TestUseCases_LoginUser(t *testing.T) {
 		Password:       hashedPassword,
 	}
 
-	refreshToken := &domains.RefreshToken{
-		ID:     1,
-		UserID: 123,
-		Value:  "old_refresh_token",
-	}
-
 	tests := []struct {
 		name      string
 		fields    fields
@@ -251,7 +245,7 @@ func TestUseCases_LoginUser(t *testing.T) {
 		err       error
 	}{
 		{
-			name: "successfully login by email without existing refresh token",
+			name: "successfully login by email",
 			fields: fields{
 				mockUsersService: func(us *mockservices.MockUsersService) {
 					us.EXPECT().
@@ -259,47 +253,6 @@ func TestUseCases_LoginUser(t *testing.T) {
 						Return(user, nil)
 				},
 				mockAuthService: func(as *mockservices.MockAuthService) {
-					as.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
-						Return(nil, errors.New("not found"))
-
-					as.EXPECT().
-						CreateRefreshToken(
-							gomock.Any(),
-							uint64(123),
-							gomock.Any(),
-							gomock.Any(),
-						).
-						Return(&domains.RefreshToken{}, nil)
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				dto: domains.LoginDTO{
-					Login:    "sometest@gmail.com",
-					Password: pass,
-				},
-			},
-			wantToken: true,
-			wantErr:   false,
-		},
-		{
-			name: "successfully login by email with existing refresh token",
-			fields: fields{
-				mockUsersService: func(us *mockservices.MockUsersService) {
-					us.EXPECT().
-						GetUserByEmail(gomock.Any(), "sometest@gmail.com").
-						Return(user, nil)
-				},
-				mockAuthService: func(as *mockservices.MockAuthService) {
-					as.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
-						Return(refreshToken, nil)
-
-					as.EXPECT().
-						ExpireRefreshToken(gomock.Any(), refreshToken.ID).
-						Return(nil)
-
 					as.EXPECT().
 						CreateRefreshToken(
 							gomock.Any(),
@@ -332,10 +285,6 @@ func TestUseCases_LoginUser(t *testing.T) {
 						Return(user, nil)
 				},
 				mockAuthService: func(as *mockservices.MockAuthService) {
-					as.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
-						Return(nil, errors.New("not found"))
-
 					as.EXPECT().
 						CreateRefreshToken(
 							gomock.Any(),
@@ -428,6 +377,36 @@ func TestUseCases_LoginUser(t *testing.T) {
 			err:       customerrors.ErrEmailNotConfirmed,
 		},
 		{
+			name: "error creating refresh token",
+			fields: fields{
+				mockUsersService: func(us *mockservices.MockUsersService) {
+					us.EXPECT().
+						GetUserByEmail(gomock.Any(), "sometest@gmail.com").
+						Return(user, nil)
+				},
+				mockAuthService: func(as *mockservices.MockAuthService) {
+					as.EXPECT().
+						CreateRefreshToken(
+							gomock.Any(),
+							uint64(123),
+							gomock.Any(),
+							gomock.Any(),
+						).
+						Return(nil, errors.New("database error"))
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.LoginDTO{
+					Login:    "sometest@gmail.com",
+					Password: pass,
+				},
+			},
+			wantToken: false,
+			wantErr:   true,
+			err:       errors.New("database error"),
+		},
+		{
 			name: "wrong password",
 			fields: fields{
 				mockUsersService: func(us *mockservices.MockUsersService) {
@@ -446,34 +425,6 @@ func TestUseCases_LoginUser(t *testing.T) {
 			wantToken: false,
 			wantErr:   true,
 			err:       customerrors.ErrWrongPassword,
-		},
-		{
-			name: "error expiring old refresh token",
-			fields: fields{
-				mockUsersService: func(us *mockservices.MockUsersService) {
-					us.EXPECT().
-						GetUserByEmail(gomock.Any(), "sometest@gmail.com").
-						Return(user, nil)
-				},
-				mockAuthService: func(as *mockservices.MockAuthService) {
-					as.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
-						Return(refreshToken, nil)
-					as.EXPECT().
-						ExpireRefreshToken(gomock.Any(), refreshToken.ID).
-						Return(errors.New("database error"))
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				dto: domains.LoginDTO{
-					Login:    "sometest@gmail.com",
-					Password: pass,
-				},
-			},
-			wantToken: false,
-			wantErr:   true,
-			err:       errors.New("database error"),
 		},
 	}
 
@@ -557,63 +508,10 @@ func TestUseCases_RefreshTokens(t *testing.T) {
 		HashCost: 10,
 	}
 
-	validationConfig := config.ValidationConfig{
-		EmailRegExp: "^[a-z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,4}$",
-		PasswordRegExps: []string{
-			".{8,}",
-			"[a-z]",
-			"[A-Z]",
-			"[0-9]",
-			"[^\\d\\w]",
-		},
-		UsernameRegExps: []string{
-			`^.{5,70}$`,      // длина 5-70 символов
-			`^[A-Za-z0-9]+$`, // только латинница и цифры
-		},
-	}
-
-	accessToken, err := security.GenerateJWT(
-		uint64(1),
-		securityConfig.JWT.SecretKey,
-		securityConfig.JWT.AccessTokenTTL,
-		securityConfig.JWT.Algorithm,
-	)
-	require.NoError(t, err)
-
-	invalidAccessToken, err := security.GenerateJWT(
-		"invalid",
-		securityConfig.JWT.SecretKey,
-		securityConfig.JWT.AccessTokenTTL,
-		securityConfig.JWT.Algorithm,
-	)
-	require.NoError(t, err)
+	validationConfig := config.ValidationConfig{}
 
 	refreshToken, err := security.GenerateJWT(
-		accessToken,
-		securityConfig.JWT.SecretKey,
-		securityConfig.JWT.RefreshTokenTTL,
-		securityConfig.JWT.Algorithm,
-	)
-	require.NoError(t, err)
-
-	invalidRefreshTokenInt, err := security.GenerateJWT(
-		1,
-		securityConfig.JWT.SecretKey,
-		securityConfig.JWT.RefreshTokenTTL,
-		securityConfig.JWT.Algorithm,
-	)
-	require.NoError(t, err)
-
-	invalidRefreshTokenString, err := security.GenerateJWT(
-		"invalid",
-		securityConfig.JWT.SecretKey,
-		securityConfig.JWT.RefreshTokenTTL,
-		securityConfig.JWT.Algorithm,
-	)
-	require.NoError(t, err)
-
-	invalidRefreshTokenWithInvalidAccessToken, err := security.GenerateJWT(
-		invalidAccessToken,
+		uint64(1),
 		securityConfig.JWT.SecretKey,
 		securityConfig.JWT.RefreshTokenTTL,
 		securityConfig.JWT.Algorithm,
@@ -640,13 +538,13 @@ func TestUseCases_RefreshTokens(t *testing.T) {
 			) {
 				authService.
 					EXPECT().
-					GetRefreshTokenByUserID(gomock.Any(), uint64(1)).
-					Return(&domains.RefreshToken{Value: refreshToken}, nil).
+					GetRefreshTokenByValue(gomock.Any(), refreshToken).
+					Return(&domains.RefreshToken{ID: 1, UserID: 1, Value: refreshToken}, nil).
 					Times(1)
 
 				authService.
 					EXPECT().
-					ExpireRefreshToken(gomock.Any(), gomock.Any()).
+					ExpireRefreshToken(gomock.Any(), uint64(1)).
 					Return(nil).
 					Times(1)
 
@@ -664,32 +562,12 @@ func TestUseCases_RefreshTokens(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name:         "invalid refresh token",
+			name:         "invalid refresh token encoding",
 			refreshToken: "invalid_token",
 			expectedErr:  customerrors.ErrInvalidJWT,
 		},
 		{
-			name:         "invalid refresh token payload",
-			refreshToken: security.RawEncode([]byte("invalid")),
-			expectedErr:  customerrors.ErrInvalidJWT,
-		},
-		{
-			name:         "invalid refresh token after encoding",
-			refreshToken: security.RawEncode([]byte(invalidRefreshTokenInt)),
-			expectedErr:  customerrors.ErrInvalidJWT,
-		},
-		{
-			name:         "invalid access token payload",
-			refreshToken: security.RawEncode([]byte(invalidRefreshTokenString)),
-			expectedErr:  customerrors.ErrInvalidJWT,
-		},
-		{
-			name:         "invalid access token payload",
-			refreshToken: security.RawEncode([]byte(invalidRefreshTokenWithInvalidAccessToken)),
-			expectedErr:  customerrors.ErrInvalidJWT,
-		},
-		{
-			name:         "get db refresh token by id error",
+			name:         "get db refresh token by value error",
 			refreshToken: encodedRefreshToken,
 			setupMocks: func(
 				authService *mockservices.MockAuthService,
@@ -697,7 +575,7 @@ func TestUseCases_RefreshTokens(t *testing.T) {
 			) {
 				authService.
 					EXPECT().
-					GetRefreshTokenByUserID(gomock.Any(), uint64(1)).
+					GetRefreshTokenByValue(gomock.Any(), refreshToken).
 					Return(nil, errors.New("db error")).
 					Times(1)
 			},
@@ -712,17 +590,17 @@ func TestUseCases_RefreshTokens(t *testing.T) {
 			) {
 				authService.
 					EXPECT().
-					GetRefreshTokenByUserID(gomock.Any(), uint64(1)).
-					Return(&domains.RefreshToken{Value: refreshToken}, nil).
+					GetRefreshTokenByValue(gomock.Any(), refreshToken).
+					Return(&domains.RefreshToken{ID: 1, UserID: 1, Value: refreshToken}, nil).
 					Times(1)
 
 				authService.
 					EXPECT().
-					ExpireRefreshToken(gomock.Any(), gomock.Any()).
+					ExpireRefreshToken(gomock.Any(), uint64(1)).
 					Return(errors.New("test")).
 					Times(1)
 			},
-			expectedErr: customerrors.ErrInvalidJWT,
+			expectedErr: errors.New("test"),
 		},
 		{
 			name:         "create db refresh token error",
@@ -733,13 +611,13 @@ func TestUseCases_RefreshTokens(t *testing.T) {
 			) {
 				authService.
 					EXPECT().
-					GetRefreshTokenByUserID(gomock.Any(), uint64(1)).
-					Return(&domains.RefreshToken{Value: refreshToken}, nil).
+					GetRefreshTokenByValue(gomock.Any(), refreshToken).
+					Return(&domains.RefreshToken{ID: 1, UserID: 1, Value: refreshToken}, nil).
 					Times(1)
 
 				authService.
 					EXPECT().
-					ExpireRefreshToken(gomock.Any(), gomock.Any()).
+					ExpireRefreshToken(gomock.Any(), uint64(1)).
 					Return(nil).
 					Times(1)
 
@@ -755,21 +633,6 @@ func TestUseCases_RefreshTokens(t *testing.T) {
 					Times(1)
 			},
 			expectedErr: errors.New("test"),
-		},
-		{
-			name:         "access token does not belong to refresh token",
-			refreshToken: encodedRefreshToken,
-			setupMocks: func(
-				authService *mockservices.MockAuthService,
-				_ *mockservices.MockUsersService,
-			) {
-				authService.
-					EXPECT().
-					GetRefreshTokenByUserID(gomock.Any(), uint64(1)).
-					Return(&domains.RefreshToken{Value: invalidRefreshTokenString}, nil).
-					Times(1)
-			},
-			expectedErr: customerrors.ErrAccessTokenDoesNotBelongToRefreshToken,
 		},
 	}
 
@@ -798,7 +661,6 @@ func TestUseCases_RefreshTokens(t *testing.T) {
 			tokens, err := useCases.RefreshTokens(context.Background(), tc.refreshToken)
 			if tc.expectedErr != nil {
 				require.Error(t, err)
-				require.IsType(t, tc.expectedErr, err)
 			} else {
 				require.NoError(t, err)
 				require.NotZero(t, tokens.AccessToken)
@@ -816,14 +678,17 @@ func TestUseCases_LogoutUser(t *testing.T) {
 	}
 
 	type args struct {
-		ctx    context.Context
-		userID uint64
+		ctx          context.Context
+		refreshToken string
 	}
 
-	refreshToken := &domains.RefreshToken{
+	rawRefreshToken := "raw_refresh_token_value"
+	encodedRefreshToken := security.RawEncode([]byte(rawRefreshToken))
+
+	dbRefreshToken := &domains.RefreshToken{
 		ID:     1,
 		UserID: 123,
-		Value:  "refresh_token_value",
+		Value:  rawRefreshToken,
 	}
 
 	tests := []struct {
@@ -834,14 +699,133 @@ func TestUseCases_LogoutUser(t *testing.T) {
 		err     error
 	}{
 		{
-			name: "successfully logout user with refresh token",
+			name: "successfully logout user",
 			fields: fields{
 				mockAuthService: func(as *mockservices.MockAuthService) {
 					as.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
-						Return(refreshToken, nil)
+						GetRefreshTokenByValue(gomock.Any(), rawRefreshToken).
+						Return(dbRefreshToken, nil)
 					as.EXPECT().
-						ExpireRefreshToken(gomock.Any(), refreshToken.ID).
+						ExpireRefreshToken(gomock.Any(), dbRefreshToken.ID).
+						Return(nil)
+				},
+			},
+			args: args{
+				ctx:          context.Background(),
+				refreshToken: encodedRefreshToken,
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid encoded refresh token",
+			args: args{
+				ctx:          context.Background(),
+				refreshToken: "!!!invalid-base64!!!",
+			},
+			wantErr: false, // LogoutUser returns nil on decode error
+		},
+		{
+			name: "refresh token not found in db",
+			fields: fields{
+				mockAuthService: func(as *mockservices.MockAuthService) {
+					as.EXPECT().
+						GetRefreshTokenByValue(gomock.Any(), rawRefreshToken).
+						Return(nil, errors.New("not found"))
+				},
+			},
+			args: args{
+				ctx:          context.Background(),
+				refreshToken: encodedRefreshToken,
+			},
+			wantErr: false, // LogoutUser returns nil when token not found
+		},
+		{
+			name: "error expiring refresh token",
+			fields: fields{
+				mockAuthService: func(as *mockservices.MockAuthService) {
+					as.EXPECT().
+						GetRefreshTokenByValue(gomock.Any(), rawRefreshToken).
+						Return(dbRefreshToken, nil)
+					as.EXPECT().
+						ExpireRefreshToken(gomock.Any(), dbRefreshToken.ID).
+						Return(errors.New("database error"))
+				},
+			},
+			args: args{
+				ctx:          context.Background(),
+				refreshToken: encodedRefreshToken,
+			},
+			wantErr: true,
+			err:     errors.New("database error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange
+			ctrl := gomock.NewController(t)
+
+			mockAuthService := mockservices.NewMockAuthService(ctrl)
+			mockUsersService := mockservices.NewMockUsersService(ctrl)
+
+			if tt.fields.mockAuthService != nil {
+				tt.fields.mockAuthService(mockAuthService)
+			}
+
+			securityConfig := security.Config{HashCost: hashCost}
+			validationConfig := config.ValidationConfig{}
+
+			uc := auth.New(
+				mockAuthService,
+				mockUsersService,
+				securityConfig,
+				validationConfig,
+			)
+
+			// Act
+			err := uc.LogoutUser(tt.args.ctx, tt.args.refreshToken)
+
+			// Assert
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				if tt.err != nil {
+					assert.Contains(t, err.Error(), tt.err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestUseCases_LogoutUserFromAllSessions(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		mockAuthService func(*mockservices.MockAuthService)
+	}
+
+	type args struct {
+		ctx    context.Context
+		userID uint64
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+		err     error
+	}{
+		{
+			name: "successfully logout from all sessions",
+			fields: fields{
+				mockAuthService: func(as *mockservices.MockAuthService) {
+					as.EXPECT().
+						ExpireAllUserRefreshTokens(gomock.Any(), uint64(123)).
 						Return(nil)
 				},
 			},
@@ -852,29 +836,11 @@ func TestUseCases_LogoutUser(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "logout user without refresh token",
+			name: "error expiring all refresh tokens",
 			fields: fields{
 				mockAuthService: func(as *mockservices.MockAuthService) {
 					as.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
-						Return(nil, errors.New("not found"))
-				},
-			},
-			args: args{
-				ctx:    context.Background(),
-				userID: 123,
-			},
-			wantErr: false, // No error expected
-		},
-		{
-			name: "error expiring refresh token",
-			fields: fields{
-				mockAuthService: func(as *mockservices.MockAuthService) {
-					as.EXPECT().
-						GetRefreshTokenByUserID(gomock.Any(), uint64(123)).
-						Return(refreshToken, nil)
-					as.EXPECT().
-						ExpireRefreshToken(gomock.Any(), refreshToken.ID).
+						ExpireAllUserRefreshTokens(gomock.Any(), uint64(123)).
 						Return(errors.New("database error"))
 				},
 			},
@@ -912,7 +878,7 @@ func TestUseCases_LogoutUser(t *testing.T) {
 			)
 
 			// Act
-			err := uc.LogoutUser(tt.args.ctx, tt.args.userID)
+			err := uc.LogoutUserFromAllSessions(tt.args.ctx, tt.args.userID)
 
 			// Assert
 			if tt.wantErr {

@@ -10,10 +10,11 @@
 |-------|----------|
 | `RegisterUser` | Дедупликация по email/username, вставка пользователя, публикация `EmailNotificationDTO` в NATS |
 | `CreateRefreshToken` | Создание + немедленный re-fetch токена в одной транзакции |
-| `GetRefreshTokenByUserID` | Получение неистёкшего токена |
+| `GetRefreshTokenByValue` | Получение неистёкшего токена по значению |
 | `ExpireRefreshToken` | Удаление токена (инвалидация) |
+| `ExpireAllUserRefreshTokens` | Удаление всех токенов пользователя (logout из всех сессий) |
 | `VerifyEmail` | Установка `email_confirmed = true` |
-| `ForgetPassword` | Обновление пароля + expire refresh token (принуждение к re-login) |
+| `ForgetPassword` | Обновление пароля + expire всех refresh-токенов (принуждение к re-login на всех устройствах) |
 | `ChangePassword` | Обновление пароля без expire токена |
 | `SendForgetPasswordMessage` | Поиск user по email → публикация `EmailNotificationDTO` в NATS (subject: `EmailNotification`) |
 | `SendVerifyEmailMessage` | Поиск user по email → публикация `EmailNotificationDTO` в NATS (subject: `EmailNotification`) |

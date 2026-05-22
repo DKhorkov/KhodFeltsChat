@@ -13,7 +13,6 @@ import (
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/security"
 	"github.com/DKhorkov/libs/validation"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 type UseCases struct {
@@ -95,13 +94,6 @@ func (u *UseCases) LoginUser(
 		return nil, customerrors.ErrWrongPassword
 	}
 
-	dbRefreshToken, err := u.authService.GetRefreshTokenByUserID(ctx, user.ID)
-	if err == nil {
-		if err = u.authService.ExpireRefreshToken(ctx, dbRefreshToken.ID); err != nil {
-			return nil, err
-		}
-	}
-
 	// Create tokens:
 	accessToken, err := security.GenerateJWT(
 		user.ID,
@@ -146,62 +138,28 @@ func (u *UseCases) RefreshTokens(
 	ctx context.Context,
 	refreshToken string,
 ) (*domains.TokensDTO, error) {
-	// Decoding refresh token to get original JWT and compare its value with value in Database:
+	// Decoding refresh token to get original JWT value:
 	oldRefreshTokenBytes, err := security.RawDecode(refreshToken)
 	if err != nil {
 		return nil, customerrors.ErrInvalidJWT
 	}
 
-	// Retrieving refresh token payload to get access token from refresh token:
 	oldRefreshToken := string(oldRefreshTokenBytes)
 
-	refreshTokenPayload, err := security.ParseJWT(
-		oldRefreshToken,
-		u.securityConfig.JWT.SecretKey,
-	)
+	// Find refresh token in database by value:
+	dbRefreshToken, err := u.authService.GetRefreshTokenByValue(ctx, oldRefreshToken)
 	if err != nil {
 		return nil, customerrors.ErrInvalidJWT
 	}
 
-	oldAccessToken, ok := refreshTokenPayload.(string)
-	if !ok {
-		return nil, customerrors.ErrInvalidJWT
-	}
+	userID := dbRefreshToken.UserID
 
-	// Retrieving access token payload to get user ID:
-	accessTokenPayload, err := security.ParseJWT(
-		oldAccessToken,
-		u.securityConfig.JWT.SecretKey,
-		jwt.WithoutClaimsValidation(), // not validating claims due to expiration of JWT TTL
-	)
-	if err != nil {
-		return nil, customerrors.ErrInvalidJWT
-	}
-
-	// Selecting refresh token model from Database, if refresh token has not expired yet:
-	floatUserID, ok := accessTokenPayload.(float64)
-	if !ok {
-		return nil, customerrors.ErrInvalidJWT
-	}
-
-	userID := uint64(floatUserID)
-
-	dbRefreshToken, err := u.authService.GetRefreshTokenByUserID(ctx, userID)
-	if err != nil {
-		return nil, customerrors.ErrInvalidJWT
-	}
-
-	// Checking if access token belongs to refresh token:
-	if oldRefreshToken != dbRefreshToken.Value {
-		return nil, customerrors.ErrAccessTokenDoesNotBelongToRefreshToken
-	}
-
-	// Expiring old refresh token in Database to have only one valid refresh token instance:
+	// Expire old refresh token:
 	if err = u.authService.ExpireRefreshToken(ctx, dbRefreshToken.ID); err != nil {
-		return nil, customerrors.ErrInvalidJWT
+		return nil, err
 	}
 
-	// Create tokens:
+	// Create new tokens:
 	newAccessToken, err := security.GenerateJWT(
 		userID,
 		u.securityConfig.JWT.SecretKey,
@@ -222,7 +180,7 @@ func (u *UseCases) RefreshTokens(
 		return nil, err
 	}
 
-	// Save token to Database:
+	// Save new token to Database:
 	if _, err = u.authService.CreateRefreshToken(
 		ctx,
 		userID,
@@ -241,13 +199,22 @@ func (u *UseCases) RefreshTokens(
 	}, nil
 }
 
-func (u *UseCases) LogoutUser(ctx context.Context, userID uint64) error {
-	refreshToken, _ := u.authService.GetRefreshTokenByUserID(ctx, userID)
-	if refreshToken == nil {
-		return nil
+func (u *UseCases) LogoutUser(ctx context.Context, refreshToken string) error {
+	decodedTokenBytes, err := security.RawDecode(refreshToken)
+	if err != nil {
+		return nil //nolint:nilerr // graceful logout: ignore invalid token
 	}
 
-	return u.authService.ExpireRefreshToken(ctx, refreshToken.ID)
+	dbRefreshToken, err := u.authService.GetRefreshTokenByValue(ctx, string(decodedTokenBytes))
+	if err != nil {
+		return nil //nolint:nilerr // graceful logout: ignore missing token
+	}
+
+	return u.authService.ExpireRefreshToken(ctx, dbRefreshToken.ID)
+}
+
+func (u *UseCases) LogoutUserFromAllSessions(ctx context.Context, userID uint64) error {
+	return u.authService.ExpireAllUserRefreshTokens(ctx, userID)
 }
 
 func (u *UseCases) VerifyEmail(ctx context.Context, verifyEmailToken string) error {

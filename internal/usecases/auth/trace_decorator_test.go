@@ -460,13 +460,13 @@ func TestTraceDecorator_LogoutUser(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		userID        uint64
+		refreshToken  string
 		setupMocks    func(*mocktracing.MockProvider, *mockusecases.MockAuthUseCases, *mocktracing.MockSpan)
 		expectedError error
 	}{
 		{
-			name:   "successful logout with tracing",
-			userID: 1,
+			name:         "successful logout with tracing",
+			refreshToken: "valid_refresh_token",
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockusecases.MockAuthUseCases,
@@ -479,14 +479,14 @@ func TestTraceDecorator_LogoutUser(t *testing.T) {
 					})
 
 				mockBase.EXPECT().
-					LogoutUser(gomock.Any(), uint64(1)).
+					LogoutUser(gomock.Any(), "valid_refresh_token").
 					Return(nil)
 			},
 			expectedError: nil,
 		},
 		{
-			name:   "user already logged out",
-			userID: 1,
+			name:         "logout error",
+			refreshToken: "valid_refresh_token",
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockusecases.MockAuthUseCases,
@@ -497,28 +497,10 @@ func TestTraceDecorator_LogoutUser(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					LogoutUser(gomock.Any(), uint64(1)).
-					Return(errors.New("user already logged out"))
+					LogoutUser(gomock.Any(), "valid_refresh_token").
+					Return(errors.New("logout error"))
 			},
-			expectedError: errors.New("user already logged out"),
-		},
-		{
-			name:   "user not found",
-			userID: 999,
-			setupMocks: func(
-				mockProvider *mocktracing.MockProvider,
-				mockBase *mockusecases.MockAuthUseCases,
-				mockSpan *mocktracing.MockSpan,
-			) {
-				mockProvider.EXPECT().
-					Span(gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(context.Background(), mockSpan)
-
-				mockBase.EXPECT().
-					LogoutUser(gomock.Any(), uint64(999)).
-					Return(errors.New("user not found"))
-			},
-			expectedError: errors.New("user not found"),
+			expectedError: errors.New("logout error"),
 		},
 	}
 
@@ -547,7 +529,93 @@ func TestTraceDecorator_LogoutUser(t *testing.T) {
 			decorator := auth.NewTraceDecorator(mockProvider, spanConfig, mockBase)
 
 			ctx := context.Background()
-			err := decorator.LogoutUser(ctx, tt.userID)
+			err := decorator.LogoutUser(ctx, tt.refreshToken)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestTraceDecorator_LogoutUserFromAllSessions(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		userID        uint64
+		setupMocks    func(*mocktracing.MockProvider, *mockusecases.MockAuthUseCases, *mocktracing.MockSpan)
+		expectedError error
+	}{
+		{
+			name:   "successful logout from all sessions with tracing",
+			userID: 1,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockAuthUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					LogoutUserFromAllSessions(gomock.Any(), uint64(1)).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:   "database error",
+			userID: 1,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockAuthUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					LogoutUserFromAllSessions(gomock.Any(), uint64(1)).
+					Return(errors.New("database error"))
+			},
+			expectedError: errors.New("database error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockusecases.NewMockAuthUseCases(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			spanConfig := tracing.SpanConfig{
+				Name: "test-span",
+				Events: tracing.SpanEventsConfig{
+					Start: tracing.SpanEventConfig{Name: "start"},
+					End:   tracing.SpanEventConfig{Name: "end"},
+				},
+			}
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockProvider, mockBase, mockSpan)
+			}
+
+			decorator := auth.NewTraceDecorator(mockProvider, spanConfig, mockBase)
+
+			ctx := context.Background()
+			err := decorator.LogoutUserFromAllSessions(ctx, tt.userID)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)
