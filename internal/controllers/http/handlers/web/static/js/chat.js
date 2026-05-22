@@ -538,13 +538,15 @@ function markAllAsRead() {
 // Emoji picker
 // ═══════════════════════════════════════
 function setupEmojiPicker() {
+    const wrapper = document.querySelector('.conversation__emoji-wrapper');
     const toggleBtn = document.getElementById('btn-emoji-toggle');
     const pickerContainer = document.getElementById('emoji-picker-container');
     const textarea = document.getElementById('message-input');
     let pickerInitialized = false;
+    let emojiCloseTimer = null;
 
-    toggleBtn.addEventListener('click', () => {
-        const isVisible = pickerContainer.style.display !== 'none';
+    function showEmojiPicker() {
+        clearTimeout(emojiCloseTimer);
 
         if (!pickerInitialized) {
             createEmojiPicker(pickerContainer, (emoji) => {
@@ -563,9 +565,19 @@ function setupEmojiPicker() {
             pickerInitialized = true;
         }
 
-        pickerContainer.style.display = isVisible ? 'none' : '';
-        toggleBtn.classList.toggle('conversation__emoji-toggle--active', !isVisible);
-    });
+        pickerContainer.style.display = '';
+        toggleBtn.classList.add('conversation__emoji-toggle--active');
+    }
+
+    function scheduleEmojiClose() {
+        emojiCloseTimer = setTimeout(() => {
+            pickerContainer.style.display = 'none';
+            toggleBtn.classList.remove('conversation__emoji-toggle--active');
+        }, 500);
+    }
+
+    wrapper.addEventListener('mouseenter', showEmojiPicker);
+    wrapper.addEventListener('mouseleave', scheduleEmojiClose);
 }
 
 // ═══════════════════════════════════════

@@ -328,10 +328,7 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 | Класс | Описание |
 |-------|----------|
 | `.emoji-picker` | Контейнер (absolute, над textarea, max 320px) |
-| `.emoji-picker__tabs` | Табы категорий |
-| `.emoji-picker__tab` | Таб |
-| `.emoji-picker__tab--active` | Активный таб |
-| `.emoji-picker__grid` | Сетка emoji (8 колонок, max-height: 200px) |
+| `.emoji-picker__grid` | Сетка emoji (8 колонок, max-height: 260px) |
 | `.emoji-picker__item` | Элемент emoji (hover → scale 1.15) |
 | `.conversation__emoji-wrapper` | Обёртка кнопки emoji (absolute, правый нижний угол textarea) |
 | `.conversation__emoji-toggle` | Кнопка открытия picker |
