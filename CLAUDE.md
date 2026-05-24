@@ -75,7 +75,7 @@ scripts/                — Taskfile, скрипты PostgreSQL
 - Trace decorators на каждом слое (OpenTelemetry spans)
 - Cache decorator в usecases/auth для rate limiting и token validation
 - Factory functions для repositories (принимают `pg.Transaction`)
-- WebSocket: sync.Map[userID → *websocket.Conn], fan-out сообщений
+- WebSocket: sync.Map[userID → *userConnections] (мультисессия), fan-out событий всем участникам включая отправителя
 
 ## Тестирование
 

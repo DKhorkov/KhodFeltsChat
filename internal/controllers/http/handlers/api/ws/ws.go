@@ -157,12 +157,10 @@ func (h *Handler) removeConnection(userID uint64, conn *websocket.Conn) {
 }
 
 // sendToUser отправляет событие во все соединения пользователя. Битые соединения закрываются и удаляются.
-// currentConnection позволяет исключить конкретное соединение (например, то, через которое пришло сообщение).
 func (h *Handler) sendToUser(
 	ctx context.Context,
 	userID uint64,
 	event domains.WSEvent,
-	currentConnection *websocket.Conn,
 ) {
 	val, ok := h.connections.Load(userID)
 	if !ok {
@@ -176,10 +174,6 @@ func (h *Handler) sendToUser(
 	var broken []*websocket.Conn
 
 	for _, conn := range uc.connections {
-		if conn == currentConnection {
-			continue
-		}
-
 		if err := conn.WriteJSON(event); err != nil {
 			logging.LogErrorContext(
 				ctx,
@@ -251,7 +245,7 @@ func (h *Handler) BroadcastMessageDeleted(
 	}
 
 	for _, member := range chatMembers {
-		h.sendToUser(ctx, member.ID, event, nil)
+		h.sendToUser(ctx, member.ID, event)
 	}
 }
 
@@ -341,15 +335,7 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 				continue
 			}
 
-			// Для отправителя: рассылаем во все соединения кроме текущего (через которое пришло сообщение),
-			// чтобы обновить другие устройства
-			if member.ID == user.ID {
-				h.sendToUser(ctx, member.ID, event, conn)
-
-				continue
-			}
-
-			h.sendToUser(ctx, member.ID, event, nil)
+			h.sendToUser(ctx, member.ID, event)
 		}
 	}
 }

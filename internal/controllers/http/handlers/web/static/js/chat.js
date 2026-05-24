@@ -147,18 +147,8 @@ function connectWebSocket() {
 
 function handleNewMessage(message) {
     if (selectedChatId === message.chatId) {
-        // Дедупликация: если есть оптимистичное сообщение с таким же текстом от текущего пользователя — заменяем
-        const optimisticIdx = messages.findIndex(
-            m => m.optimistic && m.chatId === message.chatId && m.text === message.text && m.sender.id === message.sender.id
-        );
-
-        if (optimisticIdx >= 0) {
-            messages[optimisticIdx] = message;
-        } else {
-            messages.push(message);
-            appendMessageBubble(message);
-        }
-
+        messages.push(message);
+        appendMessageBubble(message);
         scrollToBottom();
     }
 
@@ -376,7 +366,7 @@ async function loadMessages(chatId, offset) {
 }
 
 function serverMessageCount() {
-    return messages.filter(m => !m.optimistic).length;
+    return messages.length;
 }
 
 async function loadMoreMessages() {
@@ -557,27 +547,6 @@ function sendMessage() {
 
     // Помечаем все сообщения как прочитанные и убираем разделитель:
     markAllAsRead();
-
-    // Оптимистичное добавление:
-    const optimisticMessage = {
-        id: Date.now(),
-        chatId: selectedChatId,
-        text,
-        createdAt: new Date().toISOString(),
-        sender: {id: currentUser.id, username: currentUser.username},
-        isRead: true,
-        optimistic: true,
-        replyToMessage: replyToMessage ? {
-            id: replyToMessage.id,
-            sender: replyToMessage.sender,
-            text: replyToMessage.text,
-            createdAt: replyToMessage.createdAt,
-        } : undefined,
-    };
-
-    messages.push(optimisticMessage);
-    appendMessageBubble(optimisticMessage);
-    scrollToBottom();
 
     // Сбрасываем ответ:
     cancelReply();
@@ -1358,14 +1327,6 @@ async function deleteMessage(messageId, forAll) {
             const text = await resp.text();
             showError(mapError(text));
             return;
-        }
-
-        // Удаляем из UI:
-        const idx = messages.findIndex(m => m.id === messageId);
-        if (idx >= 0) {
-            messages.splice(idx, 1);
-            const bubble = document.querySelector(`.message-bubble[data-message-id="${messageId}"]`);
-            if (bubble) bubble.remove();
         }
 
         debouncedLoadChats();

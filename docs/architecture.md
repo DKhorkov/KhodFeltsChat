@@ -97,8 +97,10 @@
 ### WebSocket
 - Upgrade из HTTP с cookie-аутентификацией
 - JSON формат: `{"chatId": N, "text": "..."}`
-- Fan-out: сообщение доставляется всем онлайн-участникам чата
-- `sync.Map[userID → *websocket.Conn]`
+- Мультисессия: один пользователь может иметь несколько WebSocket-соединений (разные устройства/вкладки)
+- `sync.Map[userID → *userConnections]`, где `userConnections` содержит `sync.Mutex` + `[]*websocket.Conn`
+- Fan-out: события (`new_message`, `message_deleted`) доставляются **всем** соединениям **всех** участников чата, включая отправителя
+- Клиенты не обновляют UI самостоятельно при отправке/удалении — только по WS-событиям от сервера (single source of truth)
 
 ## Middleware (порядок)
 
