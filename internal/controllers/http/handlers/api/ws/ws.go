@@ -20,13 +20,19 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// userConnections хранит все WebSocket-соединения одного пользователя (мультисессия).
+type userConnections struct {
+	mu          sync.Mutex
+	connections []*websocket.Conn
+}
+
 type Handler struct {
 	upgrader         interfaces.Upgrader
 	usersUseCases    interfaces.UsersUseCases
 	chatsUseCases    interfaces.ChatsUseCases
 	messagesUseCases interfaces.MessagesUseCases
 	logger           logging.Logger
-	connections      *sync.Map
+	connections      *sync.Map // map[uint64]*userConnections
 	natsPublisher    customnats.Publisher
 	natsConfig       config.NATSConfig
 }
@@ -113,14 +119,109 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	h.connections.Store(user.ID, conn)
+	h.addConnection(user.ID, conn)
 
 	h.listen(conn, user)
 
-	h.connections.Delete(user.ID)
+	h.removeConnection(user.ID, conn)
 }
 
-// BroadcastMessageDeleted sends a message_deleted event to all chat members except the initiator.
+func (h *Handler) addConnection(userID uint64, conn *websocket.Conn) {
+	val, _ := h.connections.LoadOrStore(userID, &userConnections{})
+
+	uc := val.(*userConnections)
+	uc.mu.Lock()
+	uc.connections = append(uc.connections, conn)
+	uc.mu.Unlock()
+}
+
+func (h *Handler) removeConnection(userID uint64, conn *websocket.Conn) {
+	val, ok := h.connections.Load(userID)
+	if !ok {
+		return
+	}
+
+	uc := val.(*userConnections)
+	uc.mu.Lock()
+
+	uc.connections = slices.DeleteFunc(uc.connections, func(c *websocket.Conn) bool {
+		return c == conn
+	})
+
+	remaining := len(uc.connections)
+	uc.mu.Unlock()
+
+	if remaining == 0 {
+		h.connections.Delete(userID)
+	}
+}
+
+// sendToUser отправляет событие во все соединения пользователя. Битые соединения закрываются и удаляются.
+// currentConnection позволяет исключить конкретное соединение (например, то, через которое пришло сообщение).
+func (h *Handler) sendToUser(
+	ctx context.Context,
+	userID uint64,
+	event domains.WSEvent,
+	currentConnection *websocket.Conn,
+) {
+	val, ok := h.connections.Load(userID)
+	if !ok {
+		return
+	}
+
+	uc := val.(*userConnections)
+	uc.mu.Lock()
+	defer uc.mu.Unlock()
+
+	var broken []*websocket.Conn
+
+	for _, conn := range uc.connections {
+		if conn == currentConnection {
+			continue
+		}
+
+		if err := conn.WriteJSON(event); err != nil {
+			logging.LogErrorContext(
+				ctx,
+				h.logger,
+				"Failed to write event to connection",
+				err,
+				"UserID", userID,
+				"EventType", event.Type,
+			)
+
+			broken = append(broken, conn)
+		}
+	}
+
+	for _, conn := range broken {
+		if err := conn.Close(); err != nil {
+			logging.LogErrorContext(
+				ctx,
+				h.logger,
+				"Failed to close broken connection",
+				err,
+			)
+		}
+
+		uc.connections = slices.DeleteFunc(uc.connections, func(c *websocket.Conn) bool {
+			return c == conn
+		})
+	}
+
+	if len(uc.connections) == 0 {
+		h.connections.Delete(userID)
+	}
+}
+
+// hasConnections проверяет, есть ли у пользователя активные соединения.
+func (h *Handler) hasConnections(userID uint64) bool {
+	_, ok := h.connections.Load(userID)
+
+	return ok
+}
+
+// BroadcastMessageDeleted sends a message_deleted event to all chat members.
 func (h *Handler) BroadcastMessageDeleted(
 	ctx context.Context,
 	chatID uint64,
@@ -150,43 +251,7 @@ func (h *Handler) BroadcastMessageDeleted(
 	}
 
 	for _, member := range chatMembers {
-		if member.ID == senderID {
-			continue
-		}
-
-		value, exists := h.connections.Load(member.ID)
-		if !exists {
-			continue
-		}
-
-		connection, ok := value.(*websocket.Conn)
-		if !ok {
-			h.connections.Delete(member.ID)
-
-			continue
-		}
-
-		if err = connection.WriteJSON(event); err != nil {
-			logging.LogErrorContext(
-				ctx,
-				h.logger,
-				"Failed to write message_deleted event",
-				err,
-				"ChatMember", member,
-				"MessageID", messageID,
-			)
-
-			if err = connection.Close(); err != nil {
-				logging.LogErrorContext(
-					ctx,
-					h.logger,
-					"Failed to close connection",
-					err,
-				)
-			}
-
-			h.connections.Delete(member.ID)
-		}
+		h.sendToUser(ctx, member.ID, event, nil)
 	}
 }
 
@@ -257,64 +322,34 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 
 		messageToSend.IsRead = false // Сообщение не прочитано для всех получателей, так как является новым
 
+		event := domains.WSEvent{
+			Type:    domains.WSEventNewMessage,
+			Payload: messageToSend,
+		}
+
 		for _, member := range chatMembers {
-			// Не отправляем обратно отправителю:
-			if member.ID == user.ID {
-				continue
-			}
-
-			value, exists := h.connections.Load(member.ID)
-			if !exists {
-				h.publishNewMessageNotifications(
-					ctx,
-					member.ID,
-					savedMessage.ID,
-				)
-
-				continue
-			}
-
-			connection, ok := value.(*websocket.Conn)
-			if !ok {
-				logging.LogInfoContext(
-					ctx,
-					h.logger,
-					"Failed to parse connection from sync.Map value",
-					"Message", messageToSend,
-					"ChatMember", member,
-				)
-
-				h.connections.Delete(member.ID)
-
-				continue
-			}
-
-			event := domains.WSEvent{
-				Type:    domains.WSEventNewMessage,
-				Payload: messageToSend,
-			}
-
-			if err = connection.WriteJSON(event); err != nil {
-				logging.LogErrorContext(
-					ctx,
-					h.logger,
-					"Failed to write message",
-					err,
-					"Message", messageToSend,
-					"ChatMember", member,
-				)
-
-				if err = connection.Close(); err != nil {
-					logging.LogErrorContext(
+			if !h.hasConnections(member.ID) {
+				// Отправляем уведомления только офлайн-пользователям
+				if member.ID != user.ID {
+					h.publishNewMessageNotifications(
 						ctx,
-						h.logger,
-						"Failed to close connection",
-						err,
+						member.ID,
+						savedMessage.ID,
 					)
 				}
 
-				h.connections.Delete(member.ID)
+				continue
 			}
+
+			// Для отправителя: рассылаем во все соединения кроме текущего (через которое пришло сообщение),
+			// чтобы обновить другие устройства
+			if member.ID == user.ID {
+				h.sendToUser(ctx, member.ID, event, conn)
+
+				continue
+			}
+
+			h.sendToUser(ctx, member.ID, event, nil)
 		}
 	}
 }

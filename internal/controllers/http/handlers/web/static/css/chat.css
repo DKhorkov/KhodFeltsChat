@@ -236,9 +236,15 @@
     padding: var(--space-lg);
     border-top: 1px solid var(--border);
     display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--bg-surface);
+}
+
+.conversation__composer-row {
+    display: flex;
     gap: var(--space-sm);
     align-items: flex-end;
-    background: var(--bg-surface);
 }
 
 .conversation__composer-input {
@@ -383,7 +389,7 @@
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     border: 1px solid var(--border);
     border-bottom: none;
-    margin-bottom: -1px;
+    margin-bottom: 0;
 }
 
 .conversation__reply-bar-content {

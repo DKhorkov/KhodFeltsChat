@@ -179,6 +179,8 @@ function handleMessageDeleted(payload) {
             messages.splice(idx, 1);
             const bubble = document.querySelector(`.message-bubble[data-message-id="${payload.messageId}"]`);
             if (bubble) bubble.remove();
+        } else {
+            console.warn('message_deleted: сообщение не найдено в текущем списке', payload.messageId);
         }
     }
 
