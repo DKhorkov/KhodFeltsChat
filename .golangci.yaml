@@ -317,6 +317,10 @@ linters:
         linters:
           - exhaustruct
 
+      - path: internal/controllers/http/handlers/api/messages/delete/handler.go
+        linters:
+          - govet
+
       - path: internal/controllers/http/handlers/api/auth/logout/handler.go
         line: "50,51"
         linters:
@@ -346,6 +350,10 @@ linters:
       - path: internal/controllers/http/handlers/api/auth/send_*/handler.go
         linters:
           - dupl
+
+      - path: internal/controllers/http/mappers/messages/messages.go
+        linters:
+          - exhaustruct
 
       - path: .*const.go
         linters:

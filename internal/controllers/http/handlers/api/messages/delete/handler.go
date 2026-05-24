@@ -1,4 +1,4 @@
-package delete
+package delete_message
 
 import (
 	"encoding/json"
@@ -66,6 +66,7 @@ func Handler(u interfaces.MessagesUseCases, broadcaster interfaces.WSBroadcaster
 
 		// Fetch message before deletion to get chatID for WS broadcast:
 		var chatID uint64
+
 		if dto.ForAll {
 			message, err := u.GetMessageByID(r.Context(), userID, messageID)
 			if err != nil {

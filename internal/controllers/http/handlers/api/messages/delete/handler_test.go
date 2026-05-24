@@ -1,4 +1,4 @@
-package delete_test
+package delete_message_test
 
 import (
 	"bytes"
@@ -22,7 +22,12 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func createRequest(t *testing.T, userID *uint64, messageID string, dto domains.DeleteMessageDTO) *http.Request {
+func createRequest(
+	t *testing.T,
+	userID *uint64,
+	messageID string,
+	dto domains.DeleteMessageDTO,
+) *http.Request {
 	t.Helper()
 
 	body, _ := json.Marshal(dto)
@@ -58,7 +63,12 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return createRequest(t, &userID, messageIDStr, domains.DeleteMessageDTO{ForAll: false})
+				return createRequest(
+					t,
+					&userID,
+					messageIDStr,
+					domains.DeleteMessageDTO{ForAll: false},
+				)
 			},
 			setupMock: func(m *mockusecases.MockMessagesUseCases, _ *mockcontrollers.MockWSBroadcaster) {
 				m.EXPECT().
@@ -76,7 +86,12 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return createRequest(t, &userID, messageIDStr, domains.DeleteMessageDTO{ForAll: true})
+				return createRequest(
+					t,
+					&userID,
+					messageIDStr,
+					domains.DeleteMessageDTO{ForAll: true},
+				)
 			},
 			setupMock: func(m *mockusecases.MockMessagesUseCases, b *mockcontrollers.MockWSBroadcaster) {
 				m.EXPECT().
@@ -129,7 +144,11 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				req := httptest.NewRequest(http.MethodDelete, "/api/messages/"+messageIDStr, bytes.NewReader([]byte("invalid json")))
+				req := httptest.NewRequest(
+					http.MethodDelete,
+					"/api/messages/"+messageIDStr,
+					bytes.NewReader([]byte("invalid json")),
+				)
 				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
 				req = req.WithContext(ctx)
 				vars := map[string]string{common.IDRouteKey: messageIDStr}
@@ -145,7 +164,12 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return createRequest(t, &userID, messageIDStr, domains.DeleteMessageDTO{ForAll: false})
+				return createRequest(
+					t,
+					&userID,
+					messageIDStr,
+					domains.DeleteMessageDTO{ForAll: false},
+				)
 			},
 			setupMock: func(m *mockusecases.MockMessagesUseCases, _ *mockcontrollers.MockWSBroadcaster) {
 				m.EXPECT().
@@ -167,7 +191,12 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return createRequest(t, &userID, messageIDStr, domains.DeleteMessageDTO{ForAll: true})
+				return createRequest(
+					t,
+					&userID,
+					messageIDStr,
+					domains.DeleteMessageDTO{ForAll: true},
+				)
 			},
 			setupMock: func(m *mockusecases.MockMessagesUseCases, _ *mockcontrollers.MockWSBroadcaster) {
 				m.EXPECT().
@@ -197,7 +226,12 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return createRequest(t, &userID, messageIDStr, domains.DeleteMessageDTO{ForAll: false})
+				return createRequest(
+					t,
+					&userID,
+					messageIDStr,
+					domains.DeleteMessageDTO{ForAll: false},
+				)
 			},
 			setupMock: func(m *mockusecases.MockMessagesUseCases, _ *mockcontrollers.MockWSBroadcaster) {
 				m.EXPECT().
@@ -219,7 +253,12 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return createRequest(t, &userID, messageIDStr, domains.DeleteMessageDTO{ForAll: true})
+				return createRequest(
+					t,
+					&userID,
+					messageIDStr,
+					domains.DeleteMessageDTO{ForAll: true},
+				)
 			},
 			setupMock: func(m *mockusecases.MockMessagesUseCases, _ *mockcontrollers.MockWSBroadcaster) {
 				m.EXPECT().

@@ -145,6 +145,6 @@ func SetupHandlers(
 	)
 	deleteMux.Handle(
 		fmt.Sprintf(DeleteMessageURL, common.IDRouteKey),
-		delete_message.Handler(messagesUseCases, &websocketHandler),
+		delete_message.Handler(messagesUseCases, websocketHandler),
 	)
 }

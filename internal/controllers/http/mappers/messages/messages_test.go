@@ -462,9 +462,21 @@ func TestMapMessage(t *testing.T) {
 				require.NotNil(t, result.ReplyToMessage)
 				assert.Equal(t, tt.expected.ReplyToMessage.ID, result.ReplyToMessage.ID)
 				assert.Equal(t, tt.expected.ReplyToMessage.Text, result.ReplyToMessage.Text)
-				assert.Equal(t, tt.expected.ReplyToMessage.CreatedAt, result.ReplyToMessage.CreatedAt)
-				assert.Equal(t, tt.expected.ReplyToMessage.Sender.ID, result.ReplyToMessage.Sender.ID)
-				assert.Equal(t, tt.expected.ReplyToMessage.Sender.Username, result.ReplyToMessage.Sender.Username)
+				assert.Equal(
+					t,
+					tt.expected.ReplyToMessage.CreatedAt,
+					result.ReplyToMessage.CreatedAt,
+				)
+				assert.Equal(
+					t,
+					tt.expected.ReplyToMessage.Sender.ID,
+					result.ReplyToMessage.Sender.ID,
+				)
+				assert.Equal(
+					t,
+					tt.expected.ReplyToMessage.Sender.Username,
+					result.ReplyToMessage.Sender.Username,
+				)
 			} else {
 				assert.Nil(t, result.ReplyToMessage)
 			}
@@ -972,10 +984,26 @@ func TestMapMessages(t *testing.T) {
 				if expectedMessage.ReplyToMessage != nil {
 					require.NotNil(t, result[i].ReplyToMessage)
 					assert.Equal(t, expectedMessage.ReplyToMessage.ID, result[i].ReplyToMessage.ID)
-					assert.Equal(t, expectedMessage.ReplyToMessage.Text, result[i].ReplyToMessage.Text)
-					assert.Equal(t, expectedMessage.ReplyToMessage.CreatedAt, result[i].ReplyToMessage.CreatedAt)
-					assert.Equal(t, expectedMessage.ReplyToMessage.Sender.ID, result[i].ReplyToMessage.Sender.ID)
-					assert.Equal(t, expectedMessage.ReplyToMessage.Sender.Username, result[i].ReplyToMessage.Sender.Username)
+					assert.Equal(
+						t,
+						expectedMessage.ReplyToMessage.Text,
+						result[i].ReplyToMessage.Text,
+					)
+					assert.Equal(
+						t,
+						expectedMessage.ReplyToMessage.CreatedAt,
+						result[i].ReplyToMessage.CreatedAt,
+					)
+					assert.Equal(
+						t,
+						expectedMessage.ReplyToMessage.Sender.ID,
+						result[i].ReplyToMessage.Sender.ID,
+					)
+					assert.Equal(
+						t,
+						expectedMessage.ReplyToMessage.Sender.Username,
+						result[i].ReplyToMessage.Sender.Username,
+					)
 				} else {
 					assert.Nil(t, result[i].ReplyToMessage)
 				}
