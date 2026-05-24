@@ -96,7 +96,7 @@ func Handler(u interfaces.MessagesUseCases, broadcaster interfaces.WSBroadcaster
 		}
 
 		if dto.ForAll {
-			broadcaster.BroadcastMessageDeleted(r.Context(), chatID, messageID, userID)
+			broadcaster.BroadcastMessageDeleted(r.Context(), chatID, messageID)
 		}
 
 		w.WriteHeader(http.StatusNoContent)

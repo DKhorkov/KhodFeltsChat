@@ -41,13 +41,13 @@ func (m *MockWSBroadcaster) EXPECT() *MockWSBroadcasterMockRecorder {
 }
 
 // BroadcastMessageDeleted mocks base method.
-func (m *MockWSBroadcaster) BroadcastMessageDeleted(ctx context.Context, chatID, messageID, senderID uint64) {
+func (m *MockWSBroadcaster) BroadcastMessageDeleted(ctx context.Context, chatID, messageID uint64) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "BroadcastMessageDeleted", ctx, chatID, messageID, senderID)
+	m.ctrl.Call(m, "BroadcastMessageDeleted", ctx, chatID, messageID)
 }
 
 // BroadcastMessageDeleted indicates an expected call of BroadcastMessageDeleted.
-func (mr *MockWSBroadcasterMockRecorder) BroadcastMessageDeleted(ctx, chatID, messageID, senderID any) *gomock.Call {
+func (mr *MockWSBroadcasterMockRecorder) BroadcastMessageDeleted(ctx, chatID, messageID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastMessageDeleted", reflect.TypeOf((*MockWSBroadcaster)(nil).BroadcastMessageDeleted), ctx, chatID, messageID, senderID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastMessageDeleted", reflect.TypeOf((*MockWSBroadcaster)(nil).BroadcastMessageDeleted), ctx, chatID, messageID)
 }

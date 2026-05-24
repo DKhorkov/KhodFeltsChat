@@ -127,6 +127,8 @@ definitions:
                 example: true
                 type: boolean
                 x-go-name: IsRead
+            replyToMessage:
+                $ref: '#/definitions/ReplyMessage'
             sender:
                 $ref: '#/definitions/Sender'
             text:
@@ -160,6 +162,33 @@ definitions:
                 x-go-name: NewPassword
         required:
             - newPassword
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
+    ReplyMessage:
+        properties:
+            createdAt:
+                description: When the original message was sent.
+                format: date-time
+                type: string
+                x-go-name: CreatedAt
+            id:
+                description: Unique identifier of the original message.
+                format: uint64
+                minimum: 1
+                type: integer
+                x-go-name: ID
+            sender:
+                $ref: '#/definitions/Sender'
+            text:
+                description: Text of the original message.
+                type: string
+                x-go-name: Text
+        required:
+            - id
+            - sender
+            - text
+            - createdAt
+        title: ReplyMessage represents an abbreviated message that was replied to.
         type: object
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
     Sender:
@@ -401,7 +430,30 @@ paths:
                     - '[]'
             summary: GetChatMessages
             tags:
-                - chats
+                - messages
+    /api/messages/{id}:
+        delete:
+            description: Deletes a message by ID. If forAll is true, deletes for all chat members (author only).
+            operationId: DeleteMessage
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "403":
+                    $ref: '#/responses/Forbidden'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: DeleteMessage
+            tags:
+                - messages
     /api/sessions:
         delete:
             description: Logout User from the current session and deletes access and refresh tokens.
@@ -1113,6 +1165,8 @@ tags:
   description: "Управление сессиями (авторизация)"
 - name: chats
   description: "Управление чатами"
+- name: messages
+  description: "Управление сообщениями"
 - name: websockets
   description: "Веб-сокеты"
 - name: web

@@ -126,10 +126,49 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 	h.removeConnection(user.ID, conn)
 }
 
+// BroadcastMessageDeleted sends a message_deleted event to all chat members.
+func (h *Handler) BroadcastMessageDeleted(
+	ctx context.Context,
+	chatID uint64,
+	messageID uint64,
+) {
+	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, chatID)
+	if err != nil {
+		logging.LogErrorContext(
+			ctx,
+			h.logger,
+			"Failed to get chat members for message deleted broadcast",
+			err,
+			"ChatID", chatID,
+			"MessageID", messageID,
+		)
+
+		return
+	}
+
+	event := domains.WSEvent{
+		Type: domains.WSEventMessageDeleted,
+		Payload: domains.MessageDeletedPayload{
+			MessageID: messageID,
+			ChatID:    chatID,
+		},
+	}
+
+	for _, member := range chatMembers {
+		h.sendToUser(ctx, member.ID, event)
+	}
+}
+
 func (h *Handler) addConnection(userID uint64, conn *websocket.Conn) {
 	val, _ := h.connections.LoadOrStore(userID, &userConnections{})
 
-	uc := val.(*userConnections)
+	uc, ok := val.(*userConnections)
+	if !ok {
+		h.connections.Delete(userID)
+
+		return
+	}
+
 	uc.mu.Lock()
 	uc.connections = append(uc.connections, conn)
 	uc.mu.Unlock()
@@ -141,7 +180,13 @@ func (h *Handler) removeConnection(userID uint64, conn *websocket.Conn) {
 		return
 	}
 
-	uc := val.(*userConnections)
+	uc, ok := val.(*userConnections)
+	if !ok {
+		h.connections.Delete(userID)
+
+		return
+	}
+
 	uc.mu.Lock()
 
 	uc.connections = slices.DeleteFunc(uc.connections, func(c *websocket.Conn) bool {
@@ -167,7 +212,13 @@ func (h *Handler) sendToUser(
 		return
 	}
 
-	uc := val.(*userConnections)
+	uc, ok := val.(*userConnections)
+	if !ok {
+		h.connections.Delete(userID)
+
+		return
+	}
+
 	uc.mu.Lock()
 	defer uc.mu.Unlock()
 
@@ -213,40 +264,6 @@ func (h *Handler) hasConnections(userID uint64) bool {
 	_, ok := h.connections.Load(userID)
 
 	return ok
-}
-
-// BroadcastMessageDeleted sends a message_deleted event to all chat members.
-func (h *Handler) BroadcastMessageDeleted(
-	ctx context.Context,
-	chatID uint64,
-	messageID uint64,
-	senderID uint64,
-) {
-	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, chatID)
-	if err != nil {
-		logging.LogErrorContext(
-			ctx,
-			h.logger,
-			"Failed to get chat members for message deleted broadcast",
-			err,
-			"ChatID", chatID,
-			"MessageID", messageID,
-		)
-
-		return
-	}
-
-	event := domains.WSEvent{
-		Type: domains.WSEventMessageDeleted,
-		Payload: domains.MessageDeletedPayload{
-			MessageID: messageID,
-			ChatID:    chatID,
-		},
-	}
-
-	for _, member := range chatMembers {
-		h.sendToUser(ctx, member.ID, event)
-	}
 }
 
 func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
