@@ -46,9 +46,13 @@ HTTP-обработчики REST API, сгруппированные по пре
 
 ## Messages
 
-| Обработчик    | Метод | Путь                       |
-|---------------|-------|----------------------------|
-| chat_messages | GET   | /api/chats/{id}/messages   |
+| Обработчик    | Метод  | Путь                       |
+|---------------|--------|----------------------------|
+| chat_messages | GET    | /api/chats/{id}/messages   |
+| delete        | DELETE | /api/messages/{id}         |
+
+### delete
+Удаляет сообщение. Body JSON: `{"forAll": bool}`. Если `forAll=true` — проверяет авторство через `GetMessageByID`, удаляет для всех, рассылает WS-событие `message_deleted` через `WSBroadcaster`. Если `forAll=false` — удаляет только для текущего пользователя.
 
 ## WebSocket
 
@@ -59,8 +63,10 @@ HTTP-обработчики REST API, сгруппированные по пре
 - Хранит активные соединения в `sync.Map` (userID → conn).
 - Аутентифицирует пользователя, обновляет соединение до WebSocket.
 - Читает входящие JSON-сообщения в цикле.
-- Рассылает сообщения всем онлайн-участникам чата.
-- Публикует `WebPushNotificationDTO` в NATS для офлайн-участников чата.
+- Оборачивает исходящие сообщения в `WSEvent` envelope (`type` + `payload`).
+- Рассылает `new_message` событие всем онлайн-участникам чата.
+- Реализует `WSBroadcaster` — метод `BroadcastMessageDeleted` рассылает `message_deleted` событие.
+- Публикует `WebPushNotificationDTO` и `EmailNotificationDTO` в NATS для офлайн-участников чата.
 
 ## Web Push (Web Push Notifications)
 

@@ -47,6 +47,37 @@ type Message struct {
 	// nullable: false
 	// example: true
 	IsRead bool `json:"isRead"`
+
+	// Message that this message is a reply to.
+	// required: false
+	// nullable: true
+	ReplyToMessage *ReplyMessage `json:"replyToMessage,omitempty"`
+}
+
+// ReplyMessage represents an abbreviated message that was replied to.
+// swagger:model
+type ReplyMessage struct {
+	// Unique identifier of the original message.
+	// required: true
+	// nullable: false
+	// minimum: 1
+	ID uint64 `json:"id"`
+
+	// Sender of the original message.
+	// required: true
+	// nullable: false
+	Sender Sender `json:"sender"`
+
+	// Text of the original message.
+	// required: true
+	// nullable: false
+	Text string `json:"text"`
+
+	// When the original message was sent.
+	// required: true
+	// nullable: false
+	// format: date-time
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 // Sender represents a user record, who sent message to the chat.

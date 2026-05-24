@@ -143,3 +143,21 @@ func (s *Service) GetMessageByID(
 
 	return message, nil
 }
+
+func (s *Service) DeleteMessage(
+	ctx context.Context,
+	dto domains.DeleteMessageDTO,
+) error {
+	return s.uow.Do(
+		ctx,
+		func(ctx context.Context, tx pg.Transaction) error {
+			messagesRepository := s.newMessagesRepositoryFunc(tx)
+
+			if dto.ForAll {
+				return messagesRepository.DeleteMessageForAll(ctx, dto.MessageID)
+			}
+
+			return messagesRepository.DeleteMessageForUser(ctx, dto.UserID, dto.MessageID)
+		},
+	)
+}

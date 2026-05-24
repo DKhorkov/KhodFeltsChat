@@ -13,17 +13,20 @@
 ## Вспомогательный тип
 
 `MessagePg` — плоская структура для сканирования результата JOIN-запроса
-(поля сообщения + поля отправителя как `SenderID`, `SenderUsername` и т.д.).
-Преобразуется в `domains.Message` функцией `pgMessageToDomainMessage`.
+(поля сообщения + поля отправителя как `SenderID`, `SenderUsername` и т.д., + nullable reply-поля: `ReplyToMessageID`, `ReplyToMessageText`, `ReplyToMessageCreatedAt`, `ReplyToSenderID`, `ReplyToSenderUsername`).
+Преобразуется в `domains.Message` функцией `pgMessageToDomainMessage` (заполняет `ReplyToMessage`, если reply-поля не nil).
 
 ## Ключевые методы
 
 | Метод | Описание |
 |-------|----------|
-| `SaveMessage(ctx, message)` | Вставляет сообщение в `messages`, затем получает всех участников чата из `chats_members` и пакетно создаёт записи в `messages_statuses` (`is_read = true` для отправителя, `false` для остальных) |
-| `GetChatMessages(ctx, userID, chatID, pagination)` | Постраничная выборка сообщений с JOIN на `users` и `messages_statuses` (фильтр по `user_id`), сортировка `id DESC` |
-| `GetMessageByID(ctx, userID, messageID)` | Получение одного сообщения с read-статусом текущего пользователя |
+| `SaveMessage(ctx, message)` | Вставляет сообщение в `messages` (включая `reply_to_message_id`), затем получает всех участников чата из `chats_members` и пакетно создаёт записи в `messages_statuses` (`is_read = true` для отправителя, `false` для остальных) |
+| `GetChatMessages(ctx, userID, chatID, pagination)` | Постраничная выборка сообщений с JOIN на `users`, `messages_statuses` и LEFT JOIN на reply-сообщение + reply-отправитель; фильтр `is_deleted = false`; сортировка `id DESC` |
+| `GetMessageByID(ctx, userID, messageID)` | Получение одного сообщения с read-статусом текущего пользователя и reply-данными; фильтр `is_deleted = false` |
 | `ChangeMessagesIsReadStatus(ctx, userID, messages, isRead)` | Пакетное обновление `is_read` в `messages_statuses` для списка сообщений и конкретного пользователя |
+| `DeleteMessageForUser(ctx, userID, messageID)` | Soft-удаление: устанавливает `is_deleted = true` в `messages_statuses` для конкретного пользователя |
+| `DeleteMessageForAll(ctx, messageID)` | Soft-удаление для всех: устанавливает `is_deleted = true` во всех записях `messages_statuses` для данного сообщения |
+| `ReadAllChatMessages(ctx, userID, chatID)` | Пакетная пометка всех непрочитанных сообщений чата как прочитанных для пользователя |
 
 ## Зависимости
 

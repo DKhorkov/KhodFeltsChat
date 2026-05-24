@@ -2,6 +2,7 @@ package messages
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/DKhorkov/kfc/internal/domains"
@@ -67,4 +68,22 @@ func (u *UseCases) GetMessageByID(
 	messageID uint64,
 ) (*domains.Message, error) {
 	return u.messagesService.GetMessageByID(ctx, userID, messageID)
+}
+
+func (u *UseCases) DeleteMessage(
+	ctx context.Context,
+	dto domains.DeleteMessageDTO,
+) error {
+	if dto.ForAll {
+		message, err := u.messagesService.GetMessageByID(ctx, dto.UserID, dto.MessageID)
+		if err != nil {
+			return fmt.Errorf("%w: %w", customerrors.ErrMessageNotFound, err)
+		}
+
+		if message.Sender.ID != dto.UserID {
+			return customerrors.ErrNotMessageAuthor
+		}
+	}
+
+	return u.messagesService.DeleteMessage(ctx, dto)
 }

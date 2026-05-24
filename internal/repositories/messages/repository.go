@@ -17,19 +17,24 @@ const (
 	usersTableName            = "users"
 	chatsMembersTableName     = "chats_members"
 
-	senderIDColumnName       = "sender_id"
-	textColumnName           = "text"
-	messageIDColumnName      = "message_id"
-	idColumnName             = "id"
-	usernameColumnName       = "username"
-	emailColumnName          = "email"
-	createdAtColumnName      = "created_at"
-	updatedAtColumnName      = "updated_at"
-	userIDColumnName         = "user_id"
-	emailConfirmedColumnName = "email_confirmed"
-	passwordColumnName       = "password"
-	chatIDColumnName         = "chat_id"
-	isReadColumnName         = "is_read"
+	senderIDColumnName         = "sender_id"
+	textColumnName             = "text"
+	messageIDColumnName        = "message_id"
+	idColumnName               = "id"
+	usernameColumnName         = "username"
+	emailColumnName            = "email"
+	createdAtColumnName        = "created_at"
+	updatedAtColumnName        = "updated_at"
+	userIDColumnName           = "user_id"
+	emailConfirmedColumnName   = "email_confirmed"
+	passwordColumnName         = "password"
+	chatIDColumnName           = "chat_id"
+	isReadColumnName           = "is_read"
+	replyToMessageIDColumnName = "reply_to_message_id"
+	isDeletedColumnName        = "is_deleted"
+
+	replyTableAlias       = "reply"
+	replySenderTableAlias = "reply_sender"
 
 	desc = "DESC"
 	asc  = "ASC"
@@ -56,17 +61,24 @@ func (repo *Repository) SaveMessage(
 	ctx context.Context,
 	message domains.Message,
 ) (uint64, error) {
+	var replyToMessageID *uint64
+	if message.ReplyToMessage != nil {
+		replyToMessageID = &message.ReplyToMessage.ID
+	}
+
 	stmt, params, err := sq.
 		Insert(messagesTableName).
 		Columns(
 			chatIDColumnName,
 			senderIDColumnName,
 			textColumnName,
+			replyToMessageIDColumnName,
 		).
 		Values(
 			message.ChatID,
 			message.Sender.ID,
 			message.Text,
+			replyToMessageID,
 		).
 		Suffix(returningIDSuffix).
 		PlaceholderFormat(sq.Dollar). // pq postgres driver works only with $ placeholders
@@ -174,6 +186,12 @@ func (repo *Repository) GetChatMessages(
 		fmt.Sprintf("%s.%s", messagesTableName, createdAtColumnName),
 		fmt.Sprintf("%s.%s", messagesTableName, updatedAtColumnName),
 		fmt.Sprintf("%s.%s", messagesStatusesTableName, isReadColumnName),
+		// Reply fields:
+		fmt.Sprintf("%s.%s", replyTableAlias, idColumnName),
+		fmt.Sprintf("%s.%s", replyTableAlias, textColumnName),
+		fmt.Sprintf("%s.%s", replyTableAlias, createdAtColumnName),
+		fmt.Sprintf("%s.%s", replySenderTableAlias, idColumnName),
+		fmt.Sprintf("%s.%s", replySenderTableAlias, usernameColumnName),
 	}
 
 	builder := sq.
@@ -199,6 +217,22 @@ func (repo *Repository) GetChatMessages(
 				idColumnName,
 			),
 		).
+		LeftJoin(
+			fmt.Sprintf(
+				"%s AS %s ON %s.%s = %s.%s",
+				messagesTableName, replyTableAlias,
+				messagesTableName, replyToMessageIDColumnName,
+				replyTableAlias, idColumnName,
+			),
+		).
+		LeftJoin(
+			fmt.Sprintf(
+				"%s AS %s ON %s.%s = %s.%s",
+				usersTableName, replySenderTableAlias,
+				replyTableAlias, senderIDColumnName,
+				replySenderTableAlias, idColumnName,
+			),
+		).
 		Where(
 			sq.And{
 				sq.Eq{
@@ -206,6 +240,9 @@ func (repo *Repository) GetChatMessages(
 				},
 				sq.Eq{
 					fmt.Sprintf("%s.%s", messagesStatusesTableName, userIDColumnName): userID,
+				},
+				sq.Eq{
+					fmt.Sprintf("%s.%s", messagesStatusesTableName, isDeletedColumnName): false,
 				},
 			},
 		).
@@ -280,6 +317,12 @@ func (repo *Repository) GetMessageByID(
 		fmt.Sprintf("%s.%s", messagesTableName, createdAtColumnName),
 		fmt.Sprintf("%s.%s", messagesTableName, updatedAtColumnName),
 		fmt.Sprintf("%s.%s", messagesStatusesTableName, isReadColumnName),
+		// Reply fields:
+		fmt.Sprintf("%s.%s", replyTableAlias, idColumnName),
+		fmt.Sprintf("%s.%s", replyTableAlias, textColumnName),
+		fmt.Sprintf("%s.%s", replyTableAlias, createdAtColumnName),
+		fmt.Sprintf("%s.%s", replySenderTableAlias, idColumnName),
+		fmt.Sprintf("%s.%s", replySenderTableAlias, usernameColumnName),
 	}
 
 	stmt, params, err := sq.
@@ -305,6 +348,22 @@ func (repo *Repository) GetMessageByID(
 				idColumnName,
 			),
 		).
+		LeftJoin(
+			fmt.Sprintf(
+				"%s AS %s ON %s.%s = %s.%s",
+				messagesTableName, replyTableAlias,
+				messagesTableName, replyToMessageIDColumnName,
+				replyTableAlias, idColumnName,
+			),
+		).
+		LeftJoin(
+			fmt.Sprintf(
+				"%s AS %s ON %s.%s = %s.%s",
+				usersTableName, replySenderTableAlias,
+				replyTableAlias, senderIDColumnName,
+				replySenderTableAlias, idColumnName,
+			),
+		).
 		Where(
 			sq.And{
 				sq.Eq{
@@ -312,6 +371,9 @@ func (repo *Repository) GetMessageByID(
 				},
 				sq.Eq{
 					fmt.Sprintf("%s.%s", messagesStatusesTableName, userIDColumnName): userID,
+				},
+				sq.Eq{
+					fmt.Sprintf("%s.%s", messagesStatusesTableName, isDeletedColumnName): false,
 				},
 			},
 		).
@@ -405,8 +467,52 @@ func (repo *Repository) ReadAllChatMessages(
 	return err
 }
 
+func (repo *Repository) DeleteMessageForUser(
+	ctx context.Context,
+	userID uint64,
+	messageID uint64,
+) error {
+	stmt, params, err := sq.
+		Update(messagesStatusesTableName).
+		Set(isDeletedColumnName, true).
+		Where(sq.Eq{
+			userIDColumnName:    userID,
+			messageIDColumnName: messageID,
+		}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.tx.ExecContext(ctx, stmt, params...)
+
+	return err
+}
+
+func (repo *Repository) DeleteMessageForAll(
+	ctx context.Context,
+	messageID uint64,
+) error {
+	stmt, params, err := sq.
+		Update(messagesStatusesTableName).
+		Set(isDeletedColumnName, true).
+		Where(sq.Eq{
+			messageIDColumnName: messageID,
+		}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.tx.ExecContext(ctx, stmt, params...)
+
+	return err
+}
+
 func pgMessageToDomainMessage(messagePg MessagePg) *domains.Message {
-	return &domains.Message{
+	msg := &domains.Message{
 		ID:     messagePg.ID,
 		ChatID: messagePg.ChatID,
 		Sender: domains.User{
@@ -415,28 +521,47 @@ func pgMessageToDomainMessage(messagePg MessagePg) *domains.Message {
 			Email:          messagePg.SenderEmail,
 			EmailConfirmed: messagePg.SenderEmailConfirmed,
 			Password:       messagePg.SenderPassword,
-			CreatedAt:      messagePg.CreatedAt,
-			UpdatedAt:      messagePg.UpdatedAt,
+			CreatedAt:      messagePg.SenderCreatedAt,
+			UpdatedAt:      messagePg.SenderUpdatedAt,
 		},
 		Text:      messagePg.Text,
 		CreatedAt: messagePg.CreatedAt,
 		UpdatedAt: messagePg.UpdatedAt,
 		IsRead:    messagePg.IsRead,
 	}
+
+	if messagePg.ReplyToMessageID != nil {
+		msg.ReplyToMessage = &domains.Message{
+			ID:   *messagePg.ReplyToMessageID,
+			Text: *messagePg.ReplyToMessageText,
+			Sender: domains.User{
+				ID:       *messagePg.ReplyToSenderID,
+				Username: *messagePg.ReplyToSenderUsername,
+			},
+			CreatedAt: *messagePg.ReplyToMessageCreatedAt,
+		}
+	}
+
+	return msg
 }
 
 type MessagePg struct {
-	ID                   uint64
-	ChatID               uint64
-	SenderID             uint64
-	SenderUsername       string
-	SenderEmail          string
-	SenderEmailConfirmed bool
-	SenderPassword       string
-	SenderCreatedAt      time.Time
-	SenderUpdatedAt      time.Time
-	Text                 string
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
-	IsRead               bool
+	ID                      uint64
+	ChatID                  uint64
+	SenderID                uint64
+	SenderUsername          string
+	SenderEmail             string
+	SenderEmailConfirmed    bool
+	SenderPassword          string
+	SenderCreatedAt         time.Time
+	SenderUpdatedAt         time.Time
+	Text                    string
+	CreatedAt               time.Time
+	UpdatedAt               time.Time
+	IsRead                  bool
+	ReplyToMessageID        *uint64
+	ReplyToMessageText      *string
+	ReplyToMessageCreatedAt *time.Time
+	ReplyToSenderID         *uint64
+	ReplyToSenderUsername   *string
 }

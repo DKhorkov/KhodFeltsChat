@@ -18,6 +18,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/chats/create"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/chats/user_chats"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/chat_messages"
+	delete_message "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/delete"
 	get_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/get"
 	update_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/update"
 	me "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/me"
@@ -55,6 +56,9 @@ const (
 
 	ChatsURL           = "/chats"
 	GetChatMessagesURL = ChatsURL + "/{%s}/messages"
+
+	MessagesURL      = "/messages"
+	DeleteMessageURL = MessagesURL + "/{%s}"
 
 	WebPushURL            = "/web-push"
 	WebPushSubscribeURL   = WebPushURL + "/subscribe"
@@ -138,5 +142,9 @@ func SetupHandlers(
 	deleteMux.Handle(
 		fmt.Sprintf(WebPushUnsubscribeURL, common.IDRouteKey),
 		unsubscribe.Handler(webPushSubscriptionsUseCases),
+	)
+	deleteMux.Handle(
+		fmt.Sprintf(DeleteMessageURL, common.IDRouteKey),
+		delete_message.Handler(messagesUseCases, &websocketHandler),
 	)
 }

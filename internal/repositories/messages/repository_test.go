@@ -786,6 +786,335 @@ func (s *RepositoryTestSuite) TestReadAllChatMessages_NonExistentChat() {
 	s.NoError(err) // UPDATE без найденных строк не возвращает ошибку
 }
 
+func (s *RepositoryTestSuite) TestDeleteMessageForUser_Success() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	userID := uint64(1)
+	messageID := uint64(1)
+
+	// Проверяем начальное состояние: is_deleted = false
+	var initialIsDeleted bool
+
+	err := s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT is_deleted FROM messages_statuses WHERE user_id = $1 AND message_id = $2`,
+		userID, messageID,
+	).Scan(&initialIsDeleted)
+	s.NoError(err)
+	s.False(initialIsDeleted, "Initial is_deleted should be false")
+
+	// Удаляем сообщение для пользователя
+	err = s.repository.DeleteMessageForUser(s.ctx, userID, messageID)
+	s.NoError(err)
+
+	// Проверяем конечное состояние: is_deleted = true
+	var finalIsDeleted bool
+
+	err = s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT is_deleted FROM messages_statuses WHERE user_id = $1 AND message_id = $2`,
+		userID, messageID,
+	).Scan(&finalIsDeleted)
+	s.NoError(err)
+	s.True(finalIsDeleted, "Final is_deleted should be true")
+}
+
+func (s *RepositoryTestSuite) TestDeleteMessageForUser_DoesNotAffectOtherUsers() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	userID := uint64(1)
+	otherUserID := uint64(2)
+	messageID := uint64(2) // Сообщение от user 2, статус есть у user 2
+
+	// Добавляем статус для user 1 на это сообщение
+	_, err := s.tx.ExecContext(
+		s.ctx,
+		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, false)`,
+		messageID, userID,
+	)
+	s.NoError(err)
+
+	// Удаляем сообщение только для user 1
+	err = s.repository.DeleteMessageForUser(s.ctx, userID, messageID)
+	s.NoError(err)
+
+	// Проверяем, что для user 1 is_deleted = true
+	var user1Deleted bool
+
+	err = s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT is_deleted FROM messages_statuses WHERE user_id = $1 AND message_id = $2`,
+		userID, messageID,
+	).Scan(&user1Deleted)
+	s.NoError(err)
+	s.True(user1Deleted)
+
+	// Проверяем, что для другого пользователя is_deleted = false
+	var otherUserDeleted bool
+
+	err = s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT is_deleted FROM messages_statuses WHERE user_id = $1 AND message_id = $2`,
+		otherUserID, messageID,
+	).Scan(&otherUserDeleted)
+	s.NoError(err)
+	s.False(otherUserDeleted, "Other user's is_deleted should remain false")
+}
+
+func (s *RepositoryTestSuite) TestDeleteMessageForUser_NonExistentRecord() {
+	err := s.repository.DeleteMessageForUser(s.ctx, 999, 999)
+	s.NoError(err) // UPDATE без найденных строк не возвращает ошибку
+}
+
+func (s *RepositoryTestSuite) TestDeleteMessageForAll_Success() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	messageID := uint64(1)
+
+	// Добавляем статусы для нескольких пользователей
+	for _, userID := range []uint64{2, 3} {
+		_, err := s.tx.ExecContext(
+			s.ctx,
+			`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, false)`,
+			messageID, userID,
+		)
+		s.NoError(err)
+	}
+
+	// Удаляем сообщение для всех
+	err := s.repository.DeleteMessageForAll(s.ctx, messageID)
+	s.NoError(err)
+
+	// Проверяем, что is_deleted = true для всех пользователей
+	var count int
+
+	err = s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT COUNT(*) FROM messages_statuses WHERE message_id = $1 AND is_deleted = false`,
+		messageID,
+	).Scan(&count)
+	s.NoError(err)
+	s.Equal(0, count, "All statuses should have is_deleted = true")
+
+	var totalCount int
+
+	err = s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT COUNT(*) FROM messages_statuses WHERE message_id = $1 AND is_deleted = true`,
+		messageID,
+	).Scan(&totalCount)
+	s.NoError(err)
+	s.GreaterOrEqual(totalCount, 3, "At least 3 statuses should be marked as deleted")
+}
+
+func (s *RepositoryTestSuite) TestDeleteMessageForAll_NonExistentRecord() {
+	err := s.repository.DeleteMessageForAll(s.ctx, 999)
+	s.NoError(err) // UPDATE без найденных строк не возвращает ошибку
+}
+
+func (s *RepositoryTestSuite) TestSaveMessage_WithReplyToMessage() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	// Сначала создаём оригинальное сообщение
+	originalMessage := domains.Message{
+		ChatID: 1,
+		Sender: domains.User{ID: 1},
+		Text:   "Original message",
+	}
+
+	originalID, err := s.repository.SaveMessage(s.ctx, originalMessage)
+	s.NoError(err)
+	s.Greater(originalID, uint64(0))
+
+	// Создаём ответ на сообщение
+	replyMessage := domains.Message{
+		ChatID: 1,
+		Sender: domains.User{ID: 2},
+		Text:   "Reply to original",
+		ReplyToMessage: &domains.Message{
+			ID: originalID,
+		},
+	}
+
+	replyID, err := s.repository.SaveMessage(s.ctx, replyMessage)
+	s.NoError(err)
+	s.Greater(replyID, uint64(0))
+
+	// Проверяем, что reply_to_message_id сохранён
+	var replyToMessageID *uint64
+
+	err = s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT reply_to_message_id FROM messages WHERE id = $1`,
+		replyID,
+	).Scan(&replyToMessageID)
+	s.NoError(err)
+	s.NotNil(replyToMessageID)
+	s.Equal(originalID, *replyToMessageID)
+}
+
+func (s *RepositoryTestSuite) TestGetChatMessages_WithReply() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	// Создаём оригинальное сообщение
+	originalMessage := domains.Message{
+		ChatID: 1,
+		Sender: domains.User{ID: 1},
+		Text:   "Original message for reply test",
+	}
+
+	originalID, err := s.repository.SaveMessage(s.ctx, originalMessage)
+	s.NoError(err)
+
+	// Создаём ответ
+	replyMessage := domains.Message{
+		ChatID: 1,
+		Sender: domains.User{ID: 2},
+		Text:   "This is a reply",
+		ReplyToMessage: &domains.Message{
+			ID: originalID,
+		},
+	}
+
+	replyID, err := s.repository.SaveMessage(s.ctx, replyMessage)
+	s.NoError(err)
+
+	// Получаем сообщения чата от имени user 2
+	userID := uint64(2)
+	chatMessages, err := s.repository.GetChatMessages(s.ctx, userID, 1, nil)
+	s.NoError(err)
+	s.NotNil(chatMessages)
+
+	// Находим ответное сообщение
+	var foundReply *domains.Message
+
+	for i, msg := range chatMessages {
+		if msg.ID == replyID {
+			foundReply = &chatMessages[i]
+
+			break
+		}
+	}
+
+	s.NotNil(foundReply, "Reply message should be found in chat messages")
+	s.NotNil(foundReply.ReplyToMessage, "Reply should have ReplyToMessage set")
+	s.Equal(originalID, foundReply.ReplyToMessage.ID)
+	s.Equal("Original message for reply test", foundReply.ReplyToMessage.Text)
+	s.Equal(uint64(1), foundReply.ReplyToMessage.Sender.ID)
+	s.Equal("john_doe", foundReply.ReplyToMessage.Sender.Username)
+}
+
+func (s *RepositoryTestSuite) TestGetMessageByID_WithReply() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	// Создаём оригинальное сообщение
+	originalMessage := domains.Message{
+		ChatID: 1,
+		Sender: domains.User{ID: 1},
+		Text:   "Original for GetMessageByID test",
+	}
+
+	originalID, err := s.repository.SaveMessage(s.ctx, originalMessage)
+	s.NoError(err)
+
+	// Создаём ответ
+	replyMessage := domains.Message{
+		ChatID: 1,
+		Sender: domains.User{ID: 2},
+		Text:   "Reply for GetMessageByID test",
+		ReplyToMessage: &domains.Message{
+			ID: originalID,
+		},
+	}
+
+	replyID, err := s.repository.SaveMessage(s.ctx, replyMessage)
+	s.NoError(err)
+
+	// Получаем ответное сообщение по ID
+	userID := uint64(2)
+	message, err := s.repository.GetMessageByID(s.ctx, userID, replyID)
+	s.NoError(err)
+	s.NotNil(message)
+
+	s.Equal(replyID, message.ID)
+	s.NotNil(message.ReplyToMessage, "Message should have ReplyToMessage set")
+	s.Equal(originalID, message.ReplyToMessage.ID)
+	s.Equal("Original for GetMessageByID test", message.ReplyToMessage.Text)
+	s.Equal(uint64(1), message.ReplyToMessage.Sender.ID)
+	s.Equal("john_doe", message.ReplyToMessage.Sender.Username)
+}
+
+func (s *RepositoryTestSuite) TestGetChatMessages_FiltersDeletedMessages() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	userID := uint64(1)
+	chatID := uint64(1)
+
+	// Получаем сообщения до удаления
+	messagesBefore, err := s.repository.GetChatMessages(s.ctx, userID, chatID, nil)
+	s.NoError(err)
+	countBefore := len(messagesBefore)
+	s.Greater(countBefore, 0)
+
+	// Помечаем одно сообщение как удалённое для user 1
+	messageIDToDelete := messagesBefore[0].ID
+
+	err = s.repository.DeleteMessageForUser(s.ctx, userID, messageIDToDelete)
+	s.NoError(err)
+
+	// Получаем сообщения после удаления
+	messagesAfter, err := s.repository.GetChatMessages(s.ctx, userID, chatID, nil)
+	s.NoError(err)
+	s.Equal(countBefore-1, len(messagesAfter), "Deleted message should be filtered out")
+
+	// Проверяем, что удалённого сообщения нет в результатах
+	for _, msg := range messagesAfter {
+		s.NotEqual(messageIDToDelete, msg.ID, "Deleted message should not appear in results")
+	}
+}
+
+func (s *RepositoryTestSuite) TestGetMessageByID_DeletedMessage() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	userID := uint64(1)
+	messageID := uint64(1)
+
+	// Проверяем, что сообщение доступно
+	message, err := s.repository.GetMessageByID(s.ctx, userID, messageID)
+	s.NoError(err)
+	s.NotNil(message)
+
+	// Удаляем сообщение для user 1
+	err = s.repository.DeleteMessageForUser(s.ctx, userID, messageID)
+	s.NoError(err)
+
+	// Проверяем, что удалённое сообщение больше не доступно
+	message, err = s.repository.GetMessageByID(s.ctx, userID, messageID)
+	s.Error(err)
+	s.Nil(message)
+}
+
 func (s *RepositoryTestSuite) createTestUsers() {
 	// Создаем пользователей
 	users := []struct {

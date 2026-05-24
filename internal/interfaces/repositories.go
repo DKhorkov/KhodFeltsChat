@@ -78,6 +78,8 @@ type MessagesRepository interface {
 		isRead bool,
 	) error
 	ReadAllChatMessages(ctx context.Context, userID uint64, chatID uint64) error
+	DeleteMessageForUser(ctx context.Context, userID uint64, messageID uint64) error
+	DeleteMessageForAll(ctx context.Context, messageID uint64) error
 }
 
 //go:generate mockgen -source=repositories.go -destination=../../mocks/repositories/settings_repository.go -package=mockrepositories -exclude_interfaces=AuthRepository,UsersRepository,EmailsRepository,MessagesRepository,ChatsRepository,WebPushSubscriptionsRepository,WebPushRepository

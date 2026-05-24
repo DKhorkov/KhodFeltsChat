@@ -15,7 +15,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// swagger:route GET /api/chats/{id}/messages chats GetChatMessages
+// swagger:route GET /api/chats/{id}/messages messages GetChatMessages
 //
 // GetChatMessages
 //

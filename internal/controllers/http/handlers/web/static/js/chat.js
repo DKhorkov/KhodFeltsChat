@@ -14,6 +14,8 @@ let isLoadingMore = false;
 let hasMoreMessages = true;
 let returnToGroupChat = null;
 let chatsList = [];
+let replyToMessage = null;  // сообщение, на которое отвечаем
+let contextMenuMessageId = null; // ID сообщения для контекстного меню
 
 // ═══════════════════════════════════════
 // Инициализация
@@ -41,6 +43,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupChatListDelegation();
     setupMobileKeyboardDismiss();
     setupMobileViewportResize();
+    setupContextMenu();
+    setupReplyCancel();
 
     // Открытие чата из push-уведомления (по query-параметру):
     const params = new URLSearchParams(window.location.search);
@@ -119,32 +123,13 @@ function connectWebSocket() {
     ws = new WebSocket(protocol + '//' + window.location.host + '/api/ws');
 
     ws.onmessage = (event) => {
-        const message = JSON.parse(event.data);
+        const envelope = JSON.parse(event.data);
 
-        if (selectedChatId === message.chatId) {
-            // Дедупликация: если есть оптимистичное сообщение с таким же текстом от текущего пользователя — заменяем
-            const optimisticIdx = messages.findIndex(
-                m => m.optimistic && m.chatId === message.chatId && m.text === message.text && m.sender.id === message.sender.id
-            );
-
-            if (optimisticIdx >= 0) {
-                messages[optimisticIdx] = message;
-            } else {
-                messages.push(message);
-                appendMessageBubble(message);
-            }
-
-            scrollToBottom();
+        if (envelope.type === 'new_message') {
+            handleNewMessage(envelope.payload);
+        } else if (envelope.type === 'message_deleted') {
+            handleMessageDeleted(envelope.payload);
         }
-
-        // Показываем toast, если сообщение не от текущего пользователя
-        // и чат не открыт (или это другой чат):
-        if (message.sender.id !== currentUser.id && selectedChatId !== message.chatId) {
-            showToast(message.sender.username, message.text, message.chatId);
-        }
-
-        // Обновляем список чатов (непрочитанное):
-        debouncedLoadChats();
     };
 
     ws.onclose = () => {
@@ -158,6 +143,46 @@ function connectWebSocket() {
             ws.close();
         }
     };
+}
+
+function handleNewMessage(message) {
+    if (selectedChatId === message.chatId) {
+        // Дедупликация: если есть оптимистичное сообщение с таким же текстом от текущего пользователя — заменяем
+        const optimisticIdx = messages.findIndex(
+            m => m.optimistic && m.chatId === message.chatId && m.text === message.text && m.sender.id === message.sender.id
+        );
+
+        if (optimisticIdx >= 0) {
+            messages[optimisticIdx] = message;
+        } else {
+            messages.push(message);
+            appendMessageBubble(message);
+        }
+
+        scrollToBottom();
+    }
+
+    // Показываем toast, если сообщение не от текущего пользователя
+    // и чат не открыт (или это другой чат):
+    if (message.sender.id !== currentUser.id && selectedChatId !== message.chatId) {
+        showToast(message.sender.username, message.text, message.chatId);
+    }
+
+    // Обновляем список чатов (непрочитанное):
+    debouncedLoadChats();
+}
+
+function handleMessageDeleted(payload) {
+    if (selectedChatId === payload.chatId) {
+        const idx = messages.findIndex(m => m.id === payload.messageId);
+        if (idx >= 0) {
+            messages.splice(idx, 1);
+            const bubble = document.querySelector(`.message-bubble[data-message-id="${payload.messageId}"]`);
+            if (bubble) bubble.remove();
+        }
+    }
+
+    debouncedLoadChats();
 }
 
 // ═══════════════════════════════════════
@@ -412,6 +437,31 @@ function createMessageBubble(message) {
 
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble' + (isOwn ? ' message-bubble--own' : '');
+    bubble.dataset.messageId = message.id;
+
+    // Плашка ответа:
+    if (message.replyToMessage) {
+        const replyBlock = document.createElement('div');
+        replyBlock.className = 'message-bubble__reply';
+
+        const replySender = document.createElement('span');
+        replySender.className = 'message-bubble__reply-sender';
+        replySender.textContent = message.replyToMessage.sender.id === currentUser.id
+            ? 'Вы' : message.replyToMessage.sender.username;
+
+        const replyText = document.createElement('span');
+        replyText.className = 'message-bubble__reply-text';
+        replyText.textContent = message.replyToMessage.text;
+
+        replyBlock.appendChild(replySender);
+        replyBlock.appendChild(replyText);
+
+        replyBlock.addEventListener('click', () => {
+            scrollToMessage(message.replyToMessage.id);
+        });
+
+        bubble.appendChild(replyBlock);
+    }
 
     const header = document.createElement('div');
     header.className = 'message-bubble__header';
@@ -496,7 +546,12 @@ function sendMessage() {
     const text = input.value.trim();
     if (!text || !selectedChatId || !ws || ws.readyState !== WebSocket.OPEN) return;
 
-    ws.send(JSON.stringify({chatId: selectedChatId, text}));
+    const payload = {chatId: selectedChatId, text};
+    if (replyToMessage) {
+        payload.replyToMessage = {id: replyToMessage.id};
+    }
+
+    ws.send(JSON.stringify(payload));
 
     // Помечаем все сообщения как прочитанные и убираем разделитель:
     markAllAsRead();
@@ -510,11 +565,20 @@ function sendMessage() {
         sender: {id: currentUser.id, username: currentUser.username},
         isRead: true,
         optimistic: true,
+        replyToMessage: replyToMessage ? {
+            id: replyToMessage.id,
+            sender: replyToMessage.sender,
+            text: replyToMessage.text,
+            createdAt: replyToMessage.createdAt,
+        } : undefined,
     };
 
     messages.push(optimisticMessage);
     appendMessageBubble(optimisticMessage);
     scrollToBottom();
+
+    // Сбрасываем ответ:
+    cancelReply();
 
     input.value = '';
     document.getElementById('btn-send').disabled = true;
@@ -689,6 +753,9 @@ function closeChat() {
     // Закрываем emoji picker:
     document.getElementById('emoji-picker-container').style.display = 'none';
     document.getElementById('btn-emoji-toggle').classList.remove('conversation__emoji-toggle--active');
+
+    // Сбрасываем ответ:
+    cancelReply();
 }
 
 // ═══════════════════════════════════════
@@ -1130,6 +1197,179 @@ function setupMobileViewportResize() {
     window.addEventListener('scroll', () => {
         if (window.scrollY !== 0) window.scrollTo(0, 0);
     });
+}
+
+// ═══════════════════════════════════════
+// Контекстное меню сообщений
+// ═══════════════════════════════════════
+function setupContextMenu() {
+    const menu = document.getElementById('context-menu');
+    const msgList = document.getElementById('messages-list');
+
+    // Desktop: правый клик
+    msgList.addEventListener('contextmenu', (e) => {
+        const bubble = e.target.closest('.message-bubble');
+        if (!bubble) return;
+
+        e.preventDefault();
+        showContextMenu(bubble, e.clientX, e.clientY);
+    });
+
+    // Mobile: длинное нажатие
+    let longPressTimer = null;
+    let longPressTarget = null;
+
+    msgList.addEventListener('touchstart', (e) => {
+        const bubble = e.target.closest('.message-bubble');
+        if (!bubble) return;
+
+        longPressTarget = bubble;
+        longPressTimer = setTimeout(() => {
+            const touch = e.touches[0];
+            showContextMenu(bubble, touch.clientX, touch.clientY);
+            longPressTarget = null;
+        }, 500);
+    }, {passive: true});
+
+    msgList.addEventListener('touchmove', () => {
+        clearTimeout(longPressTimer);
+        longPressTarget = null;
+    }, {passive: true});
+
+    msgList.addEventListener('touchend', () => {
+        clearTimeout(longPressTimer);
+        longPressTarget = null;
+    }, {passive: true});
+
+    // Закрытие меню при клике в другом месте:
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#context-menu')) {
+            menu.style.display = 'none';
+        }
+    });
+
+    document.addEventListener('touchstart', (e) => {
+        if (!e.target.closest('#context-menu') && menu.style.display !== 'none') {
+            menu.style.display = 'none';
+        }
+    }, {passive: true});
+
+    // Действия:
+    document.getElementById('ctx-reply').addEventListener('click', () => {
+        menu.style.display = 'none';
+        const msg = messages.find(m => m.id === contextMenuMessageId);
+        if (msg) setReply(msg);
+    });
+
+    document.getElementById('ctx-copy').addEventListener('click', () => {
+        menu.style.display = 'none';
+        const msg = messages.find(m => m.id === contextMenuMessageId);
+        if (msg) navigator.clipboard.writeText(msg.text).catch(console.error);
+    });
+
+    document.getElementById('ctx-delete-toggle').addEventListener('click', () => {
+        document.getElementById('ctx-delete-sub').style.display = '';
+        document.getElementById('ctx-delete-toggle').style.display = 'none';
+    });
+
+    document.getElementById('ctx-delete-for-me').addEventListener('click', () => {
+        menu.style.display = 'none';
+        deleteMessage(contextMenuMessageId, false);
+    });
+
+    document.getElementById('ctx-delete-for-all').addEventListener('click', () => {
+        menu.style.display = 'none';
+        deleteMessage(contextMenuMessageId, true);
+    });
+}
+
+function showContextMenu(bubble, x, y) {
+    const menu = document.getElementById('context-menu');
+    const messageId = Number(bubble.dataset.messageId);
+    contextMenuMessageId = messageId;
+
+    const msg = messages.find(m => m.id === messageId);
+    const isOwn = msg && msg.sender.id === currentUser.id;
+    document.getElementById('ctx-delete-group').style.display = isOwn ? '' : 'none';
+    document.getElementById('ctx-delete-toggle').style.display = isOwn ? '' : 'none';
+    document.getElementById('ctx-delete-sub').style.display = 'none';
+
+    menu.style.display = '';
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+
+    // Не выходим за границы экрана:
+    const rect = menu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+        menu.style.left = (window.innerWidth - rect.width - 8) + 'px';
+    }
+    if (rect.bottom > window.innerHeight) {
+        menu.style.top = (window.innerHeight - rect.height - 8) + 'px';
+    }
+}
+
+// ═══════════════════════════════════════
+// Ответ на сообщение
+// ═══════════════════════════════════════
+function setReply(message) {
+    replyToMessage = message;
+    const bar = document.getElementById('reply-bar');
+    document.getElementById('reply-bar-sender').textContent =
+        message.sender.id === currentUser.id ? 'Вы' : message.sender.username;
+    document.getElementById('reply-bar-text').textContent = message.text;
+    bar.style.display = '';
+    document.getElementById('message-input').focus();
+}
+
+function cancelReply() {
+    replyToMessage = null;
+    document.getElementById('reply-bar').style.display = 'none';
+}
+
+function scrollToMessage(messageId) {
+    const bubble = document.querySelector(`.message-bubble[data-message-id="${messageId}"]`);
+    if (bubble) {
+        bubble.scrollIntoView({behavior: 'smooth', block: 'center'});
+        bubble.classList.add('message-bubble--highlight');
+        bubble.addEventListener('animationend', () => {
+            bubble.classList.remove('message-bubble--highlight');
+        }, {once: true});
+    }
+}
+
+// ═══════════════════════════════════════
+// Удаление сообщений
+// ═══════════════════════════════════════
+function setupReplyCancel() {
+    document.getElementById('btn-cancel-reply').addEventListener('click', cancelReply);
+}
+
+async function deleteMessage(messageId, forAll) {
+    try {
+        const resp = await fetchWithAuth('/api/messages/' + messageId, {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({forAll}),
+        });
+
+        if (!resp.ok) {
+            const text = await resp.text();
+            showError(mapError(text));
+            return;
+        }
+
+        // Удаляем из UI:
+        const idx = messages.findIndex(m => m.id === messageId);
+        if (idx >= 0) {
+            messages.splice(idx, 1);
+            const bubble = document.querySelector(`.message-bubble[data-message-id="${messageId}"]`);
+            if (bubble) bubble.remove();
+        }
+
+        debouncedLoadChats();
+    } catch (err) {
+        showError('Ошибка сети: ' + err.message);
+    }
 }
 
 // ═══════════════════════════════════════

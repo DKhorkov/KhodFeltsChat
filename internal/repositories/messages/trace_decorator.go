@@ -96,3 +96,30 @@ func (d *TraceDecorator) ReadAllChatMessages(
 
 	return d.base.ReadAllChatMessages(ctx, userID, chatID)
 }
+
+func (d *TraceDecorator) DeleteMessageForUser(
+	ctx context.Context,
+	userID uint64,
+	messageID uint64,
+) error {
+	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
+	defer span.End()
+
+	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
+	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
+
+	return d.base.DeleteMessageForUser(ctx, userID, messageID)
+}
+
+func (d *TraceDecorator) DeleteMessageForAll(
+	ctx context.Context,
+	messageID uint64,
+) error {
+	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
+	defer span.End()
+
+	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
+	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
+
+	return d.base.DeleteMessageForAll(ctx, messageID)
+}

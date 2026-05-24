@@ -55,6 +55,34 @@ func (mr *MockMessagesRepositoryMockRecorder) ChangeMessagesIsReadStatus(ctx, us
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeMessagesIsReadStatus", reflect.TypeOf((*MockMessagesRepository)(nil).ChangeMessagesIsReadStatus), ctx, userID, messages, isRead)
 }
 
+// DeleteMessageForAll mocks base method.
+func (m *MockMessagesRepository) DeleteMessageForAll(ctx context.Context, messageID uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteMessageForAll", ctx, messageID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteMessageForAll indicates an expected call of DeleteMessageForAll.
+func (mr *MockMessagesRepositoryMockRecorder) DeleteMessageForAll(ctx, messageID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMessageForAll", reflect.TypeOf((*MockMessagesRepository)(nil).DeleteMessageForAll), ctx, messageID)
+}
+
+// DeleteMessageForUser mocks base method.
+func (m *MockMessagesRepository) DeleteMessageForUser(ctx context.Context, userID, messageID uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteMessageForUser", ctx, userID, messageID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteMessageForUser indicates an expected call of DeleteMessageForUser.
+func (mr *MockMessagesRepositoryMockRecorder) DeleteMessageForUser(ctx, userID, messageID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMessageForUser", reflect.TypeOf((*MockMessagesRepository)(nil).DeleteMessageForUser), ctx, userID, messageID)
+}
+
 // GetChatMessages mocks base method.
 func (m *MockMessagesRepository) GetChatMessages(ctx context.Context, userID, chatID uint64, pagination *domains.Pagination) ([]domains.Message, error) {
 	m.ctrl.T.Helper()

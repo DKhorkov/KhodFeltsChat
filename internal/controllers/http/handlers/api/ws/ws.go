@@ -219,7 +219,12 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 				continue
 			}
 
-			if err = connection.WriteJSON(messageToSend); err != nil {
+			event := domains.WSEvent{
+				Type:    domains.WSEventNewMessage,
+				Payload: messageToSend,
+			}
+
+			if err = connection.WriteJSON(event); err != nil {
 				logging.LogErrorContext(
 					ctx,
 					h.logger,
@@ -297,6 +302,71 @@ func (h *Handler) publishNewMessageNotifications(
 		content,
 	); err != nil {
 		logging.LogErrorContext(ctx, h.logger, "Failed to publish email notification", err)
+	}
+}
+
+// BroadcastMessageDeleted sends a message_deleted event to all chat members except the initiator.
+func (h *Handler) BroadcastMessageDeleted(ctx context.Context, chatID uint64, messageID uint64, senderID uint64) {
+	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, chatID)
+	if err != nil {
+		logging.LogErrorContext(
+			ctx,
+			h.logger,
+			"Failed to get chat members for message deleted broadcast",
+			err,
+			"ChatID", chatID,
+			"MessageID", messageID,
+		)
+
+		return
+	}
+
+	event := domains.WSEvent{
+		Type: domains.WSEventMessageDeleted,
+		Payload: domains.MessageDeletedPayload{
+			MessageID: messageID,
+			ChatID:    chatID,
+		},
+	}
+
+	for _, member := range chatMembers {
+		if member.ID == senderID {
+			continue
+		}
+
+		value, exists := h.connections.Load(member.ID)
+		if !exists {
+			continue
+		}
+
+		connection, ok := value.(*websocket.Conn)
+		if !ok {
+			h.connections.Delete(member.ID)
+
+			continue
+		}
+
+		if err = connection.WriteJSON(event); err != nil {
+			logging.LogErrorContext(
+				ctx,
+				h.logger,
+				"Failed to write message_deleted event",
+				err,
+				"ChatMember", member,
+				"MessageID", messageID,
+			)
+
+			if err = connection.Close(); err != nil {
+				logging.LogErrorContext(
+					ctx,
+					h.logger,
+					"Failed to close connection",
+					err,
+				)
+			}
+
+			h.connections.Delete(member.ID)
+		}
 	}
 }
 
