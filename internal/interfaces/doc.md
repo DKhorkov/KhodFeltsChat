@@ -8,7 +8,7 @@
 - **Controller** — `Run()`, `Stop()` — управление HTTP сервером
 - **UnitOfWork** — `Do(ctx, fn(ctx, tx) error) error` — транзакционная обёртка
 - **Upgrader** — `Upgrade(w, r, header) (*websocket.Conn, error)` — WebSocket upgrade
-- **WSBroadcaster** — `BroadcastMessageDeleted(ctx, chatID, messageID, senderID)` — рассылка WS-события удаления сообщения участникам чата
+- **WSBroadcaster** — `BroadcastMessageDeleted(ctx, chatID, messageID)` — рассылка WS-события удаления сообщения всем участникам чата; `SendMessageDeletedToUser(ctx, chatID, messageID, userID)` — отправка события удаления только конкретному пользователю (удаление у себя)
 
 ### Repositories
 - **UsersRepository** — CRUD пользователей

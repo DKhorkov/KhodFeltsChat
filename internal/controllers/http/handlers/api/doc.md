@@ -52,7 +52,7 @@ HTTP-обработчики REST API, сгруппированные по пре
 | delete        | DELETE | /api/messages/{id}         |
 
 ### delete
-Удаляет сообщение. Body JSON: `{"forAll": bool}`. Если `forAll=true` — проверяет авторство через `GetMessageByID`, удаляет для всех, рассылает WS-событие `message_deleted` через `WSBroadcaster`. Если `forAll=false` — удаляет только для текущего пользователя.
+Удаляет сообщение. Body JSON: `{"forAll": bool}`. Всегда получает сообщение через `GetMessageByID` для определения `chatID`. Если `forAll=true` — удаляет для всех, рассылает WS-событие `message_deleted` всем участникам чата через `BroadcastMessageDeleted`. Если `forAll=false` — удаляет только для текущего пользователя, отправляет WS-событие `message_deleted` только на его соединения через `SendMessageDeletedToUser`.
 
 ## WebSocket
 
@@ -60,12 +60,12 @@ HTTP-обработчики REST API, сгруппированные по пре
 |------------|-------|----------|
 | ws         | GET   | /api/ws  |
 
-- Хранит активные соединения в `sync.Map` (userID → conn).
+- Хранит активные соединения в `sync.Map` (userID → `*userConnections`), поддерживает мультисессию (несколько соединений на пользователя).
 - Аутентифицирует пользователя, обновляет соединение до WebSocket.
 - Читает входящие JSON-сообщения в цикле.
 - Оборачивает исходящие сообщения в `WSEvent` envelope (`type` + `payload`).
 - Рассылает `new_message` событие всем онлайн-участникам чата.
-- Реализует `WSBroadcaster` — метод `BroadcastMessageDeleted` рассылает `message_deleted` событие.
+- Реализует `WSBroadcaster` — метод `BroadcastMessageDeleted` рассылает `message_deleted` событие всем участникам чата (удаление у всех); `SendMessageDeletedToUser` отправляет только конкретному пользователю (удаление у себя).
 - Публикует `WebPushNotificationDTO` и `EmailNotificationDTO` в NATS для офлайн-участников чата.
 
 ## Web Push (Web Push Notifications)

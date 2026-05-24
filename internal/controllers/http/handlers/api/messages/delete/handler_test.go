@@ -59,7 +59,7 @@ func TestHandler(t *testing.T) {
 		checkResponse  func(t *testing.T, rr *httptest.ResponseRecorder)
 	}{
 		{
-			name: "successful delete for self (no broadcast)",
+			name: "successful delete for self (send to user only)",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
@@ -70,7 +70,15 @@ func TestHandler(t *testing.T) {
 					domains.DeleteMessageDTO{ForAll: false},
 				)
 			},
-			setupMock: func(m *mockusecases.MockMessagesUseCases, _ *mockcontrollers.MockWSBroadcaster) {
+			setupMock: func(m *mockusecases.MockMessagesUseCases, b *mockcontrollers.MockWSBroadcaster) {
+				m.EXPECT().
+					GetMessageByID(gomock.Any(), userID, messageID).
+					Return(&domains.Message{
+						ID:     messageID,
+						ChatID: 100,
+						Sender: domains.User{ID: userID},
+					}, nil)
+
 				m.EXPECT().
 					DeleteMessage(gomock.Any(), domains.DeleteMessageDTO{
 						MessageID: messageID,
@@ -78,6 +86,9 @@ func TestHandler(t *testing.T) {
 						ForAll:    false,
 					}).
 					Return(nil)
+
+				b.EXPECT().
+					SendMessageDeletedToUser(gomock.Any(), uint64(100), messageID, userID)
 			},
 			expectedStatus: http.StatusNoContent,
 		},
@@ -173,6 +184,14 @@ func TestHandler(t *testing.T) {
 			},
 			setupMock: func(m *mockusecases.MockMessagesUseCases, _ *mockcontrollers.MockWSBroadcaster) {
 				m.EXPECT().
+					GetMessageByID(gomock.Any(), userID, messageID).
+					Return(&domains.Message{
+						ID:     messageID,
+						ChatID: 100,
+						Sender: domains.User{ID: userID},
+					}, nil)
+
+				m.EXPECT().
 					DeleteMessage(gomock.Any(), domains.DeleteMessageDTO{
 						MessageID: messageID,
 						UserID:    userID,
@@ -235,6 +254,14 @@ func TestHandler(t *testing.T) {
 			},
 			setupMock: func(m *mockusecases.MockMessagesUseCases, _ *mockcontrollers.MockWSBroadcaster) {
 				m.EXPECT().
+					GetMessageByID(gomock.Any(), userID, messageID).
+					Return(&domains.Message{
+						ID:     messageID,
+						ChatID: 100,
+						Sender: domains.User{ID: userID},
+					}, nil)
+
+				m.EXPECT().
 					DeleteMessage(gomock.Any(), domains.DeleteMessageDTO{
 						MessageID: messageID,
 						UserID:    userID,
@@ -249,7 +276,7 @@ func TestHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "GetMessageByID error for ForAll",
+			name: "GetMessageByID error",
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 

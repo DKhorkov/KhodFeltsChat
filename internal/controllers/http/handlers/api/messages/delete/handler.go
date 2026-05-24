@@ -65,17 +65,11 @@ func Handler(u interfaces.MessagesUseCases, broadcaster interfaces.WSBroadcaster
 		dto.UserID = userID
 
 		// Fetch message before deletion to get chatID for WS broadcast:
-		var chatID uint64
+		message, err := u.GetMessageByID(r.Context(), userID, messageID)
+		if err != nil {
+			http.Error(w, customerrors.ErrMessageNotFound.Error(), http.StatusNotFound)
 
-		if dto.ForAll {
-			message, err := u.GetMessageByID(r.Context(), userID, messageID)
-			if err != nil {
-				http.Error(w, customerrors.ErrMessageNotFound.Error(), http.StatusNotFound)
-
-				return
-			}
-
-			chatID = message.ChatID
+			return
 		}
 
 		err = u.DeleteMessage(r.Context(), dto)
@@ -96,7 +90,9 @@ func Handler(u interfaces.MessagesUseCases, broadcaster interfaces.WSBroadcaster
 		}
 
 		if dto.ForAll {
-			broadcaster.BroadcastMessageDeleted(r.Context(), chatID, messageID)
+			broadcaster.BroadcastMessageDeleted(r.Context(), message.ChatID, messageID)
+		} else {
+			broadcaster.SendMessageDeletedToUser(r.Context(), message.ChatID, messageID, userID)
 		}
 
 		w.WriteHeader(http.StatusNoContent)
