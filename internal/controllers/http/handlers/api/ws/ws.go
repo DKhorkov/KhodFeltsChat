@@ -159,6 +159,24 @@ func (h *Handler) BroadcastMessageDeleted(
 	}
 }
 
+// SendMessageDeletedToUser sends a message_deleted event only to a specific user's connections.
+func (h *Handler) SendMessageDeletedToUser(
+	ctx context.Context,
+	chatID uint64,
+	messageID uint64,
+	userID uint64,
+) {
+	event := domains.WSEvent{
+		Type: domains.WSEventMessageDeleted,
+		Payload: domains.MessageDeletedPayload{
+			MessageID: messageID,
+			ChatID:    chatID,
+		},
+	}
+
+	h.sendToUser(ctx, userID, event)
+}
+
 func (h *Handler) addConnection(userID uint64, conn *websocket.Conn) {
 	val, _ := h.connections.LoadOrStore(userID, &userConnections{})
 
@@ -264,24 +282,6 @@ func (h *Handler) hasConnections(userID uint64) bool {
 	_, ok := h.connections.Load(userID)
 
 	return ok
-}
-
-// SendMessageDeletedToUser sends a message_deleted event only to a specific user's connections.
-func (h *Handler) SendMessageDeletedToUser(
-	ctx context.Context,
-	chatID uint64,
-	messageID uint64,
-	userID uint64,
-) {
-	event := domains.WSEvent{
-		Type: domains.WSEventMessageDeleted,
-		Payload: domains.MessageDeletedPayload{
-			MessageID: messageID,
-			ChatID:    chatID,
-		},
-	}
-
-	h.sendToUser(ctx, userID, event)
 }
 
 func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
