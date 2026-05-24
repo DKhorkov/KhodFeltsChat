@@ -169,6 +169,7 @@ function handleMessageDeleted(payload) {
             messages.splice(idx, 1);
             const bubble = document.querySelector(`.message-bubble[data-message-id="${payload.messageId}"]`);
             if (bubble) bubble.remove();
+            updateUnreadDivider();
         } else {
             console.warn('message_deleted: сообщение не найдено в текущем списке', payload.messageId);
         }
@@ -485,6 +486,36 @@ function isFirstUnread(message, index) {
 
     const prev = messages[index - 1];
     return prev.isRead || prev.sender.id === currentUser.id;
+}
+
+function updateUnreadDivider() {
+    const container = document.getElementById('messages-list');
+
+    // Убираем старый разделитель:
+    const old = container.querySelector('.conversation__unread-divider');
+    if (old) old.remove();
+
+    // Ищем первое непрочитанное сообщение:
+    let firstUnreadIdx = -1;
+    for (let i = 0; i < messages.length; i++) {
+        if (isFirstUnread(messages[i], i)) {
+            firstUnreadIdx = i;
+            break;
+        }
+    }
+
+    if (firstUnreadIdx < 0) return;
+
+    // Вставляем divider перед bubble этого сообщения:
+    const bubble = container.querySelector(
+        `.message-bubble[data-message-id="${messages[firstUnreadIdx].id}"]`
+    );
+    if (bubble) {
+        const divider = document.createElement('div');
+        divider.className = 'conversation__unread-divider';
+        divider.innerHTML = '<span>Новые сообщения</span>';
+        container.insertBefore(divider, bubble);
+    }
 }
 
 function scrollToBottom() {
