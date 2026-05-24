@@ -1,6 +1,11 @@
 const MESSAGES_PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 300;
+const CHAT_LIST_DEBOUNCE_MS = 300;
 const CHAT_LIST_POLL_INTERVAL_MS = 5000;
+const WS_RECONNECT_DELAY_MS = 3000;
+const EMOJI_CLOSE_DELAY_MS = 500;
+const LONG_PRESS_DELAY_MS = 500;
+const TOAST_DURATION_MS = 3000;
 const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 600;
 const SWIPE_CLOSE_THRESHOLD_RATIO = 0.5; // 50% ширины экрана для закрытия чата свайпом
 const SWIPE_LOCK_ANGLE_PX = 15;          // минимальное смещение до определения направления свайпа
@@ -134,7 +139,7 @@ function connectWebSocket() {
 
     ws.onclose = () => {
         // Переподключение через 3 секунды:
-        setTimeout(connectWebSocket, 3000);
+        setTimeout(connectWebSocket, WS_RECONNECT_DELAY_MS);
     };
 
     ws.onerror = () => {
@@ -197,7 +202,7 @@ let loadChatsTimer = null;
 
 function debouncedLoadChats() {
     if (loadChatsTimer) clearTimeout(loadChatsTimer);
-    loadChatsTimer = setTimeout(loadChats, 300);
+    loadChatsTimer = setTimeout(loadChats, CHAT_LIST_DEBOUNCE_MS);
 }
 
 function renderChatList(chats) {
@@ -639,7 +644,7 @@ function setupEmojiPicker() {
         emojiCloseTimer = setTimeout(() => {
             pickerContainer.style.display = 'none';
             toggleBtn.classList.remove('conversation__emoji-toggle--active');
-        }, 500);
+        }, EMOJI_CLOSE_DELAY_MS);
     }
 
     wrapper.addEventListener('mouseenter', showEmojiPicker);
@@ -1230,7 +1235,7 @@ function setupContextMenu() {
             const touch = e.touches[0];
             showContextMenu(bubble, touch.clientX, touch.clientY);
             longPressTarget = null;
-        }, 500);
+        }, LONG_PRESS_DELAY_MS);
     }, {passive: true});
 
     msgList.addEventListener('touchmove', () => {
@@ -1424,7 +1429,7 @@ function showToast(senderName, text, chatId) {
 
     setTimeout(() => {
         if (toast.parentNode) toast.remove();
-    }, 3000);
+    }, TOAST_DURATION_MS);
 }
 
 // ═══════════════════════════════════════
