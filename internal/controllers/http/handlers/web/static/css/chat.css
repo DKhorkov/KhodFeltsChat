@@ -243,12 +243,14 @@
 
 .conversation__composer-row {
     display: flex;
+    flex-wrap: nowrap;
     gap: var(--space-sm);
     align-items: flex-end;
 }
 
 .conversation__composer-input {
     flex: 1;
+    min-width: 0;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -287,6 +289,8 @@
     cursor: pointer;
     transition: background var(--transition-base);
     align-self: stretch;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .conversation__composer button:hover:not(:disabled) {
