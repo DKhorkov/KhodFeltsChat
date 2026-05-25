@@ -21,6 +21,7 @@ let returnToGroupChat = null;
 let chatsList = [];
 let replyToMessage = null;  // сообщение, на которое отвечаем
 let contextMenuMessageId = null; // ID сообщения для контекстного меню
+let contextMenuInputWasFocused = false; // был ли input в фокусе при открытии меню
 
 // ═══════════════════════════════════════
 // Инициализация
@@ -1276,6 +1277,7 @@ function setupContextMenu() {
         menu.style.display = 'none';
         const msg = messages.find(m => m.id === contextMenuMessageId);
         if (msg) navigator.clipboard.writeText(msg.text).catch(console.error);
+        restoreInputFocus();
     });
 
     document.getElementById('ctx-delete-toggle').addEventListener('click', () => {
@@ -1286,18 +1288,27 @@ function setupContextMenu() {
     document.getElementById('ctx-delete-for-me').addEventListener('click', () => {
         menu.style.display = 'none';
         deleteMessage(contextMenuMessageId, false);
+        restoreInputFocus();
     });
 
     document.getElementById('ctx-delete-for-all').addEventListener('click', () => {
         menu.style.display = 'none';
         deleteMessage(contextMenuMessageId, true);
+        restoreInputFocus();
     });
+}
+
+function restoreInputFocus() {
+    if (contextMenuInputWasFocused) {
+        document.getElementById('message-input').focus();
+    }
 }
 
 function showContextMenu(bubble, x, y) {
     const menu = document.getElementById('context-menu');
     const messageId = Number(bubble.dataset.messageId);
     contextMenuMessageId = messageId;
+    contextMenuInputWasFocused = document.activeElement === document.getElementById('message-input');
 
     const msg = messages.find(m => m.id === messageId);
     const isOwn = msg && msg.sender.id === currentUser.id;
