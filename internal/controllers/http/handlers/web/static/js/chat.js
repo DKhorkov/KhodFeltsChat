@@ -1157,7 +1157,7 @@ function setupMobileKeyboardDismiss() {
     }, {passive: true});
 
     document.addEventListener('touchend', (e) => {
-        if (e.target.closest('#message-input, #btn-send, #context-menu')) return;
+        if (e.target.closest('#message-input, #btn-send, #context-menu, #btn-cancel-reply')) return;
 
         // Не закрываем клавиатуру, если контекстное меню открыто (long press по bubble):
         const menu = document.getElementById('context-menu');
@@ -1271,6 +1271,7 @@ function setupContextMenu() {
         menu.style.display = 'none';
         const msg = messages.find(m => m.id === contextMenuMessageId);
         if (msg) setReply(msg);
+        restoreInputFocus();
     });
 
     document.getElementById('ctx-copy').addEventListener('click', () => {
@@ -1283,6 +1284,7 @@ function setupContextMenu() {
     document.getElementById('ctx-delete-toggle').addEventListener('click', () => {
         document.getElementById('ctx-delete-sub').style.display = '';
         document.getElementById('ctx-delete-toggle').style.display = 'none';
+        restoreInputFocus();
     });
 
     document.getElementById('ctx-delete-for-me').addEventListener('click', () => {
@@ -1346,6 +1348,7 @@ function setReply(message) {
 function cancelReply() {
     replyToMessage = null;
     document.getElementById('reply-bar').style.display = 'none';
+    document.getElementById('message-input').focus();
 }
 
 function scrollToMessage(messageId) {
