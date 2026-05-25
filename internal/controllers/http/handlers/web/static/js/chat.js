@@ -1158,6 +1158,10 @@ function setupMobileKeyboardDismiss() {
     document.addEventListener('touchend', (e) => {
         if (e.target.closest('#message-input, #btn-send, #context-menu')) return;
 
+        // Не закрываем клавиатуру, если контекстное меню открыто (long press по bubble):
+        const menu = document.getElementById('context-menu');
+        if (menu && menu.style.display !== 'none') return;
+
         // Проверяем, был ли это тап (не скролл):
         const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
         const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
