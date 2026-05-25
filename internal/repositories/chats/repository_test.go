@@ -264,6 +264,120 @@ func (s *RepositoryTestSuite) TestGetUserChats_WithOffset() {
 	s.Equal(uint64(2), chats[0].ID)
 }
 
+func (s *RepositoryTestSuite) TestGetUserChats_IsReadTrue_WhenAllMessagesRead() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	userID := uint64(1)
+	chatID := uint64(1)
+
+	// Создаём сообщение от другого пользователя
+	s.createMessage(chatID, 2)
+
+	// Статус: прочитано для user 1
+	s.createMessageStatus(1, userID, true, false)
+
+	userChats, err := s.repository.GetUserChats(s.ctx, userID, nil)
+	s.NoError(err)
+
+	chat := s.findChatByID(userChats, chatID)
+	s.NotNil(chat)
+	s.True(chat.IsRead, "Chat should be read when all messages are read")
+}
+
+func (s *RepositoryTestSuite) TestGetUserChats_IsReadFalse_WhenUnreadMessagesExist() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	userID := uint64(1)
+	chatID := uint64(1)
+
+	// Создаём сообщение от другого пользователя
+	s.createMessage(chatID, 2)
+
+	// Статус: НЕ прочитано для user 1
+	s.createMessageStatus(1, userID, false, false)
+
+	userChats, err := s.repository.GetUserChats(s.ctx, userID, nil)
+	s.NoError(err)
+
+	chat := s.findChatByID(userChats, chatID)
+	s.NotNil(chat)
+	s.False(chat.IsRead, "Chat should be unread when there are unread messages")
+}
+
+func (s *RepositoryTestSuite) TestGetUserChats_IsReadTrue_WhenUnreadMessageDeleted() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	userID := uint64(1)
+	chatID := uint64(1)
+
+	// Создаём сообщение от другого пользователя
+	s.createMessage(chatID, 2)
+
+	// Статус: НЕ прочитано, но УДАЛЕНО для user 1
+	s.createMessageStatus(1, userID, false, true)
+
+	userChats, err := s.repository.GetUserChats(s.ctx, userID, nil)
+	s.NoError(err)
+
+	chat := s.findChatByID(userChats, chatID)
+	s.NotNil(chat)
+	s.True(chat.IsRead, "Chat should be read when unread message is deleted")
+}
+
+func (s *RepositoryTestSuite) TestGetUserChats_IsReadFalse_WhenOneDeletedAndOneUnread() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	userID := uint64(1)
+	chatID := uint64(1)
+
+	// Создаём два сообщения от другого пользователя
+	s.createMessage(chatID, 2)
+	s.createMessage(chatID, 2)
+
+	// Первое — удалено и непрочитано, второе — непрочитано и не удалено
+	s.createMessageStatus(1, userID, false, true)
+	s.createMessageStatus(2, userID, false, false)
+
+	userChats, err := s.repository.GetUserChats(s.ctx, userID, nil)
+	s.NoError(err)
+
+	chat := s.findChatByID(userChats, chatID)
+	s.NotNil(chat)
+	s.False(chat.IsRead, "Chat should be unread when there is still an unread non-deleted message")
+}
+
+func (s *RepositoryTestSuite) TestGetUserChats_IsReadTrue_WhenAllUnreadMessagesDeleted() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	userID := uint64(1)
+	chatID := uint64(1)
+
+	// Создаём два сообщения
+	s.createMessage(chatID, 2)
+	s.createMessage(chatID, 2)
+
+	// Оба непрочитаны и удалены
+	s.createMessageStatus(1, userID, false, true)
+	s.createMessageStatus(2, userID, false, true)
+
+	userChats, err := s.repository.GetUserChats(s.ctx, userID, nil)
+	s.NoError(err)
+
+	chat := s.findChatByID(userChats, chatID)
+	s.NotNil(chat)
+	s.True(chat.IsRead, "Chat should be read when all unread messages are deleted")
+}
+
 func (s *RepositoryTestSuite) TestGetUserChats_UserWithNoChats() {
 	// Тест: Получение чатов пользователя без чатов
 	// Создаем пользователя без чатов
@@ -713,4 +827,39 @@ func (s *RepositoryTestSuite) createTestChatMembers() {
 		)
 		s.NoError(err)
 	}
+}
+
+func (s *RepositoryTestSuite) createMessage(chatID, senderID uint64) {
+	_, err := s.tx.ExecContext(
+		s.ctx,
+		`INSERT INTO messages (chat_id, sender_id, text, created_at, updated_at)
+		 VALUES ($1, $2, 'test message', $3, $3)`,
+		chatID,
+		senderID,
+		time.Now().UTC(),
+	)
+	s.NoError(err)
+}
+
+func (s *RepositoryTestSuite) createMessageStatus(messageID, userID uint64, isRead, isDeleted bool) {
+	_, err := s.tx.ExecContext(
+		s.ctx,
+		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted)
+		 VALUES ($1, $2, $3, $4)`,
+		messageID,
+		userID,
+		isRead,
+		isDeleted,
+	)
+	s.NoError(err)
+}
+
+func (s *RepositoryTestSuite) findChatByID(userChats []domains.Chat, chatID uint64) *domains.Chat {
+	for i := range userChats {
+		if userChats[i].ID == chatID {
+			return &userChats[i]
+		}
+	}
+
+	return nil
 }

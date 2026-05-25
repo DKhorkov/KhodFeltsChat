@@ -24,6 +24,7 @@ const (
 	typeColumnName           = "type"
 	chatIDColumnName         = "chat_id"
 	isReadColumnName         = "is_read"
+	isDeletedColumnName      = "is_deleted"
 	messageIDColumnName      = "message_id"
 	idColumnName             = "id"
 	usernameColumnName       = "username"
@@ -175,6 +176,11 @@ func (repo *Repository) GetUserChats(
 		Where(
 			sq.Eq{
 				fmt.Sprintf("%s.%s", messagesStatusesTableName, isReadColumnName): false,
+			},
+		).
+		Where(
+			sq.Eq{
+				fmt.Sprintf("%s.%s", messagesStatusesTableName, isDeletedColumnName): false,
 			},
 		)
 
