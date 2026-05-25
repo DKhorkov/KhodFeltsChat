@@ -1156,7 +1156,7 @@ function setupMobileKeyboardDismiss() {
     }, {passive: true});
 
     document.addEventListener('touchend', (e) => {
-        if (e.target.closest('#message-input, #btn-send')) return;
+        if (e.target.closest('#message-input, #btn-send, #context-menu')) return;
 
         // Проверяем, был ли это тап (не скролл):
         const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
