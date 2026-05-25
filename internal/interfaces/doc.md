@@ -8,18 +8,19 @@
 - **Controller** — `Run()`, `Stop()` — управление HTTP сервером
 - **UnitOfWork** — `Do(ctx, fn(ctx, tx) error) error` — транзакционная обёртка
 - **Upgrader** — `Upgrade(w, r, header) (*websocket.Conn, error)` — WebSocket upgrade
+- **WSBroadcaster** — `BroadcastMessageDeleted(ctx, chatID, messageID)` — рассылка WS-события удаления сообщения всем участникам чата; `SendMessageDeletedToUser(ctx, chatID, messageID, userID)` — отправка события удаления только конкретному пользователю (удаление у себя)
 
 ### Repositories
 - **UsersRepository** — CRUD пользователей
 - **AuthRepository** — регистрация, токены (мультисессионность: GetRefreshTokenByValue, ExpireAllUserRefreshTokens), verify email, change password
 - **ChatsRepository** — чаты, участники, is_read статусы, `GetChatByID`
-- **MessagesRepository** — сообщения, статусы прочтения
+- **MessagesRepository** — сообщения, статусы прочтения, soft-удаление (`DeleteMessageForUser`, `DeleteMessageForAll`)
 - **EmailsRepository** — SMTP отправка: `SendVerifyEmailMessage(user)`, `SendForgetPasswordMessage(user)`, `SendNewMessageEmail(recipient, message, chat)` — принимает доменные объекты
 - **SettingsRepository** — настройки пользователя (CRUD)
 - **WebPushSubscriptionsRepository** — подписки на push-уведомления (CRUD)
 
 ### Services
-- **UsersService**, **AuthService**, **MessagesService** — бизнес-логика
+- **UsersService**, **AuthService**, **MessagesService** (включая `DeleteMessage`) — бизнес-логика
 - **ChatsService** — чаты + `GetChatByID`
 - **NotificationsService** — email (`SendVerifyEmailMessage`, `SendForgetPasswordMessage`, `SendNewMessageEmail`) + web push (`SendWebPushNotification(subscription, message)`)
 - **SettingsService** — настройки пользователя

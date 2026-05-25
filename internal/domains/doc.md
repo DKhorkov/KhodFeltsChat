@@ -22,6 +22,15 @@
 - `From(user User) *Message` — устанавливает отправителя.
 - `Received() *Message` — проставляет `CreatedAt = time.Now()`.
 - `Updated() *Message` — проставляет `UpdatedAt = time.Now()`.
+- Поле `ReplyToMessage *Message` — ссылка на сообщение, на которое отвечают (nil, если не ответ).
+
+### WSEvent (`ws_event.go`)
+WebSocket-событие (envelope для передачи типизированных данных через WS).
+- `WSEventType` (string) — тип события.
+  - `WSEventNewMessage` = `"new_message"` — новое сообщение.
+  - `WSEventMessageDeleted` = `"message_deleted"` — удалённое сообщение.
+- `WSEvent` — `Type WSEventType`, `Payload any`.
+- `MessageDeletedPayload` — `MessageID uint64`, `ChatID uint64`.
 
 ### RefreshToken
 Токен обновления сессии: `ID`, `UserID`, `Value`, `TTL`, `CreatedAt`, `UpdatedAt`.
@@ -51,6 +60,7 @@ Push-подписка пользователя на Web Push уведомлен�
 | `UsersFilters` | Фильтр по `Username` |
 | `SendVerifyEmailMessageDTO` | Email для отправки письма верификации |
 | `SendForgetPasswordMessageDTO` | Email для отправки письма восстановления пароля |
+| `DeleteMessageDTO` | Удаление сообщения: `MessageID`, `UserID`, `ForAll` |
 
 
 ## Типы уведомлений (notifications.go)

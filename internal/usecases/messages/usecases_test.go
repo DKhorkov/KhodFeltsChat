@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/DKhorkov/kfc/internal/domains"
+	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/usecases/messages"
 	mockservices "github.com/DKhorkov/kfc/mocks/services"
 	"github.com/stretchr/testify/assert"
@@ -723,6 +724,199 @@ func TestUseCases_GetMessageByID(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestUseCases_DeleteMessage(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		mockMessagesService func(*mockservices.MockMessagesService)
+		mockUsersService    func(*mockservices.MockUsersService)
+		mockChatsService    func(*mockservices.MockChatsService)
+	}
+
+	type args struct {
+		ctx context.Context
+		dto domains.DeleteMessageDTO
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+		err     error
+	}{
+		{
+			name: "successfully delete for self",
+			fields: fields{
+				mockMessagesService: func(ms *mockservices.MockMessagesService) {
+					ms.EXPECT().
+						DeleteMessage(gomock.Any(), domains.DeleteMessageDTO{
+							MessageID: 10,
+							UserID:    1,
+							ForAll:    false,
+						}).
+						Return(nil)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.DeleteMessageDTO{
+					MessageID: 10,
+					UserID:    1,
+					ForAll:    false,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "successfully delete for all (user is author)",
+			fields: fields{
+				mockMessagesService: func(ms *mockservices.MockMessagesService) {
+					ms.EXPECT().
+						GetMessageByID(gomock.Any(), uint64(1), uint64(10)).
+						Return(&domains.Message{
+							ID:     10,
+							ChatID: 100,
+							Text:   "Hello",
+							Sender: domains.User{ID: 1},
+						}, nil)
+
+					ms.EXPECT().
+						DeleteMessage(gomock.Any(), domains.DeleteMessageDTO{
+							MessageID: 10,
+							UserID:    1,
+							ForAll:    true,
+						}).
+						Return(nil)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.DeleteMessageDTO{
+					MessageID: 10,
+					UserID:    1,
+					ForAll:    true,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "delete for all - message not found",
+			fields: fields{
+				mockMessagesService: func(ms *mockservices.MockMessagesService) {
+					ms.EXPECT().
+						GetMessageByID(gomock.Any(), uint64(1), uint64(999)).
+						Return(nil, errors.New("message not found"))
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.DeleteMessageDTO{
+					MessageID: 999,
+					UserID:    1,
+					ForAll:    true,
+				},
+			},
+			wantErr: true,
+			err:     customerrors.ErrMessageNotFound,
+		},
+		{
+			name: "delete for all - not message author",
+			fields: fields{
+				mockMessagesService: func(ms *mockservices.MockMessagesService) {
+					ms.EXPECT().
+						GetMessageByID(gomock.Any(), uint64(2), uint64(10)).
+						Return(&domains.Message{
+							ID:     10,
+							ChatID: 100,
+							Text:   "Hello",
+							Sender: domains.User{ID: 1},
+						}, nil)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.DeleteMessageDTO{
+					MessageID: 10,
+					UserID:    2,
+					ForAll:    true,
+				},
+			},
+			wantErr: true,
+			err:     customerrors.ErrNotMessageAuthor,
+		},
+		{
+			name: "service DeleteMessage error",
+			fields: fields{
+				mockMessagesService: func(ms *mockservices.MockMessagesService) {
+					ms.EXPECT().
+						DeleteMessage(gomock.Any(), domains.DeleteMessageDTO{
+							MessageID: 10,
+							UserID:    1,
+							ForAll:    false,
+						}).
+						Return(errors.New("database error"))
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.DeleteMessageDTO{
+					MessageID: 10,
+					UserID:    1,
+					ForAll:    false,
+				},
+			},
+			wantErr: true,
+			err:     errors.New("database error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange
+			ctrl := gomock.NewController(t)
+
+			mockMessagesService := mockservices.NewMockMessagesService(ctrl)
+			mockUsersService := mockservices.NewMockUsersService(ctrl)
+			mockChatsService := mockservices.NewMockChatsService(ctrl)
+
+			if tt.fields.mockMessagesService != nil {
+				tt.fields.mockMessagesService(mockMessagesService)
+			}
+
+			if tt.fields.mockUsersService != nil {
+				tt.fields.mockUsersService(mockUsersService)
+			}
+
+			if tt.fields.mockChatsService != nil {
+				tt.fields.mockChatsService(mockChatsService)
+			}
+
+			uc := messages.New(
+				mockMessagesService,
+				mockChatsService,
+				mockUsersService,
+			)
+
+			// Act
+			err := uc.DeleteMessage(tt.args.ctx, tt.args.dto)
+
+			// Assert
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				if tt.err != nil {
+					assert.Contains(t, err.Error(), tt.err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}

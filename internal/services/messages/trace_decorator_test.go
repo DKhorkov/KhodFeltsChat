@@ -600,6 +600,177 @@ func TestTraceDecorator_GetChatMessages(t *testing.T) {
 	}
 }
 
+func TestTraceDecorator_DeleteMessage(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		dto           domains.DeleteMessageDTO
+		setupMocks    func(*mocktracing.MockProvider, *mockservices.MockMessagesService, *mocktracing.MockSpan)
+		expectedError error
+	}{
+		{
+			name: "successful delete message for user with tracing",
+			dto: domains.DeleteMessageDTO{
+				MessageID: 10,
+				UserID:    1,
+				ForAll:    false,
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockMessagesService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					DeleteMessage(gomock.Any(), domains.DeleteMessageDTO{
+						MessageID: 10,
+						UserID:    1,
+						ForAll:    false,
+					}).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "successful delete message for all with tracing",
+			dto: domains.DeleteMessageDTO{
+				MessageID: 10,
+				UserID:    1,
+				ForAll:    true,
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockMessagesService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					DeleteMessage(gomock.Any(), domains.DeleteMessageDTO{
+						MessageID: 10,
+						UserID:    1,
+						ForAll:    true,
+					}).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name: "message not found",
+			dto: domains.DeleteMessageDTO{
+				MessageID: 999,
+				UserID:    1,
+				ForAll:    false,
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockMessagesService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					DeleteMessage(gomock.Any(), gomock.Any()).
+					Return(errors.New("message not found"))
+			},
+			expectedError: errors.New("message not found"),
+		},
+		{
+			name: "not message author for delete for all",
+			dto: domains.DeleteMessageDTO{
+				MessageID: 10,
+				UserID:    2,
+				ForAll:    true,
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockMessagesService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					DeleteMessage(gomock.Any(), gomock.Any()).
+					Return(errors.New("only message author can delete for all"))
+			},
+			expectedError: errors.New("only message author can delete for all"),
+		},
+		{
+			name: "database error",
+			dto: domains.DeleteMessageDTO{
+				MessageID: 10,
+				UserID:    1,
+				ForAll:    false,
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockMessagesService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					DeleteMessage(gomock.Any(), gomock.Any()).
+					Return(errors.New("database connection failed"))
+			},
+			expectedError: errors.New("database connection failed"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockservices.NewMockMessagesService(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			spanConfig := tracing.SpanConfig{
+				Name: "test-span",
+				Opts: []trace.SpanStartOption{},
+				Events: tracing.SpanEventsConfig{
+					Start: tracing.SpanEventConfig{Name: "start"},
+					End:   tracing.SpanEventConfig{Name: "end"},
+				},
+			}
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockProvider, mockBase, mockSpan)
+			}
+
+			decorator := messages.NewTraceDecorator(mockProvider, spanConfig, mockBase)
+
+			ctx := context.Background()
+			err := decorator.DeleteMessage(ctx, tt.dto)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestTraceDecorator_GetMessageByID(t *testing.T) {
 	t.Parallel()
 

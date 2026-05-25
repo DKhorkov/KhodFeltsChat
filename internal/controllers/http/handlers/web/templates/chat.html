@@ -45,21 +45,30 @@
             <div class="conversation__messages" id="messages-list"></div>
 
             <div class="conversation__composer">
-                <div class="conversation__composer-input">
-                    <textarea
-                        id="message-input"
-                        placeholder="Введите сообщение..."
-                        rows="3"
-                        aria-label="Сообщение"
-                    ></textarea>
-                    <div class="conversation__emoji-wrapper">
-                        <button type="button" class="conversation__emoji-toggle" id="btn-emoji-toggle" title="Смайлы" aria-label="Эмодзи">
-                            &#x1F642;
-                        </button>
-                        <div class="emoji-picker" id="emoji-picker-container" style="display: none;"></div>
+                <div class="conversation__reply-bar" id="reply-bar" style="display: none;">
+                    <div class="conversation__reply-bar-content">
+                        <span class="conversation__reply-bar-sender" id="reply-bar-sender"></span>
+                        <span class="conversation__reply-bar-text" id="reply-bar-text"></span>
                     </div>
+                    <button class="conversation__reply-bar-close" id="btn-cancel-reply" aria-label="Отменить ответ">&times;</button>
                 </div>
-                <button id="btn-send" disabled aria-label="Отправить">Отправить</button>
+                <div class="conversation__composer-row">
+                    <div class="conversation__composer-input">
+                        <textarea
+                            id="message-input"
+                            placeholder="Введите сообщение..."
+                            rows="3"
+                            aria-label="Сообщение"
+                        ></textarea>
+                        <div class="conversation__emoji-wrapper">
+                            <button type="button" class="conversation__emoji-toggle" id="btn-emoji-toggle" title="Смайлы" aria-label="Эмодзи">
+                                &#x1F642;
+                            </button>
+                            <div class="emoji-picker" id="emoji-picker-container" style="display: none;"></div>
+                        </div>
+                    </div>
+                    <button id="btn-send" disabled aria-label="Отправить">Отправить</button>
+                </div>
             </div>
         </main>
 
@@ -162,6 +171,18 @@
                 <span id="group-chat-members-count"></span>
             </div>
             <div class="group-chat-modal__members-list" id="group-chat-members-list"></div>
+        </div>
+    </div>
+    <!-- Контекстное меню сообщения -->
+    <div class="context-menu" id="context-menu" style="display: none;">
+        <button class="context-menu__item" id="ctx-reply">Ответить</button>
+        <button class="context-menu__item" id="ctx-copy">Копировать текст</button>
+        <div class="context-menu__delete-group" id="ctx-delete-group" style="display: none;">
+            <button class="context-menu__item context-menu__item--danger" id="ctx-delete-toggle">Удалить</button>
+            <div class="context-menu__delete-sub" id="ctx-delete-sub" style="display: none;">
+                <button class="context-menu__item context-menu__item--danger" id="ctx-delete-for-me">Удалить у себя</button>
+                <button class="context-menu__item context-menu__item--danger" id="ctx-delete-for-all">Удалить у всех</button>
+            </div>
         </div>
     </div>
 </body>

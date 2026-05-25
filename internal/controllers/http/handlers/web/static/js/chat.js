@@ -1,6 +1,11 @@
 const MESSAGES_PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 300;
+const CHAT_LIST_DEBOUNCE_MS = 300;
 const CHAT_LIST_POLL_INTERVAL_MS = 5000;
+const WS_RECONNECT_DELAY_MS = 3000;
+const EMOJI_CLOSE_DELAY_MS = 500;
+const LONG_PRESS_DELAY_MS = 500;
+const TOAST_DURATION_MS = 3000;
 const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 600;
 const SWIPE_CLOSE_THRESHOLD_RATIO = 0.5; // 50% ширины экрана для закрытия чата свайпом
 const SWIPE_LOCK_ANGLE_PX = 15;          // минимальное смещение до определения направления свайпа
@@ -14,6 +19,8 @@ let isLoadingMore = false;
 let hasMoreMessages = true;
 let returnToGroupChat = null;
 let chatsList = [];
+let replyToMessage = null;  // сообщение, на которое отвечаем
+let contextMenuMessageId = null; // ID сообщения для контекстного меню
 
 // ═══════════════════════════════════════
 // Инициализация
@@ -41,6 +48,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupChatListDelegation();
     setupMobileKeyboardDismiss();
     setupMobileViewportResize();
+    setupContextMenu();
+    setupReplyCancel();
 
     // Открытие чата из push-уведомления (по query-параметру):
     const params = new URLSearchParams(window.location.search);
@@ -119,37 +128,18 @@ function connectWebSocket() {
     ws = new WebSocket(protocol + '//' + window.location.host + '/api/ws');
 
     ws.onmessage = (event) => {
-        const message = JSON.parse(event.data);
+        const envelope = JSON.parse(event.data);
 
-        if (selectedChatId === message.chatId) {
-            // Дедупликация: если есть оптимистичное сообщение с таким же текстом от текущего пользователя — заменяем
-            const optimisticIdx = messages.findIndex(
-                m => m.optimistic && m.chatId === message.chatId && m.text === message.text && m.sender.id === message.sender.id
-            );
-
-            if (optimisticIdx >= 0) {
-                messages[optimisticIdx] = message;
-            } else {
-                messages.push(message);
-                appendMessageBubble(message);
-            }
-
-            scrollToBottom();
+        if (envelope.type === 'new_message') {
+            handleNewMessage(envelope.payload);
+        } else if (envelope.type === 'message_deleted') {
+            handleMessageDeleted(envelope.payload);
         }
-
-        // Показываем toast, если сообщение не от текущего пользователя
-        // и чат не открыт (или это другой чат):
-        if (message.sender.id !== currentUser.id && selectedChatId !== message.chatId) {
-            showToast(message.sender.username, message.text, message.chatId);
-        }
-
-        // Обновляем список чатов (непрочитанное):
-        debouncedLoadChats();
     };
 
     ws.onclose = () => {
         // Переподключение через 3 секунды:
-        setTimeout(connectWebSocket, 3000);
+        setTimeout(connectWebSocket, WS_RECONNECT_DELAY_MS);
     };
 
     ws.onerror = () => {
@@ -158,6 +148,39 @@ function connectWebSocket() {
             ws.close();
         }
     };
+}
+
+function handleNewMessage(message) {
+    if (selectedChatId === message.chatId) {
+        messages.push(message);
+        appendMessageBubble(message);
+        scrollToBottom();
+    }
+
+    // Показываем toast, если сообщение не от текущего пользователя
+    // и чат не открыт (или это другой чат):
+    if (message.sender.id !== currentUser.id && selectedChatId !== message.chatId) {
+        showToast(message.sender.username, message.text, message.chatId);
+    }
+
+    // Обновляем список чатов (непрочитанное):
+    debouncedLoadChats();
+}
+
+function handleMessageDeleted(payload) {
+    if (selectedChatId === payload.chatId) {
+        const idx = messages.findIndex(m => m.id === payload.messageId);
+        if (idx >= 0) {
+            messages.splice(idx, 1);
+            const bubble = document.querySelector(`.message-bubble[data-message-id="${payload.messageId}"]`);
+            if (bubble) bubble.remove();
+            updateUnreadDivider();
+        } else {
+            console.warn('message_deleted: сообщение не найдено в текущем списке', payload.messageId);
+        }
+    }
+
+    debouncedLoadChats();
 }
 
 // ═══════════════════════════════════════
@@ -179,7 +202,7 @@ let loadChatsTimer = null;
 
 function debouncedLoadChats() {
     if (loadChatsTimer) clearTimeout(loadChatsTimer);
-    loadChatsTimer = setTimeout(loadChats, 300);
+    loadChatsTimer = setTimeout(loadChats, CHAT_LIST_DEBOUNCE_MS);
 }
 
 function renderChatList(chats) {
@@ -349,7 +372,7 @@ async function loadMessages(chatId, offset) {
 }
 
 function serverMessageCount() {
-    return messages.filter(m => !m.optimistic).length;
+    return messages.length;
 }
 
 async function loadMoreMessages() {
@@ -412,6 +435,31 @@ function createMessageBubble(message) {
 
     const bubble = document.createElement('div');
     bubble.className = 'message-bubble' + (isOwn ? ' message-bubble--own' : '');
+    bubble.dataset.messageId = message.id;
+
+    // Плашка ответа:
+    if (message.replyToMessage) {
+        const replyBlock = document.createElement('div');
+        replyBlock.className = 'message-bubble__reply';
+
+        const replySender = document.createElement('span');
+        replySender.className = 'message-bubble__reply-sender';
+        replySender.textContent = message.replyToMessage.sender.id === currentUser.id
+            ? 'Вы' : message.replyToMessage.sender.username;
+
+        const replyText = document.createElement('span');
+        replyText.className = 'message-bubble__reply-text';
+        replyText.textContent = message.replyToMessage.text;
+
+        replyBlock.appendChild(replySender);
+        replyBlock.appendChild(replyText);
+
+        replyBlock.addEventListener('click', () => {
+            scrollToMessage(message.replyToMessage.id);
+        });
+
+        bubble.appendChild(replyBlock);
+    }
 
     const header = document.createElement('div');
     header.className = 'message-bubble__header';
@@ -443,6 +491,36 @@ function isFirstUnread(message, index) {
 
     const prev = messages[index - 1];
     return prev.isRead || prev.sender.id === currentUser.id;
+}
+
+function updateUnreadDivider() {
+    const container = document.getElementById('messages-list');
+
+    // Убираем старый разделитель:
+    const old = container.querySelector('.conversation__unread-divider');
+    if (old) old.remove();
+
+    // Ищем первое непрочитанное сообщение:
+    let firstUnreadIdx = -1;
+    for (let i = 0; i < messages.length; i++) {
+        if (isFirstUnread(messages[i], i)) {
+            firstUnreadIdx = i;
+            break;
+        }
+    }
+
+    if (firstUnreadIdx < 0) return;
+
+    // Вставляем divider перед bubble этого сообщения:
+    const bubble = container.querySelector(
+        `.message-bubble[data-message-id="${messages[firstUnreadIdx].id}"]`
+    );
+    if (bubble) {
+        const divider = document.createElement('div');
+        divider.className = 'conversation__unread-divider';
+        divider.innerHTML = '<span>Новые сообщения</span>';
+        container.insertBefore(divider, bubble);
+    }
 }
 
 function scrollToBottom() {
@@ -496,25 +574,18 @@ function sendMessage() {
     const text = input.value.trim();
     if (!text || !selectedChatId || !ws || ws.readyState !== WebSocket.OPEN) return;
 
-    ws.send(JSON.stringify({chatId: selectedChatId, text}));
+    const payload = {chatId: selectedChatId, text};
+    if (replyToMessage) {
+        payload.replyToMessage = {id: replyToMessage.id};
+    }
+
+    ws.send(JSON.stringify(payload));
 
     // Помечаем все сообщения как прочитанные и убираем разделитель:
     markAllAsRead();
 
-    // Оптимистичное добавление:
-    const optimisticMessage = {
-        id: Date.now(),
-        chatId: selectedChatId,
-        text,
-        createdAt: new Date().toISOString(),
-        sender: {id: currentUser.id, username: currentUser.username},
-        isRead: true,
-        optimistic: true,
-    };
-
-    messages.push(optimisticMessage);
-    appendMessageBubble(optimisticMessage);
-    scrollToBottom();
+    // Сбрасываем ответ:
+    cancelReply();
 
     input.value = '';
     document.getElementById('btn-send').disabled = true;
@@ -573,7 +644,7 @@ function setupEmojiPicker() {
         emojiCloseTimer = setTimeout(() => {
             pickerContainer.style.display = 'none';
             toggleBtn.classList.remove('conversation__emoji-toggle--active');
-        }, 500);
+        }, EMOJI_CLOSE_DELAY_MS);
     }
 
     wrapper.addEventListener('mouseenter', showEmojiPicker);
@@ -689,6 +760,9 @@ function closeChat() {
     // Закрываем emoji picker:
     document.getElementById('emoji-picker-container').style.display = 'none';
     document.getElementById('btn-emoji-toggle').classList.remove('conversation__emoji-toggle--active');
+
+    // Сбрасываем ответ:
+    cancelReply();
 }
 
 // ═══════════════════════════════════════
@@ -1133,6 +1207,171 @@ function setupMobileViewportResize() {
 }
 
 // ═══════════════════════════════════════
+// Контекстное меню сообщений
+// ═══════════════════════════════════════
+function setupContextMenu() {
+    const menu = document.getElementById('context-menu');
+    const msgList = document.getElementById('messages-list');
+
+    // Desktop: правый клик
+    msgList.addEventListener('contextmenu', (e) => {
+        const bubble = e.target.closest('.message-bubble');
+        if (!bubble) return;
+
+        e.preventDefault();
+        showContextMenu(bubble, e.clientX, e.clientY);
+    });
+
+    // Mobile: длинное нажатие
+    let longPressTimer = null;
+    let longPressTarget = null;
+
+    msgList.addEventListener('touchstart', (e) => {
+        const bubble = e.target.closest('.message-bubble');
+        if (!bubble) return;
+
+        longPressTarget = bubble;
+        longPressTimer = setTimeout(() => {
+            const touch = e.touches[0];
+            showContextMenu(bubble, touch.clientX, touch.clientY);
+            longPressTarget = null;
+        }, LONG_PRESS_DELAY_MS);
+    }, {passive: true});
+
+    msgList.addEventListener('touchmove', () => {
+        clearTimeout(longPressTimer);
+        longPressTarget = null;
+    }, {passive: true});
+
+    msgList.addEventListener('touchend', () => {
+        clearTimeout(longPressTimer);
+        longPressTarget = null;
+    }, {passive: true});
+
+    // Закрытие меню при клике в другом месте:
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#context-menu')) {
+            menu.style.display = 'none';
+        }
+    });
+
+    document.addEventListener('touchstart', (e) => {
+        if (!e.target.closest('#context-menu') && menu.style.display !== 'none') {
+            menu.style.display = 'none';
+        }
+    }, {passive: true});
+
+    // Действия:
+    document.getElementById('ctx-reply').addEventListener('click', () => {
+        menu.style.display = 'none';
+        const msg = messages.find(m => m.id === contextMenuMessageId);
+        if (msg) setReply(msg);
+    });
+
+    document.getElementById('ctx-copy').addEventListener('click', () => {
+        menu.style.display = 'none';
+        const msg = messages.find(m => m.id === contextMenuMessageId);
+        if (msg) navigator.clipboard.writeText(msg.text).catch(console.error);
+    });
+
+    document.getElementById('ctx-delete-toggle').addEventListener('click', () => {
+        document.getElementById('ctx-delete-sub').style.display = '';
+        document.getElementById('ctx-delete-toggle').style.display = 'none';
+    });
+
+    document.getElementById('ctx-delete-for-me').addEventListener('click', () => {
+        menu.style.display = 'none';
+        deleteMessage(contextMenuMessageId, false);
+    });
+
+    document.getElementById('ctx-delete-for-all').addEventListener('click', () => {
+        menu.style.display = 'none';
+        deleteMessage(contextMenuMessageId, true);
+    });
+}
+
+function showContextMenu(bubble, x, y) {
+    const menu = document.getElementById('context-menu');
+    const messageId = Number(bubble.dataset.messageId);
+    contextMenuMessageId = messageId;
+
+    const msg = messages.find(m => m.id === messageId);
+    const isOwn = msg && msg.sender.id === currentUser.id;
+    document.getElementById('ctx-delete-group').style.display = isOwn ? '' : 'none';
+    document.getElementById('ctx-delete-toggle').style.display = isOwn ? '' : 'none';
+    document.getElementById('ctx-delete-sub').style.display = 'none';
+
+    menu.style.display = '';
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+
+    // Не выходим за границы экрана:
+    const rect = menu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+        menu.style.left = (window.innerWidth - rect.width - 8) + 'px';
+    }
+    if (rect.bottom > window.innerHeight) {
+        menu.style.top = (window.innerHeight - rect.height - 8) + 'px';
+    }
+}
+
+// ═══════════════════════════════════════
+// Ответ на сообщение
+// ═══════════════════════════════════════
+function setReply(message) {
+    replyToMessage = message;
+    const bar = document.getElementById('reply-bar');
+    document.getElementById('reply-bar-sender').textContent =
+        message.sender.id === currentUser.id ? 'Вы' : message.sender.username;
+    document.getElementById('reply-bar-text').textContent = message.text;
+    bar.style.display = '';
+    document.getElementById('message-input').focus();
+}
+
+function cancelReply() {
+    replyToMessage = null;
+    document.getElementById('reply-bar').style.display = 'none';
+}
+
+function scrollToMessage(messageId) {
+    const bubble = document.querySelector(`.message-bubble[data-message-id="${messageId}"]`);
+    if (bubble) {
+        bubble.scrollIntoView({behavior: 'smooth', block: 'center'});
+        bubble.classList.add('message-bubble--highlight');
+        bubble.addEventListener('animationend', () => {
+            bubble.classList.remove('message-bubble--highlight');
+        }, {once: true});
+    }
+}
+
+// ═══════════════════════════════════════
+// Удаление сообщений
+// ═══════════════════════════════════════
+function setupReplyCancel() {
+    document.getElementById('btn-cancel-reply').addEventListener('click', cancelReply);
+}
+
+async function deleteMessage(messageId, forAll) {
+    try {
+        const resp = await fetchWithAuth('/api/messages/' + messageId, {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({forAll}),
+        });
+
+        if (!resp.ok) {
+            const text = await resp.text();
+            showError(mapError(text));
+            return;
+        }
+
+        debouncedLoadChats();
+    } catch (err) {
+        showError('Ошибка сети: ' + err.message);
+    }
+}
+
+// ═══════════════════════════════════════
 // Toast-уведомления
 // ═══════════════════════════════════════
 function showToast(senderName, text, chatId) {
@@ -1190,7 +1429,7 @@ function showToast(senderName, text, chatId) {
 
     setTimeout(() => {
         if (toast.parentNode) toast.remove();
-    }, 3000);
+    }, TOAST_DURATION_MS);
 }
 
 // ═══════════════════════════════════════

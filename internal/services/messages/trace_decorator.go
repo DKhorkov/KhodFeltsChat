@@ -67,3 +67,16 @@ func (d *TraceDecorator) GetMessageByID(
 
 	return d.base.GetMessageByID(ctx, userID, messageID)
 }
+
+func (d *TraceDecorator) DeleteMessage(
+	ctx context.Context,
+	dto domains.DeleteMessageDTO,
+) error {
+	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
+	defer span.End()
+
+	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
+	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
+
+	return d.base.DeleteMessage(ctx, dto)
+}

@@ -41,6 +41,20 @@ func (m *MockMessagesUseCases) EXPECT() *MockMessagesUseCasesMockRecorder {
 	return m.recorder
 }
 
+// DeleteMessage mocks base method.
+func (m *MockMessagesUseCases) DeleteMessage(ctx context.Context, dto domains.DeleteMessageDTO) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteMessage", ctx, dto)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteMessage indicates an expected call of DeleteMessage.
+func (mr *MockMessagesUseCasesMockRecorder) DeleteMessage(ctx, dto any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMessage", reflect.TypeOf((*MockMessagesUseCases)(nil).DeleteMessage), ctx, dto)
+}
+
 // GetChatMessages mocks base method.
 func (m *MockMessagesUseCases) GetChatMessages(ctx context.Context, userID, chatID uint64, pagination *domains.Pagination) ([]domains.Message, error) {
 	m.ctrl.T.Helper()

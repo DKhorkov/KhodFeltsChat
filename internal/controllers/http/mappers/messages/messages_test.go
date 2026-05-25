@@ -322,6 +322,93 @@ func TestMapMessage(t *testing.T) {
 			},
 		},
 		{
+			name: "Сообщение с ответом на другое сообщение",
+			input: domains.Message{
+				ID:     11,
+				ChatID: 100,
+				Sender: domains.User{
+					ID:             5,
+					Username:       "alice",
+					Email:          "alice@example.com",
+					EmailConfirmed: true,
+					Password:       "hash",
+					CreatedAt:      now,
+					UpdatedAt:      now,
+				},
+				Text:      "This is a reply",
+				CreatedAt: now.Add(10 * time.Minute),
+				UpdatedAt: now.Add(10 * time.Minute),
+				ReplyToMessage: &domains.Message{
+					ID:     5,
+					ChatID: 100,
+					Sender: domains.User{
+						ID:             6,
+						Username:       "bob",
+						Email:          "bob@example.com",
+						EmailConfirmed: true,
+						Password:       "hash2",
+						CreatedAt:      now,
+						UpdatedAt:      now,
+					},
+					Text:      "Original message",
+					CreatedAt: now,
+					UpdatedAt: now,
+				},
+			},
+			expected: schemas.Message{
+				ID:     11,
+				ChatID: 100,
+				Sender: schemas.Sender{
+					ID:       5,
+					Username: "alice",
+				},
+				Text:      "This is a reply",
+				CreatedAt: now.Add(10 * time.Minute),
+				UpdatedAt: now.Add(10 * time.Minute),
+				ReplyToMessage: &schemas.ReplyMessage{
+					ID: 5,
+					Sender: schemas.Sender{
+						ID:       6,
+						Username: "bob",
+					},
+					Text:      "Original message",
+					CreatedAt: now,
+				},
+			},
+		},
+		{
+			name: "Сообщение без ответа (nil ReplyToMessage)",
+			input: domains.Message{
+				ID:     12,
+				ChatID: 200,
+				Sender: domains.User{
+					ID:             7,
+					Username:       "charlie",
+					Email:          "charlie@example.com",
+					EmailConfirmed: true,
+					Password:       "hash3",
+					CreatedAt:      now,
+					UpdatedAt:      now,
+				},
+				Text:           "No reply here",
+				CreatedAt:      now,
+				UpdatedAt:      now,
+				ReplyToMessage: nil,
+			},
+			expected: schemas.Message{
+				ID:     12,
+				ChatID: 200,
+				Sender: schemas.Sender{
+					ID:       7,
+					Username: "charlie",
+				},
+				Text:           "No reply here",
+				CreatedAt:      now,
+				UpdatedAt:      now,
+				ReplyToMessage: nil,
+			},
+		},
+		{
 			name: "Сообщение с будущей датой создания (edge case)",
 			input: domains.Message{
 				ID:     10,
@@ -369,6 +456,30 @@ func TestMapMessage(t *testing.T) {
 			// Проверяем Sender
 			assert.Equal(t, tt.expected.Sender.ID, result.Sender.ID)
 			assert.Equal(t, tt.expected.Sender.Username, result.Sender.Username)
+
+			// Проверяем ReplyToMessage
+			if tt.expected.ReplyToMessage != nil {
+				require.NotNil(t, result.ReplyToMessage)
+				assert.Equal(t, tt.expected.ReplyToMessage.ID, result.ReplyToMessage.ID)
+				assert.Equal(t, tt.expected.ReplyToMessage.Text, result.ReplyToMessage.Text)
+				assert.Equal(
+					t,
+					tt.expected.ReplyToMessage.CreatedAt,
+					result.ReplyToMessage.CreatedAt,
+				)
+				assert.Equal(
+					t,
+					tt.expected.ReplyToMessage.Sender.ID,
+					result.ReplyToMessage.Sender.ID,
+				)
+				assert.Equal(
+					t,
+					tt.expected.ReplyToMessage.Sender.Username,
+					result.ReplyToMessage.Sender.Username,
+				)
+			} else {
+				assert.Nil(t, result.ReplyToMessage)
+			}
 		})
 	}
 }
@@ -599,6 +710,123 @@ func TestMapMessages(t *testing.T) {
 			},
 		},
 		{
+			name: "Смешанные сообщения с ответами и без",
+			input: []domains.Message{
+				{
+					ID:     1,
+					ChatID: 100,
+					Sender: domains.User{
+						ID:             5,
+						Username:       "alice",
+						Email:          "alice@example.com",
+						EmailConfirmed: true,
+						Password:       "hash1",
+						CreatedAt:      now,
+						UpdatedAt:      now,
+					},
+					Text:           "Hello!",
+					CreatedAt:      now,
+					UpdatedAt:      now,
+					ReplyToMessage: nil,
+				},
+				{
+					ID:     2,
+					ChatID: 100,
+					Sender: domains.User{
+						ID:             6,
+						Username:       "bob",
+						Email:          "bob@example.com",
+						EmailConfirmed: true,
+						Password:       "hash2",
+						CreatedAt:      now,
+						UpdatedAt:      now,
+					},
+					Text:      "Reply to hello",
+					CreatedAt: now.Add(5 * time.Minute),
+					UpdatedAt: now.Add(5 * time.Minute),
+					ReplyToMessage: &domains.Message{
+						ID:     1,
+						ChatID: 100,
+						Sender: domains.User{
+							ID:             5,
+							Username:       "alice",
+							Email:          "alice@example.com",
+							EmailConfirmed: true,
+							Password:       "hash1",
+							CreatedAt:      now,
+							UpdatedAt:      now,
+						},
+						Text:      "Hello!",
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+				},
+				{
+					ID:     3,
+					ChatID: 100,
+					Sender: domains.User{
+						ID:             5,
+						Username:       "alice",
+						Email:          "alice@example.com",
+						EmailConfirmed: true,
+						Password:       "hash1",
+						CreatedAt:      now,
+						UpdatedAt:      now,
+					},
+					Text:           "Another standalone message",
+					CreatedAt:      now.Add(10 * time.Minute),
+					UpdatedAt:      now.Add(10 * time.Minute),
+					ReplyToMessage: nil,
+				},
+			},
+			expected: []schemas.Message{
+				{
+					ID:     1,
+					ChatID: 100,
+					Sender: schemas.Sender{
+						ID:       5,
+						Username: "alice",
+					},
+					Text:           "Hello!",
+					CreatedAt:      now,
+					UpdatedAt:      now,
+					ReplyToMessage: nil,
+				},
+				{
+					ID:     2,
+					ChatID: 100,
+					Sender: schemas.Sender{
+						ID:       6,
+						Username: "bob",
+					},
+					Text:      "Reply to hello",
+					CreatedAt: now.Add(5 * time.Minute),
+					UpdatedAt: now.Add(5 * time.Minute),
+					ReplyToMessage: &schemas.ReplyMessage{
+						ID: 1,
+						Sender: schemas.Sender{
+							ID:       5,
+							Username: "alice",
+						},
+						Text:      "Hello!",
+						CreatedAt: now,
+					},
+				},
+				{
+					ID:     3,
+					ChatID: 100,
+					Sender: schemas.Sender{
+						ID:       5,
+						Username: "alice",
+					},
+					Text:           "Another standalone message",
+					CreatedAt:      now.Add(10 * time.Minute),
+					UpdatedAt:      now.Add(10 * time.Minute),
+					ReplyToMessage: nil,
+				},
+			},
+		},
+		{
 			name: "Большое количество сообщений (производительность)",
 			input: func() []domains.Message {
 				messages := make([]domains.Message, 10000)
@@ -751,6 +979,34 @@ func TestMapMessages(t *testing.T) {
 				// Проверяем Sender
 				assert.Equal(t, expectedMessage.Sender.ID, result[i].Sender.ID)
 				assert.Equal(t, expectedMessage.Sender.Username, result[i].Sender.Username)
+
+				// Проверяем ReplyToMessage
+				if expectedMessage.ReplyToMessage != nil {
+					require.NotNil(t, result[i].ReplyToMessage)
+					assert.Equal(t, expectedMessage.ReplyToMessage.ID, result[i].ReplyToMessage.ID)
+					assert.Equal(
+						t,
+						expectedMessage.ReplyToMessage.Text,
+						result[i].ReplyToMessage.Text,
+					)
+					assert.Equal(
+						t,
+						expectedMessage.ReplyToMessage.CreatedAt,
+						result[i].ReplyToMessage.CreatedAt,
+					)
+					assert.Equal(
+						t,
+						expectedMessage.ReplyToMessage.Sender.ID,
+						result[i].ReplyToMessage.Sender.ID,
+					)
+					assert.Equal(
+						t,
+						expectedMessage.ReplyToMessage.Sender.Username,
+						result[i].ReplyToMessage.Sender.Username,
+					)
+				} else {
+					assert.Nil(t, result[i].ReplyToMessage)
+				}
 			}
 
 			// Для больших слайсов проверяем производительность

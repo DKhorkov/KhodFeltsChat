@@ -40,6 +40,10 @@ const errorMapping = [
     // Web Push
     { key: 'web-push subscription not found', message: 'Подписка на уведомления в браузере не найдена' },
 
+    // Messages
+    { key: 'only message author can delete for all', message: 'Только автор сообщения может удалить его для всех' },
+    { key: 'message not found', message: 'Сообщение не найдено' },
+
     // Chats
     { key: 'user is not a chat member', message: 'У вас нет доступа к этому чату' },
     { key: 'chat already exists', message: 'Такой чат уже существует' },

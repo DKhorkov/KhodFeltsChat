@@ -816,3 +816,214 @@ func TestService_GetMessageByID(t *testing.T) {
 		})
 	}
 }
+
+func TestService_DeleteMessage(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		mockUOW                func(*mockuow.MockUnitOfWork)
+		mockChatsRepository    func(*mockrepositories.MockChatsRepository)
+		mockMessagesRepository func(*mockrepositories.MockMessagesRepository)
+	}
+
+	type args struct {
+		ctx context.Context
+		dto domains.DeleteMessageDTO
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+		err     error
+	}{
+		{
+			name: "successfully delete for user",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
+					mr.EXPECT().
+						DeleteMessageForUser(gomock.Any(), uint64(1), uint64(10)).
+						Return(nil)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.DeleteMessageDTO{
+					MessageID: 10,
+					UserID:    1,
+					ForAll:    false,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "successfully delete for all",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
+					mr.EXPECT().
+						DeleteMessageForAll(gomock.Any(), uint64(10)).
+						Return(nil)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.DeleteMessageDTO{
+					MessageID: 10,
+					UserID:    1,
+					ForAll:    true,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "DeleteMessageForUser error",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
+					mr.EXPECT().
+						DeleteMessageForUser(gomock.Any(), uint64(1), uint64(10)).
+						Return(errors.New("database error"))
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.DeleteMessageDTO{
+					MessageID: 10,
+					UserID:    1,
+					ForAll:    false,
+				},
+			},
+			wantErr: true,
+			err:     errors.New("database error"),
+		},
+		{
+			name: "DeleteMessageForAll error",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
+					mr.EXPECT().
+						DeleteMessageForAll(gomock.Any(), uint64(10)).
+						Return(errors.New("database error"))
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.DeleteMessageDTO{
+					MessageID: 10,
+					UserID:    1,
+					ForAll:    true,
+				},
+			},
+			wantErr: true,
+			err:     errors.New("database error"),
+		},
+		{
+			name: "UoW error",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						Return(errors.New("unit of work error"))
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.DeleteMessageDTO{
+					MessageID: 10,
+					UserID:    1,
+					ForAll:    false,
+				},
+			},
+			wantErr: true,
+			err:     errors.New("unit of work error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange
+			ctrl := gomock.NewController(t)
+
+			mockUOW := mockuow.NewMockUnitOfWork(ctrl)
+			mockChatsRepo := mockrepositories.NewMockChatsRepository(ctrl)
+			mockMessagesRepo := mockrepositories.NewMockMessagesRepository(ctrl)
+
+			if tt.fields.mockUOW != nil {
+				tt.fields.mockUOW(mockUOW)
+			}
+
+			if tt.fields.mockChatsRepository != nil {
+				tt.fields.mockChatsRepository(mockChatsRepo)
+			}
+
+			if tt.fields.mockMessagesRepository != nil {
+				tt.fields.mockMessagesRepository(mockMessagesRepo)
+			}
+
+			newChatsRepoFunc := func(_ pg.Transaction) interfaces.ChatsRepository {
+				return mockChatsRepo
+			}
+
+			newMessagesRepoFunc := func(_ pg.Transaction) interfaces.MessagesRepository {
+				return mockMessagesRepo
+			}
+
+			s := service.New(
+				mockUOW,
+				newChatsRepoFunc,
+				newMessagesRepoFunc,
+			)
+
+			// Act
+			err := s.DeleteMessage(tt.args.ctx, tt.args.dto)
+
+			// Assert
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				if tt.err != nil {
+					assert.Contains(t, err.Error(), tt.err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

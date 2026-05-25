@@ -6,7 +6,7 @@ import (
 )
 
 func MapMessage(message domains.Message) schemas.Message {
-	return schemas.Message{
+	mapped := schemas.Message{
 		ID:     message.ID,
 		ChatID: message.ChatID,
 		Sender: schemas.Sender{
@@ -18,6 +18,20 @@ func MapMessage(message domains.Message) schemas.Message {
 		UpdatedAt: message.UpdatedAt,
 		IsRead:    message.IsRead,
 	}
+
+	if message.ReplyToMessage != nil {
+		mapped.ReplyToMessage = &schemas.ReplyMessage{
+			ID: message.ReplyToMessage.ID,
+			Sender: schemas.Sender{
+				ID:       message.ReplyToMessage.Sender.ID,
+				Username: message.ReplyToMessage.Sender.Username,
+			},
+			Text:      message.ReplyToMessage.Text,
+			CreatedAt: message.ReplyToMessage.CreatedAt,
+		}
+	}
+
+	return mapped
 }
 
 func MapMessages(messages []domains.Message) []schemas.Message {

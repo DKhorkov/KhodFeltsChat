@@ -236,9 +236,15 @@
     padding: var(--space-lg);
     border-top: 1px solid var(--border);
     display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--bg-surface);
+}
+
+.conversation__composer-row {
+    display: flex;
     gap: var(--space-sm);
     align-items: flex-end;
-    background: var(--bg-surface);
 }
 
 .conversation__composer-input {
@@ -328,6 +334,158 @@
     white-space: pre-wrap;
     word-wrap: break-word;
     line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════
+   Плашка ответа в пузырьке
+   ═══════════════════════════════════════ */
+.message-bubble__reply {
+    background: rgba(0, 0, 0, 0.06);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: var(--space-xs) var(--space-sm);
+    margin-bottom: var(--space-xs);
+    cursor: pointer;
+    font-size: var(--font-sm);
+    transition: background var(--transition-base);
+}
+
+.message-bubble__reply:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.message-bubble--own .message-bubble__reply {
+    background: rgba(255, 255, 255, 0.15);
+    border-left-color: rgba(255, 255, 255, 0.6);
+}
+
+.message-bubble--own .message-bubble__reply:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.message-bubble__reply-sender {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 1px;
+}
+
+.message-bubble__reply-text {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 300px;
+}
+
+/* ═══════════════════════════════════════
+   Панель ответа в composer
+   ═══════════════════════════════════════ */
+.conversation__reply-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-hover);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.conversation__reply-bar-content {
+    flex: 1;
+    min-width: 0;
+    border-left: 3px solid var(--accent);
+    padding-left: var(--space-sm);
+}
+
+.conversation__reply-bar-sender {
+    font-weight: 600;
+    font-size: var(--font-sm);
+    color: var(--accent);
+    display: block;
+}
+
+.conversation__reply-bar-text {
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
+
+.conversation__reply-bar-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: var(--text-placeholder);
+    cursor: pointer;
+    padding: var(--space-xs);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-base);
+    line-height: 1;
+}
+
+.conversation__reply-bar-close:hover {
+    color: var(--text-primary);
+    background: var(--bg-active);
+}
+
+/* ═══════════════════════════════════════
+   Контекстное меню
+   ═══════════════════════════════════════ */
+.context-menu {
+    position: fixed;
+    z-index: 3000;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-xs) 0;
+    min-width: 180px;
+}
+
+.context-menu__item {
+    display: block;
+    width: 100%;
+    padding: var(--space-sm) var(--space-lg);
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: var(--font-md);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background var(--transition-base);
+}
+
+.context-menu__item:hover {
+    background: var(--bg-hover);
+}
+
+.context-menu__item--danger {
+    color: var(--danger);
+}
+
+.context-menu__item--danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.context-menu__delete-sub {
+    padding-left: var(--space-md);
+}
+
+/* ═══════════════════════════════════════
+   Подсветка целевого сообщения (scroll-to-reply)
+   ═══════════════════════════════════════ */
+.message-bubble--highlight {
+    animation: highlightPulse 1.5s ease;
+}
+
+@keyframes highlightPulse {
+    0%, 100% { box-shadow: none; }
+    30% { box-shadow: 0 0 0 3px var(--accent); }
+    70% { box-shadow: 0 0 0 3px var(--accent); }
 }
 
 /* ═══════════════════════════════════════

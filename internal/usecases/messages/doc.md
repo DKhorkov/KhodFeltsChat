@@ -20,8 +20,12 @@
 - Прямая передача запроса в `MessagesService`.
 - Используется NATS-воркером push-уведомлений для получения текста сообщения.
 
+### DeleteMessage
+- Если `ForAll`: проверяет через `GetMessageByID`, что сообщение существует и запрашивающий — автор. Иначе `ErrMessageNotFound` / `ErrNotMessageAuthor`.
+- Делегирует удаление в `MessagesService.DeleteMessage`.
+
 ## Зависимости
 
 - `internal/interfaces` — `MessagesService`, `ChatsService`, `UsersService`.
-- `internal/domains` — `Message`, `Pagination`.
-- `internal/errors` — ошибка доступа (пользователь не является членом чата).
+- `internal/domains` — `Message`, `Pagination`, `DeleteMessageDTO`.
+- `internal/errors` — `ErrUserIsNotChatMember`, `ErrMessageNotFound`, `ErrNotMessageAuthor`.
