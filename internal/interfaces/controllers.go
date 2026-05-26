@@ -12,4 +12,5 @@ type Controller interface {
 type WSBroadcaster interface {
 	BroadcastMessageDeleted(ctx context.Context, chatID uint64, messageID uint64)
 	SendMessageDeletedToUser(ctx context.Context, chatID uint64, messageID uint64, userID uint64)
+	BroadcastMessageEdited(ctx context.Context, chatID uint64, messageID uint64)
 }

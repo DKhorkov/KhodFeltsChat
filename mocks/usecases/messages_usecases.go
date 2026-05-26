@@ -85,6 +85,21 @@ func (mr *MockMessagesUseCasesMockRecorder) GetMessageByID(ctx, userID, messageI
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMessageByID", reflect.TypeOf((*MockMessagesUseCases)(nil).GetMessageByID), ctx, userID, messageID)
 }
 
+// UpdateMessage mocks base method.
+func (m *MockMessagesUseCases) UpdateMessage(ctx context.Context, dto domains.UpdateMessageDTO) (*domains.Message, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateMessage", ctx, dto)
+	ret0, _ := ret[0].(*domains.Message)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateMessage indicates an expected call of UpdateMessage.
+func (mr *MockMessagesUseCasesMockRecorder) UpdateMessage(ctx, dto any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMessage", reflect.TypeOf((*MockMessagesUseCases)(nil).UpdateMessage), ctx, dto)
+}
+
 // SaveMessage mocks base method.
 func (m *MockMessagesUseCases) SaveMessage(ctx context.Context, message domains.Message) (*domains.Message, error) {
 	m.ctrl.T.Helper()

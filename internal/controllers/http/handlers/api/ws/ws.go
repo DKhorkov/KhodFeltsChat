@@ -159,6 +159,39 @@ func (h *Handler) BroadcastMessageDeleted(
 	}
 }
 
+// BroadcastMessageEdited sends a message_edited event to all chat members.
+func (h *Handler) BroadcastMessageEdited(
+	ctx context.Context,
+	chatID uint64,
+	messageID uint64,
+) {
+	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, chatID)
+	if err != nil {
+		logging.LogErrorContext(
+			ctx,
+			h.logger,
+			"Failed to get chat members for message edited broadcast",
+			err,
+			"ChatID", chatID,
+			"MessageID", messageID,
+		)
+
+		return
+	}
+
+	event := domains.WSEvent{
+		Type: domains.WSEventMessageEdited,
+		Payload: domains.MessageEditedPayload{
+			MessageID: messageID,
+			ChatID:    chatID,
+		},
+	}
+
+	for _, member := range chatMembers {
+		h.sendToUser(ctx, member.ID, event)
+	}
+}
+
 // SendMessageDeletedToUser sends a message_deleted event only to a specific user's connections.
 func (h *Handler) SendMessageDeletedToUser(
 	ctx context.Context,

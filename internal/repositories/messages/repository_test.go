@@ -1115,6 +1115,88 @@ func (s *RepositoryTestSuite) TestGetMessageByID_DeletedMessage() {
 	s.Nil(message)
 }
 
+func (s *RepositoryTestSuite) TestUpdateMessage_Success() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	// Запоминаем время до обновления
+	timeBefore := time.Now().UTC()
+
+	// Обновляем текст сообщения
+	dto := domains.UpdateMessageDTO{
+		MessageID: 1,
+		UserID:    1,
+		Text:      "Updated text!",
+	}
+
+	err := s.repository.UpdateMessage(s.ctx, dto)
+	s.NoError(err)
+
+	// Проверяем, что текст и updated_at обновились
+	var (
+		dbText      string
+		dbUpdatedAt time.Time
+	)
+
+	err = s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT text, updated_at FROM messages WHERE id = $1`,
+		dto.MessageID,
+	).Scan(&dbText, &dbUpdatedAt)
+	s.NoError(err)
+
+	s.Equal("Updated text!", dbText)
+	s.True(dbUpdatedAt.After(timeBefore) || dbUpdatedAt.Equal(timeBefore),
+		"updated_at should be >= timeBefore")
+}
+
+func (s *RepositoryTestSuite) TestUpdateMessage_NonExistentMessage() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	// Обновляем несуществующее сообщение
+	dto := domains.UpdateMessageDTO{
+		MessageID: 999,
+		UserID:    1,
+		Text:      "This message does not exist",
+	}
+
+	err := s.repository.UpdateMessage(s.ctx, dto)
+	s.NoError(err) // UPDATE без найденных строк не возвращает ошибку
+}
+
+func (s *RepositoryTestSuite) TestUpdateMessage_EmptyText() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	// Обновляем текст сообщения на пустую строку
+	dto := domains.UpdateMessageDTO{
+		MessageID: 1,
+		UserID:    1,
+		Text:      "",
+	}
+
+	err := s.repository.UpdateMessage(s.ctx, dto)
+	s.NoError(err)
+
+	// Проверяем, что текст сохранён как пустая строка
+	var dbText string
+
+	err = s.tx.QueryRowContext(
+		s.ctx,
+		`SELECT text FROM messages WHERE id = $1`,
+		dto.MessageID,
+	).Scan(&dbText)
+	s.NoError(err)
+	s.Equal("", dbText)
+}
+
 func (s *RepositoryTestSuite) createTestUsers() {
 	// Создаем пользователей
 	users := []struct {

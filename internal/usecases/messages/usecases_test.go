@@ -921,3 +921,198 @@ func TestUseCases_DeleteMessage(t *testing.T) {
 		})
 	}
 }
+
+func TestUseCases_UpdateMessage(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		mockMessagesService func(*mockservices.MockMessagesService)
+		mockUsersService    func(*mockservices.MockUsersService)
+		mockChatsService    func(*mockservices.MockChatsService)
+	}
+
+	type args struct {
+		ctx context.Context
+		dto domains.UpdateMessageDTO
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *domains.Message
+		wantErr bool
+		err     error
+	}{
+		{
+			name: "successfully update message",
+			fields: fields{
+				mockMessagesService: func(ms *mockservices.MockMessagesService) {
+					ms.EXPECT().
+						GetMessageByID(gomock.Any(), uint64(1), uint64(10)).
+						Return(&domains.Message{
+							ID:     10,
+							ChatID: 100,
+							Text:   "Old text",
+							Sender: domains.User{ID: 1},
+						}, nil)
+
+					ms.EXPECT().
+						UpdateMessage(gomock.Any(), domains.UpdateMessageDTO{
+							MessageID: 10,
+							UserID:    1,
+							Text:      "New text",
+						}).
+						Return(&domains.Message{
+							ID:     10,
+							ChatID: 100,
+							Text:   "New text",
+							Sender: domains.User{ID: 1},
+						}, nil)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.UpdateMessageDTO{
+					MessageID: 10,
+					UserID:    1,
+					Text:      "New text",
+				},
+			},
+			want: &domains.Message{
+				ID:     10,
+				ChatID: 100,
+				Text:   "New text",
+				Sender: domains.User{ID: 1},
+			},
+			wantErr: false,
+		},
+		{
+			name: "message not found",
+			fields: fields{
+				mockMessagesService: func(ms *mockservices.MockMessagesService) {
+					ms.EXPECT().
+						GetMessageByID(gomock.Any(), uint64(1), uint64(999)).
+						Return(nil, errors.New("message not found"))
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.UpdateMessageDTO{
+					MessageID: 999,
+					UserID:    1,
+					Text:      "New text",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+			err:     customerrors.ErrMessageNotFound,
+		},
+		{
+			name: "not message author",
+			fields: fields{
+				mockMessagesService: func(ms *mockservices.MockMessagesService) {
+					ms.EXPECT().
+						GetMessageByID(gomock.Any(), uint64(2), uint64(10)).
+						Return(&domains.Message{
+							ID:     10,
+							ChatID: 100,
+							Text:   "Hello",
+							Sender: domains.User{ID: 1},
+						}, nil)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.UpdateMessageDTO{
+					MessageID: 10,
+					UserID:    2,
+					Text:      "New text",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+			err:     customerrors.ErrNotMessageAuthor,
+		},
+		{
+			name: "service UpdateMessage error",
+			fields: fields{
+				mockMessagesService: func(ms *mockservices.MockMessagesService) {
+					ms.EXPECT().
+						GetMessageByID(gomock.Any(), uint64(1), uint64(10)).
+						Return(&domains.Message{
+							ID:     10,
+							ChatID: 100,
+							Text:   "Hello",
+							Sender: domains.User{ID: 1},
+						}, nil)
+
+					ms.EXPECT().
+						UpdateMessage(gomock.Any(), domains.UpdateMessageDTO{
+							MessageID: 10,
+							UserID:    1,
+							Text:      "New text",
+						}).
+						Return(nil, errors.New("database error"))
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.UpdateMessageDTO{
+					MessageID: 10,
+					UserID:    1,
+					Text:      "New text",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+			err:     errors.New("database error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange
+			ctrl := gomock.NewController(t)
+
+			mockMessagesService := mockservices.NewMockMessagesService(ctrl)
+			mockUsersService := mockservices.NewMockUsersService(ctrl)
+			mockChatsService := mockservices.NewMockChatsService(ctrl)
+
+			if tt.fields.mockMessagesService != nil {
+				tt.fields.mockMessagesService(mockMessagesService)
+			}
+
+			if tt.fields.mockUsersService != nil {
+				tt.fields.mockUsersService(mockUsersService)
+			}
+
+			if tt.fields.mockChatsService != nil {
+				tt.fields.mockChatsService(mockChatsService)
+			}
+
+			uc := messages.New(
+				mockMessagesService,
+				mockChatsService,
+				mockUsersService,
+			)
+
+			// Act
+			got, err := uc.UpdateMessage(tt.args.ctx, tt.args.dto)
+
+			// Assert
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				if tt.err != nil {
+					assert.Contains(t, err.Error(), tt.err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}

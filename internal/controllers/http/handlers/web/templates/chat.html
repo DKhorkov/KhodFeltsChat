@@ -52,6 +52,13 @@
                     </div>
                     <button class="conversation__reply-bar-close" id="btn-cancel-reply" aria-label="Отменить ответ">&times;</button>
                 </div>
+                <div class="conversation__edit-bar" id="edit-bar" style="display: none;">
+                    <div class="conversation__edit-bar-content">
+                        <span class="conversation__edit-bar-label" id="edit-bar-label">Редактирование</span>
+                        <span class="conversation__edit-bar-text" id="edit-bar-text"></span>
+                    </div>
+                    <button class="conversation__edit-bar-close" id="btn-cancel-edit" aria-label="Отменить редактирование">&times;</button>
+                </div>
                 <div class="conversation__composer-row">
                     <div class="conversation__composer-input">
                         <textarea
@@ -176,6 +183,7 @@
     <!-- Контекстное меню сообщения -->
     <div class="context-menu" id="context-menu" style="display: none;">
         <button class="context-menu__item" id="ctx-reply">Ответить</button>
+        <button class="context-menu__item" id="ctx-edit" style="display: none;">Редактировать</button>
         <button class="context-menu__item" id="ctx-copy">Копировать текст</button>
         <div class="context-menu__delete-group" id="ctx-delete-group" style="display: none;">
             <button class="context-menu__item context-menu__item--danger" id="ctx-delete-toggle">Удалить</button>

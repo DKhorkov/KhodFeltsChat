@@ -721,9 +721,9 @@ func TestTraceDecorator_DeleteMessage(t *testing.T) {
 
 				mockBase.EXPECT().
 					DeleteMessage(gomock.Any(), gomock.Any()).
-					Return(errors.New("only message author can delete for all"))
+					Return(errors.New("only message author can perform this action"))
 			},
-			expectedError: errors.New("only message author can delete for all"),
+			expectedError: errors.New("only message author can perform this action"),
 		},
 		{
 			name: "database error",
@@ -789,6 +789,180 @@ func TestTraceDecorator_DeleteMessage(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestTraceDecorator_UpdateMessage(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+
+	tests := []struct {
+		name           string
+		dto            domains.UpdateMessageDTO
+		setupMocks     func(*mocktracing.MockProvider, *mockusecases.MockMessagesUseCases, *mocktracing.MockSpan)
+		expectedResult *domains.Message
+		expectedError  error
+	}{
+		{
+			name: "successful update message with tracing",
+			dto: domains.UpdateMessageDTO{
+				MessageID: 10,
+				UserID:    1,
+				Text:      "Updated text",
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockMessagesUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					UpdateMessage(gomock.Any(), domains.UpdateMessageDTO{
+						MessageID: 10,
+						UserID:    1,
+						Text:      "Updated text",
+					}).
+					Return(&domains.Message{
+						ID:        10,
+						ChatID:    1,
+						Sender:    domains.User{ID: 1, Username: "user1"},
+						Text:      "Updated text",
+						CreatedAt: now,
+						UpdatedAt: now,
+						IsRead:    false,
+					}, nil)
+			},
+			expectedResult: &domains.Message{
+				ID:        10,
+				ChatID:    1,
+				Sender:    domains.User{ID: 1, Username: "user1"},
+				Text:      "Updated text",
+				CreatedAt: now,
+				UpdatedAt: now,
+				IsRead:    false,
+			},
+			expectedError: nil,
+		},
+		{
+			name: "message not found",
+			dto: domains.UpdateMessageDTO{
+				MessageID: 999,
+				UserID:    1,
+				Text:      "Updated text",
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockMessagesUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					UpdateMessage(gomock.Any(), gomock.Any()).
+					Return(nil, errors.New("message not found"))
+			},
+			expectedResult: nil,
+			expectedError:  errors.New("message not found"),
+		},
+		{
+			name: "not message author",
+			dto: domains.UpdateMessageDTO{
+				MessageID: 10,
+				UserID:    2,
+				Text:      "Updated text",
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockMessagesUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					UpdateMessage(gomock.Any(), gomock.Any()).
+					Return(nil, errors.New("only message author can perform this action"))
+			},
+			expectedResult: nil,
+			expectedError:  errors.New("only message author can perform this action"),
+		},
+		{
+			name: "database error",
+			dto: domains.UpdateMessageDTO{
+				MessageID: 10,
+				UserID:    1,
+				Text:      "Updated text",
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockMessagesUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					UpdateMessage(gomock.Any(), gomock.Any()).
+					Return(nil, errors.New("database connection failed"))
+			},
+			expectedResult: nil,
+			expectedError:  errors.New("database connection failed"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockusecases.NewMockMessagesUseCases(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			spanConfig := tracing.SpanConfig{
+				Name: "test-span",
+				Opts: []trace.SpanStartOption{},
+				Events: tracing.SpanEventsConfig{
+					Start: tracing.SpanEventConfig{
+						Name: "start",
+						Opts: []trace.EventOption{},
+					},
+					End: tracing.SpanEventConfig{
+						Name: "end",
+						Opts: []trace.EventOption{},
+					},
+				},
+			}
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockProvider, mockBase, mockSpan)
+			}
+
+			decorator := messages.NewTraceDecorator(mockProvider, spanConfig, mockBase)
+
+			ctx := context.Background()
+			result, err := decorator.UpdateMessage(ctx, tt.dto)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
 }

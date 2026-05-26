@@ -127,6 +127,20 @@ func (mr *MockMessagesRepositoryMockRecorder) ReadAllChatMessages(ctx, userID, c
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadAllChatMessages", reflect.TypeOf((*MockMessagesRepository)(nil).ReadAllChatMessages), ctx, userID, chatID)
 }
 
+// UpdateMessage mocks base method.
+func (m *MockMessagesRepository) UpdateMessage(ctx context.Context, dto domains.UpdateMessageDTO) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateMessage", ctx, dto)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateMessage indicates an expected call of UpdateMessage.
+func (mr *MockMessagesRepositoryMockRecorder) UpdateMessage(ctx, dto any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateMessage", reflect.TypeOf((*MockMessagesRepository)(nil).UpdateMessage), ctx, dto)
+}
+
 // SaveMessage mocks base method.
 func (m *MockMessagesRepository) SaveMessage(ctx context.Context, message domains.Message) (uint64, error) {
 	m.ctrl.T.Helper()

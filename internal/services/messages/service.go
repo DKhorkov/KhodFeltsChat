@@ -161,3 +161,37 @@ func (s *Service) DeleteMessage(
 		},
 	)
 }
+
+func (s *Service) UpdateMessage(
+	ctx context.Context,
+	dto domains.UpdateMessageDTO,
+) (*domains.Message, error) {
+	var updatedMessage *domains.Message
+
+	err := s.uow.Do(
+		ctx,
+		func(ctx context.Context, tx pg.Transaction) error {
+			messagesRepository := s.newMessagesRepositoryFunc(tx)
+
+			if err := messagesRepository.UpdateMessage(ctx, dto); err != nil {
+				return err
+			}
+
+			var err error
+			if updatedMessage, err = messagesRepository.GetMessageByID(
+				ctx,
+				dto.UserID,
+				dto.MessageID,
+			); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedMessage, nil
+}

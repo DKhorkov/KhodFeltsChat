@@ -12,6 +12,7 @@
 | `GetChatMessages` | Проверка существования чата → paginated fetch → пометка полученных сообщений как прочитанных для запрашивающего пользователя (через `ChangeMessagesIsReadStatus`) |
 | `GetMessageByID` | Получение одного сообщения по ID в контексте пользователя (через `MessagesRepository`) |
 | `DeleteMessage` | Удаление сообщения: если `ForAll` — вызывает `DeleteMessageForAll`, иначе `DeleteMessageForUser` |
+| `UpdateMessage` | Редактирование текста сообщения: обновляет `text` и `updated_at` → re-fetch обновлённого сообщения (в рамках UoW) |
 
 ## Зависимости
 
