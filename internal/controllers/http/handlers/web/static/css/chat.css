@@ -437,6 +437,61 @@
 }
 
 /* ═══════════════════════════════════════
+   Панель редактирования в composer
+   ═══════════════════════════════════════ */
+.conversation__edit-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-hover);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.conversation__edit-bar-content {
+    flex: 1;
+    min-width: 0;
+    border-left: 3px solid var(--warning, #f0ad4e);
+    padding-left: var(--space-sm);
+}
+
+.conversation__edit-bar-label {
+    font-weight: 600;
+    font-size: var(--font-sm);
+    color: var(--warning, #f0ad4e);
+    display: block;
+}
+
+.conversation__edit-bar-text {
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
+
+.conversation__edit-bar-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: var(--text-placeholder);
+    cursor: pointer;
+    padding: var(--space-xs);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-base);
+    line-height: 1;
+}
+
+.conversation__edit-bar-close:hover {
+    color: var(--text-primary);
+    background: var(--bg-active);
+}
+
+/* ═══════════════════════════════════════
    Контекстное меню
    ═══════════════════════════════════════ */
 .context-menu {
