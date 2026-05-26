@@ -199,6 +199,8 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 - `.message-bubble` → max-width: 85%, `will-change: transform` (для свайпа влево)
 - `.message-bubble--pressing` → анимация увеличения при long press (`scale(1) → scale(1.05)` за 500мс, `longPressScale` keyframes)
 - textarea и input → `font-size: 16px` (предотвращает zoom на iOS)
+- `.modal-overlay--keyboard-open` → `align-items: flex-start`, модалка поднимается наверх при открытой клавиатуре (класс добавляется/убирается JS через `visualViewport.resize`)
+- `.modal-overlay--keyboard-open .modal-content` → `margin-top` + `max-height` через `--vh` (ограничивает высоту видимой областью)
 - `.toast-container` → сверху, на всю ширину
 
 ---

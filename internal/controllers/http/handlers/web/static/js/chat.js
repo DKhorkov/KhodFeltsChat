@@ -1259,6 +1259,10 @@ function setupMobileViewportResize() {
 
     updateVh();
 
+    // Порог уменьшения viewport для определения открытой клавиатуры (150px):
+    const KEYBOARD_THRESHOLD_PX = 150;
+    const fullViewportHeight = window.innerHeight;
+
     if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', () => {
             // Запоминаем позицию скролла сообщений до изменения размера:
@@ -1268,6 +1272,12 @@ function setupMobileViewportResize() {
 
             updateVh();
             window.scrollTo(0, 0);
+
+            // Определяем, открыта ли клавиатура (viewport уменьшился значительно):
+            const keyboardOpen = fullViewportHeight - window.visualViewport.height > KEYBOARD_THRESHOLD_PX;
+            document.querySelectorAll('.modal-overlay').forEach(overlay => {
+                overlay.classList.toggle('modal-overlay--keyboard-open', keyboardOpen);
+            });
 
             // Восстанавливаем позицию скролла после перестроения layout:
             requestAnimationFrame(() => {

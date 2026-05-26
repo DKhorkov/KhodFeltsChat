@@ -804,6 +804,16 @@
         font-size: 16px;
     }
 
+    /* Модалки: поднимаем наверх, когда клавиатура открыта (класс добавляется из JS) */
+    .modal-overlay--keyboard-open {
+        align-items: flex-start;
+    }
+
+    .modal-overlay--keyboard-open .modal-content {
+        margin-top: var(--space-xl);
+        max-height: calc(var(--vh, 1vh) * 100 - var(--space-xl) * 2);
+    }
+
     .toast-container {
         top: 60px;
         bottom: auto;
