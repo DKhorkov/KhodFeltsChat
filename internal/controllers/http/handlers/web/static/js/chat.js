@@ -199,29 +199,29 @@ async function handleMessageDeleted(payload) {
 }
 
 async function handleMessageEdited(payload) {
-    if (selectedChatId !== payload.chatId) return;
+    if (selectedChatId === payload.chatId) {
+        try {
+            const resp = await fetchWithAuth('/api/messages/' + payload.messageId);
+            if (resp.ok) {
+                const updated = await resp.json();
 
-    try {
-        const resp = await fetchWithAuth('/api/messages/' + payload.messageId);
-        if (!resp.ok) return;
+                const idx = messages.findIndex(m => m.id === payload.messageId);
+                if (idx >= 0) {
+                    messages[idx].text = updated.text;
+                    messages[idx].updatedAt = updated.updatedAt;
 
-        const updated = await resp.json();
-
-        const idx = messages.findIndex(m => m.id === payload.messageId);
-        if (idx >= 0) {
-            messages[idx].text = updated.text;
-            messages[idx].updatedAt = updated.updatedAt;
-
-            const bubble = document.querySelector(
-                `.message-bubble[data-message-id="${payload.messageId}"]`
-            );
-            if (bubble) {
-                const textEl = bubble.querySelector('.message-bubble__text');
-                if (textEl) textEl.textContent = updated.text;
+                    const bubble = document.querySelector(
+                        `.message-bubble[data-message-id="${payload.messageId}"]`
+                    );
+                    if (bubble) {
+                        const textEl = bubble.querySelector('.message-bubble__text');
+                        if (textEl) textEl.textContent = updated.text;
+                    }
+                }
             }
+        } catch (err) {
+            console.error('handleMessageEdited error:', err);
         }
-    } catch (err) {
-        console.error('handleMessageEdited error:', err);
     }
 
     debouncedLoadChats();

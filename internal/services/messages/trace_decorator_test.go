@@ -705,9 +705,9 @@ func TestTraceDecorator_DeleteMessage(t *testing.T) {
 
 				mockBase.EXPECT().
 					DeleteMessage(gomock.Any(), gomock.Any()).
-					Return(errors.New("only message author can delete for all"))
+					Return(errors.New("only message author can perform this action"))
 			},
-			expectedError: errors.New("only message author can delete for all"),
+			expectedError: errors.New("only message author can perform this action"),
 		},
 		{
 			name: "database error",
