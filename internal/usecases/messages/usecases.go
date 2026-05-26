@@ -87,3 +87,19 @@ func (u *UseCases) DeleteMessage(
 
 	return u.messagesService.DeleteMessage(ctx, dto)
 }
+
+func (u *UseCases) UpdateMessage(
+	ctx context.Context,
+	dto domains.UpdateMessageDTO,
+) (*domains.Message, error) {
+	message, err := u.messagesService.GetMessageByID(ctx, dto.UserID, dto.MessageID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", customerrors.ErrMessageNotFound, err)
+	}
+
+	if message.Sender.ID != dto.UserID {
+		return nil, customerrors.ErrNotMessageAuthor
+	}
+
+	return u.messagesService.UpdateMessage(ctx, dto)
+}

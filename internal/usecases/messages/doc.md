@@ -24,8 +24,12 @@
 - Если `ForAll`: проверяет через `GetMessageByID`, что сообщение существует и запрашивающий — автор. Иначе `ErrMessageNotFound` / `ErrNotMessageAuthor`.
 - Делегирует удаление в `MessagesService.DeleteMessage`.
 
+### UpdateMessage
+- Проверяет через `GetMessageByID`, что сообщение существует и запрашивающий — автор. Иначе `ErrMessageNotFound` / `ErrNotMessageAuthor`.
+- Делегирует редактирование в `MessagesService.UpdateMessage`.
+
 ## Зависимости
 
 - `internal/interfaces` — `MessagesService`, `ChatsService`, `UsersService`.
-- `internal/domains` — `Message`, `Pagination`, `DeleteMessageDTO`.
+- `internal/domains` — `Message`, `Pagination`, `DeleteMessageDTO`, `UpdateMessageDTO`.
 - `internal/errors` — `ErrUserIsNotChatMember`, `ErrMessageNotFound`, `ErrNotMessageAuthor`.

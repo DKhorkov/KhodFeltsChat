@@ -27,6 +27,7 @@
 | `DeleteMessageForUser(ctx, userID, messageID)` | Soft-удаление: устанавливает `is_deleted = true` в `messages_statuses` для конкретного пользователя |
 | `DeleteMessageForAll(ctx, messageID)` | Soft-удаление для всех: устанавливает `is_deleted = true` во всех записях `messages_statuses` для данного сообщения |
 | `ReadAllChatMessages(ctx, userID, chatID)` | Пакетная пометка всех непрочитанных сообщений чата как прочитанных для пользователя |
+| `UpdateMessageText(ctx, messageID, text)` | Обновляет `text` и `updated_at` в таблице `messages` для указанного сообщения |
 
 ## Зависимости
 

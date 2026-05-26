@@ -29,8 +29,10 @@ WebSocket-событие (envelope для передачи типизирова�
 - `WSEventType` (string) — тип события.
   - `WSEventNewMessage` = `"new_message"` — новое сообщение.
   - `WSEventMessageDeleted` = `"message_deleted"` — удалённое сообщение.
+  - `WSEventMessageEdited` = `"message_edited"` — отредактированное сообщение.
 - `WSEvent` — `Type WSEventType`, `Payload any`.
 - `MessageDeletedPayload` — `MessageID uint64`, `ChatID uint64`.
+- `MessageEditedPayload` — `MessageID uint64`, `ChatID uint64`, `Text string`.
 
 ### RefreshToken
 Токен обновления сессии: `ID`, `UserID`, `Value`, `TTL`, `CreatedAt`, `UpdatedAt`.
@@ -61,6 +63,7 @@ Push-подписка пользователя на Web Push уведомлен�
 | `SendVerifyEmailMessageDTO` | Email для отправки письма верификации |
 | `SendForgetPasswordMessageDTO` | Email для отправки письма восстановления пароля |
 | `DeleteMessageDTO` | Удаление сообщения: `MessageID`, `UserID`, `ForAll` |
+| `UpdateMessageDTO` | Редактирование сообщения: `MessageID`, `UserID`, `Text` |
 
 
 ## Типы уведомлений (notifications.go)

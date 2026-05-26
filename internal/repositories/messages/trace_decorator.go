@@ -123,3 +123,16 @@ func (d *TraceDecorator) DeleteMessageForAll(
 
 	return d.base.DeleteMessageForAll(ctx, messageID)
 }
+
+func (d *TraceDecorator) UpdateMessage(
+	ctx context.Context,
+	dto domains.UpdateMessageDTO,
+) error {
+	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
+	defer span.End()
+
+	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
+	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
+
+	return d.base.UpdateMessage(ctx, dto)
+}

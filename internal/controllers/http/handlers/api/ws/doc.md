@@ -33,6 +33,7 @@ WebSocket-обработчик для real-time обмена сообщения�
 |-------|----------|
 | `BroadcastMessageDeleted(ctx, chatID, messageID)` | Рассылает `message_deleted` событие всем участникам чата (удаление у всех) |
 | `SendMessageDeletedToUser(ctx, chatID, messageID, userID)` | Отправляет `message_deleted` событие только конкретному пользователю (удаление у себя) |
+| `BroadcastMessageEdited(ctx, chatID, messageID, text)` | Рассылает `message_edited` событие всем участникам чата (редактирование сообщения) |
 
 ## Вспомогательные методы
 

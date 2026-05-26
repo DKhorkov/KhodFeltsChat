@@ -19,6 +19,8 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/chats/user_chats"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/chat_messages"
 	delete_message "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/delete"
+	get_message "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/get"
+	update_message "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/update"
 	get_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/get"
 	update_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/update"
 	me "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/me"
@@ -57,8 +59,10 @@ const (
 	ChatsURL           = "/chats"
 	GetChatMessagesURL = ChatsURL + "/{%s}/messages"
 
-	MessagesURL      = "/messages"
-	DeleteMessageURL = MessagesURL + "/{%s}"
+	MessagesURL       = "/messages"
+	DeleteMessageURL  = MessagesURL + "/{%s}"
+	UpdateMessageURL  = MessagesURL + "/{%s}"
+	GetMessageByIDURL = MessagesURL + "/{%s}"
 
 	WebPushURL            = "/web-push"
 	WebPushSubscribeURL   = WebPushURL + "/subscribe"
@@ -110,6 +114,10 @@ func SetupHandlers(
 		fmt.Sprintf(VerifyEmailURL, verify_email.TokenRouteKey),
 		verify_email.Handler(authUseCases),
 	)
+	getMux.Handle(
+		fmt.Sprintf(GetMessageByIDURL, common.IDRouteKey),
+		get_message.Handler(messagesUseCases),
+	)
 	getMux.Handle(WebPushVAPIDKeyURL, vapid_key.Handler(vapidPublicKey))
 
 	postMux := apiMux.Methods(http.MethodPost).Subrouter()
@@ -135,6 +143,10 @@ func SetupHandlers(
 	putMux.Handle(MeURL, update.Handler(usersUseCases))
 	putMux.Handle(SettingsURL, update_settings.Handler(settingsUseCases))
 	putMux.Handle(SessionsURL, refresh_tokens.Handler(authUseCases, cookiesConfig))
+	putMux.Handle(
+		fmt.Sprintf(UpdateMessageURL, common.IDRouteKey),
+		update_message.Handler(messagesUseCases, websocketHandler),
+	)
 
 	deleteMux := apiMux.Methods(http.MethodDelete).Subrouter()
 	deleteMux.Handle(AllSessionsURL, logout_all.Handler(authUseCases, cookiesConfig))

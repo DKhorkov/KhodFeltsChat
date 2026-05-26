@@ -42,3 +42,9 @@ type DeleteMessageDTO struct {
 	UserID    uint64 `json:"-"`
 	ForAll    bool   `json:"forAll"`
 }
+
+type UpdateMessageDTO struct {
+	MessageID uint64 `json:"messageId"`
+	UserID    uint64 `json:"-"`
+	Text      string `json:"text"`
+}

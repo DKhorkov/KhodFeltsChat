@@ -771,6 +771,151 @@ func TestTraceDecorator_DeleteMessage(t *testing.T) {
 	}
 }
 
+func TestTraceDecorator_UpdateMessage(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+
+	tests := []struct {
+		name           string
+		dto            domains.UpdateMessageDTO
+		setupMocks     func(*mocktracing.MockProvider, *mockservices.MockMessagesService, *mocktracing.MockSpan)
+		expectedResult *domains.Message
+		expectedError  error
+	}{
+		{
+			name: "successful update message with tracing",
+			dto: domains.UpdateMessageDTO{
+				MessageID: 10,
+				UserID:    1,
+				Text:      "Updated text",
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockMessagesService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					UpdateMessage(gomock.Any(), domains.UpdateMessageDTO{
+						MessageID: 10,
+						UserID:    1,
+						Text:      "Updated text",
+					}).
+					Return(&domains.Message{
+						ID:        10,
+						ChatID:    1,
+						Sender:    domains.User{ID: 1, Username: "user1"},
+						Text:      "Updated text",
+						CreatedAt: now,
+						UpdatedAt: now,
+						IsRead:    false,
+					}, nil)
+			},
+			expectedResult: &domains.Message{
+				ID:        10,
+				ChatID:    1,
+				Sender:    domains.User{ID: 1, Username: "user1"},
+				Text:      "Updated text",
+				CreatedAt: now,
+				UpdatedAt: now,
+				IsRead:    false,
+			},
+			expectedError: nil,
+		},
+		{
+			name: "message not found",
+			dto: domains.UpdateMessageDTO{
+				MessageID: 999,
+				UserID:    1,
+				Text:      "Updated text",
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockMessagesService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					UpdateMessage(gomock.Any(), gomock.Any()).
+					Return(nil, errors.New("message not found"))
+			},
+			expectedResult: nil,
+			expectedError:  errors.New("message not found"),
+		},
+		{
+			name: "database error",
+			dto: domains.UpdateMessageDTO{
+				MessageID: 10,
+				UserID:    1,
+				Text:      "Updated text",
+			},
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockservices.MockMessagesService,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					UpdateMessage(gomock.Any(), gomock.Any()).
+					Return(nil, errors.New("database connection failed"))
+			},
+			expectedResult: nil,
+			expectedError:  errors.New("database connection failed"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockservices.NewMockMessagesService(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			spanConfig := tracing.SpanConfig{
+				Name: "test-span",
+				Opts: []trace.SpanStartOption{},
+				Events: tracing.SpanEventsConfig{
+					Start: tracing.SpanEventConfig{Name: "start"},
+					End:   tracing.SpanEventConfig{Name: "end"},
+				},
+			}
+
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockProvider, mockBase, mockSpan)
+			}
+
+			decorator := messages.NewTraceDecorator(mockProvider, spanConfig, mockBase)
+
+			ctx := context.Background()
+			result, err := decorator.UpdateMessage(ctx, tt.dto)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError.Error(), err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
 func TestTraceDecorator_GetMessageByID(t *testing.T) {
 	t.Parallel()
 

@@ -20,6 +20,7 @@ let hasMoreMessages = true;
 let returnToGroupChat = null;
 let chatsList = [];
 let replyToMessage = null;  // сообщение, на которое отвечаем
+let editingMessage = null;  // сообщение, которое редактируем
 let contextMenuMessageId = null; // ID сообщения для контекстного меню
 let contextMenuInputWasFocused = false; // был ли input в фокусе при открытии меню
 
@@ -113,6 +114,17 @@ function setupEscapeHandler() {
             }
         }
 
+        // Сначала сбрасываем редактирование/ответ:
+        if (editingMessage) {
+            cancelEdit();
+            return;
+        }
+
+        if (replyToMessage) {
+            cancelReply();
+            return;
+        }
+
         // Если модалок нет — закрываем панель чата:
         if (selectedChatId) {
             closeChat();
@@ -132,9 +144,11 @@ function connectWebSocket() {
         const envelope = JSON.parse(event.data);
 
         if (envelope.type === 'new_message') {
-            handleNewMessage(envelope.payload);
+            handleNewMessage(envelope.payload).catch(err => console.error('handleNewMessage error:', err));
         } else if (envelope.type === 'message_deleted') {
-            handleMessageDeleted(envelope.payload);
+            handleMessageDeleted(envelope.payload).catch(err => console.error('handleMessageDeleted error:', err));
+        } else if (envelope.type === 'message_edited') {
+            handleMessageEdited(envelope.payload).catch(err => console.error('handleMessageEdited error:', err));
         }
     };
 
@@ -151,7 +165,7 @@ function connectWebSocket() {
     };
 }
 
-function handleNewMessage(message) {
+async function handleNewMessage(message) {
     if (selectedChatId === message.chatId) {
         messages.push(message);
         appendMessageBubble(message);
@@ -168,7 +182,7 @@ function handleNewMessage(message) {
     debouncedLoadChats();
 }
 
-function handleMessageDeleted(payload) {
+async function handleMessageDeleted(payload) {
     if (selectedChatId === payload.chatId) {
         const idx = messages.findIndex(m => m.id === payload.messageId);
         if (idx >= 0) {
@@ -179,6 +193,35 @@ function handleMessageDeleted(payload) {
         } else {
             console.warn('message_deleted: сообщение не найдено в текущем списке', payload.messageId);
         }
+    }
+
+    debouncedLoadChats();
+}
+
+async function handleMessageEdited(payload) {
+    if (selectedChatId !== payload.chatId) return;
+
+    try {
+        const resp = await fetchWithAuth('/api/messages/' + payload.messageId);
+        if (!resp.ok) return;
+
+        const updated = await resp.json();
+
+        const idx = messages.findIndex(m => m.id === payload.messageId);
+        if (idx >= 0) {
+            messages[idx].text = updated.text;
+            messages[idx].updatedAt = updated.updatedAt;
+
+            const bubble = document.querySelector(
+                `.message-bubble[data-message-id="${payload.messageId}"]`
+            );
+            if (bubble) {
+                const textEl = bubble.querySelector('.message-bubble__text');
+                if (textEl) textEl.textContent = updated.text;
+            }
+        }
+    } catch (err) {
+        console.error('handleMessageEdited error:', err);
     }
 
     debouncedLoadChats();
@@ -573,7 +616,17 @@ function setupSendMessage() {
 function sendMessage() {
     const input = document.getElementById('message-input');
     const text = input.value.trim();
-    if (!text || !selectedChatId || !ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!text || !selectedChatId) return;
+
+    // Режим редактирования:
+    if (editingMessage) {
+        updateMessage(editingMessage.id, text).catch(err => console.error('updateMessage error:', err));
+        cancelEdit();
+        return;
+    }
+
+    // Обычная отправка через WebSocket:
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
     const payload = {chatId: selectedChatId, text};
     if (replyToMessage) {
@@ -595,6 +648,30 @@ function sendMessage() {
     input.focus();
 
     loadChats().catch(console.error);
+}
+
+async function updateMessage(messageId, text) {
+    const input = document.getElementById('message-input');
+
+    try {
+        const resp = await fetchWithAuth('/api/messages/' + messageId, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({text}),
+        });
+
+        if (!resp.ok) {
+            const errText = await resp.text();
+            showError(mapError(errText));
+            return;
+        }
+    } catch (err) {
+        console.error('updateMessage error:', err);
+    }
+
+    input.value = '';
+    document.getElementById('btn-send').disabled = true;
+    input.focus();
 }
 
 function markAllAsRead() {
@@ -1294,6 +1371,13 @@ function setupContextMenu() {
         restoreInputFocus();
     });
 
+    document.getElementById('ctx-edit').addEventListener('click', () => {
+        menu.style.display = 'none';
+        const msg = messages.find(m => m.id === contextMenuMessageId);
+        if (msg) setEdit(msg);
+        restoreInputFocus();
+    });
+
     document.getElementById('ctx-copy').addEventListener('click', () => {
         menu.style.display = 'none';
         const msg = messages.find(m => m.id === contextMenuMessageId);
@@ -1334,6 +1418,7 @@ function showContextMenu(bubble, x, y) {
 
     const msg = messages.find(m => m.id === messageId);
     const isOwn = msg && msg.sender.id === currentUser.id;
+    document.getElementById('ctx-edit').style.display = isOwn ? '' : 'none';
     document.getElementById('ctx-delete-group').style.display = isOwn ? '' : 'none';
     document.getElementById('ctx-delete-toggle').style.display = isOwn ? '' : 'none';
     document.getElementById('ctx-delete-sub').style.display = 'none';
@@ -1434,6 +1519,9 @@ function setupSwipeToReply(msgList) {
 // Ответ на сообщение
 // ═══════════════════════════════════════
 function setReply(message) {
+    // Если было редактирование — сбрасываем:
+    if (editingMessage) cancelEdit();
+
     replyToMessage = message;
     const bar = document.getElementById('reply-bar');
     document.getElementById('reply-bar-sender').textContent =
@@ -1447,6 +1535,30 @@ function cancelReply() {
     replyToMessage = null;
     document.getElementById('reply-bar').style.display = 'none';
     document.getElementById('message-input').focus();
+}
+
+function setEdit(message) {
+    // Если был ответ — сбрасываем:
+    cancelReply();
+
+    editingMessage = message;
+    const bar = document.getElementById('edit-bar');
+    document.getElementById('edit-bar-text').textContent = message.text;
+    bar.style.display = '';
+
+    const input = document.getElementById('message-input');
+    input.value = message.text;
+    document.getElementById('btn-send').disabled = !input.value.trim();
+    input.focus();
+}
+
+function cancelEdit() {
+    editingMessage = null;
+    document.getElementById('edit-bar').style.display = 'none';
+    const input = document.getElementById('message-input');
+    input.value = '';
+    document.getElementById('btn-send').disabled = true;
+    input.focus();
 }
 
 function scrollToMessage(messageId) {
@@ -1465,6 +1577,7 @@ function scrollToMessage(messageId) {
 // ═══════════════════════════════════════
 function setupReplyCancel() {
     document.getElementById('btn-cancel-reply').addEventListener('click', cancelReply);
+    document.getElementById('btn-cancel-edit').addEventListener('click', cancelEdit);
 }
 
 async function deleteMessage(messageId, forAll) {

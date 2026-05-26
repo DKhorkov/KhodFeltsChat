@@ -511,6 +511,28 @@ func (repo *Repository) DeleteMessageForAll(
 	return err
 }
 
+func (repo *Repository) UpdateMessage(
+	ctx context.Context,
+	dto domains.UpdateMessageDTO,
+) error {
+	stmt, params, err := sq.
+		Update(messagesTableName).
+		Set(textColumnName, dto.Text).
+		Set(updatedAtColumnName, time.Now()).
+		Where(sq.Eq{
+			idColumnName: dto.MessageID,
+		}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.tx.ExecContext(ctx, stmt, params...)
+
+	return err
+}
+
 func pgMessageToDomainMessage(messagePg MessagePg) *domains.Message {
 	msg := &domains.Message{
 		ID:     messagePg.ID,
