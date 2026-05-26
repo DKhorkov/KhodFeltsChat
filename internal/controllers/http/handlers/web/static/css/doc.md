@@ -196,7 +196,8 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 - `.chat-layout` → column, sidebar на всю ширину, высота через CSS-переменную `--vh` (устанавливается JS из `visualViewport.height`)
 - `.conversation` → absolute позиционирование поверх sidebar (для swipe-to-close), высота через `--vh` (реагирует на клавиатуру)
 - `.chat-item__last-message` → многострочное превью (до 2 строк, `-webkit-line-clamp: 2`)
-- `.message-bubble` → max-width: 85%
+- `.message-bubble` → max-width: 85%, `will-change: transform` (для свайпа влево)
+- `.message-bubble--pressing` → анимация увеличения при long press (`scale(1) → scale(1.05)` за 500мс, `longPressScale` keyframes)
 - textarea и input → `font-size: 16px` (предотвращает zoom на iOS)
 - `.toast-container` → сверху, на всю ширину
 
