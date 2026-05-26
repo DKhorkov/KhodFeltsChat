@@ -1227,7 +1227,7 @@ function setupContextMenu() {
         showContextMenu(bubble, e.clientX, e.clientY);
     });
 
-    // Mobile: длинное нажатие
+    // Mobile: длинное нажатие с анимацией увеличения
     let longPressTimer = null;
     let longPressTarget = null;
 
@@ -1236,7 +1236,16 @@ function setupContextMenu() {
         if (!bubble) return;
 
         longPressTarget = bubble;
+
+        // Запускаем анимацию увеличения на время long press:
+        if (IS_MOBILE) {
+            bubble.classList.add('message-bubble--pressing');
+        }
+
         longPressTimer = setTimeout(() => {
+            if (longPressTarget) {
+                longPressTarget.classList.remove('message-bubble--pressing');
+            }
             const touch = e.touches[0];
             showContextMenu(bubble, touch.clientX, touch.clientY);
             longPressTarget = null;
@@ -1244,14 +1253,25 @@ function setupContextMenu() {
     }, {passive: true});
 
     msgList.addEventListener('touchmove', () => {
+        if (longPressTarget) {
+            longPressTarget.classList.remove('message-bubble--pressing');
+        }
         clearTimeout(longPressTimer);
         longPressTarget = null;
     }, {passive: true});
 
     msgList.addEventListener('touchend', () => {
+        if (longPressTarget) {
+            longPressTarget.classList.remove('message-bubble--pressing');
+        }
         clearTimeout(longPressTimer);
         longPressTarget = null;
     }, {passive: true});
+
+    // Mobile: свайп влево для ответа на сообщение
+    if (IS_MOBILE) {
+        setupSwipeToReply(msgList);
+    }
 
     // Закрытие меню при клике в другом месте:
     document.addEventListener('click', (e) => {
@@ -1287,15 +1307,15 @@ function setupContextMenu() {
         restoreInputFocus();
     });
 
-    document.getElementById('ctx-delete-for-me').addEventListener('click', () => {
+    document.getElementById('ctx-delete-for-me').addEventListener('click', async () => {
         menu.style.display = 'none';
-        deleteMessage(contextMenuMessageId, false);
+        await deleteMessage(contextMenuMessageId, false);
         restoreInputFocus();
     });
 
-    document.getElementById('ctx-delete-for-all').addEventListener('click', () => {
+    document.getElementById('ctx-delete-for-all').addEventListener('click', async () => {
         menu.style.display = 'none';
-        deleteMessage(contextMenuMessageId, true);
+        await deleteMessage(contextMenuMessageId, true);
         restoreInputFocus();
     });
 }
@@ -1330,6 +1350,84 @@ function showContextMenu(bubble, x, y) {
     if (rect.bottom > window.innerHeight) {
         menu.style.top = (window.innerHeight - rect.height - 8) + 'px';
     }
+}
+
+// ═══════════════════════════════════════
+// Свайп влево → ответ на сообщение (мобильная версия)
+// ═══════════════════════════════════════
+const SWIPE_REPLY_THRESHOLD_PX = 80;
+
+function setupSwipeToReply(msgList) {
+    let swipeStartX = 0;
+    let swipeStartY = 0;
+    let swipeBubble = null;
+    let swipeActive = false;
+    let swipeDirectionLocked = false;
+
+    msgList.addEventListener('touchstart', (e) => {
+        const bubble = e.target.closest('.message-bubble');
+        if (!bubble) return;
+
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
+        swipeBubble = bubble;
+        swipeActive = false;
+        swipeDirectionLocked = false;
+        bubble.style.transition = 'none';
+    }, {passive: true});
+
+    msgList.addEventListener('touchmove', (e) => {
+        if (!swipeBubble) return;
+
+        const dx = e.touches[0].clientX - swipeStartX;
+        const dy = Math.abs(e.touches[0].clientY - swipeStartY);
+
+        // Определяем направление один раз:
+        if (!swipeDirectionLocked && (Math.abs(dx) > SWIPE_LOCK_ANGLE_PX || dy > SWIPE_LOCK_ANGLE_PX)) {
+            swipeDirectionLocked = true;
+            swipeActive = dx < 0 && Math.abs(dx) > dy; // горизонтальный свайп влево
+        }
+
+        if (!swipeActive) return;
+
+        // Сдвигаем bubble влево (только отрицательное направление), ограничиваем максимум:
+        const offset = Math.max(-SWIPE_REPLY_THRESHOLD_PX * 1.5, Math.min(0, dx));
+        swipeBubble.style.transform = `translateX(${offset}px)`;
+    }, {passive: true});
+
+    msgList.addEventListener('touchend', (e) => {
+        if (!swipeBubble || !swipeActive) {
+            if (swipeBubble) {
+                swipeBubble.style.transition = '';
+                swipeBubble.style.transform = '';
+            }
+            swipeBubble = null;
+            return;
+        }
+
+        const dx = e.changedTouches[0].clientX - swipeStartX;
+        const bubble = swipeBubble;
+        swipeBubble = null;
+
+        bubble.style.transition = 'transform 0.2s ease';
+        bubble.style.transform = '';
+
+        bubble.addEventListener('transitionend', function handler() {
+            bubble.removeEventListener('transitionend', handler);
+            bubble.style.transition = '';
+        });
+
+        // Если свайп достаточный — активируем reply:
+        if (Math.abs(dx) >= SWIPE_REPLY_THRESHOLD_PX) {
+            const messageId = Number(bubble.dataset.messageId);
+            const msg = messages.find(m => m.id === messageId);
+            if (msg) {
+                setReply(msg);
+            }
+        }
+
+        swipeActive = false;
+    }, {passive: true});
 }
 
 // ═══════════════════════════════════════
