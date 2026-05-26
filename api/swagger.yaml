@@ -454,6 +454,50 @@ paths:
             summary: DeleteMessage
             tags:
                 - messages
+        get:
+            description: Returns a message by ID.
+            operationId: GetMessage
+            responses:
+                "200":
+                    description: Message
+                    schema:
+                        $ref: '#/definitions/Message'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: GetMessage
+            tags:
+                - messages
+        put:
+            description: Updates text of a message by ID. Only the author can edit.
+            operationId: UpdateMessage
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "403":
+                    $ref: '#/responses/Forbidden'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: UpdateMessage
+            tags:
+                - messages
     /api/sessions:
         delete:
             description: Logout User from the current session and deletes access and refresh tokens.

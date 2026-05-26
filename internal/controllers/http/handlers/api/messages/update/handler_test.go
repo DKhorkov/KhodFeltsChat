@@ -175,7 +175,12 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return createRequest(t, &userID, "invalid", domains.UpdateMessageDTO{Text: "new text"})
+				return createRequest(
+					t,
+					&userID,
+					"invalid",
+					domains.UpdateMessageDTO{Text: "new text"},
+				)
 			},
 			setupMock:      func(_ *mockusecases.MockMessagesUseCases, _ *mockcontrollers.MockWSBroadcaster) {},
 			expectedStatus: http.StatusBadRequest,
@@ -228,7 +233,12 @@ func TestHandler(t *testing.T) {
 			setupRequest: func(t *testing.T) *http.Request {
 				t.Helper()
 
-				return createRequest(t, nil, messageIDStr, domains.UpdateMessageDTO{Text: "new text"})
+				return createRequest(
+					t,
+					nil,
+					messageIDStr,
+					domains.UpdateMessageDTO{Text: "new text"},
+				)
 			},
 			setupMock:      func(_ *mockusecases.MockMessagesUseCases, _ *mockcontrollers.MockWSBroadcaster) {},
 			expectedStatus: http.StatusUnauthorized,

@@ -29,7 +29,7 @@ func createRequest(
 ) *http.Request {
 	t.Helper()
 
-	req := httptest.NewRequest(http.MethodGet, "/api/messages/"+messageID, nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/messages/"+messageID, http.NoBody)
 
 	if userID != nil {
 		ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, *userID)
@@ -86,6 +86,7 @@ func TestHandler(t *testing.T) {
 				assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
 
 				var resp map[string]any
+
 				err := json.NewDecoder(rr.Body).Decode(&resp)
 				require.NoError(t, err)
 
