@@ -51,6 +51,9 @@ func Handler(u interfaces.UsersUseCases) http.HandlerFunc {
 			return
 		}
 
+		r.Body = http.MaxBytesReader(w, r.Body, maxMemory)
+
+		//nolint:gosec // body is limited by MaxBytesReader above.
 		if err = r.ParseMultipartForm(maxMemory); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 

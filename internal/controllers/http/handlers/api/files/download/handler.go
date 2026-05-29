@@ -48,8 +48,10 @@ func Handler(fileStorageUseCases interfaces.FileStorageUseCases) http.HandlerFun
 		}
 
 		w.Header().Set(common.ContentTypeHeaderName, common.ImageJPEGContentType)
+		w.Header().Set(common.ContentTypeOptionsHeaderName, common.NoSniffContentTypeOption)
 		w.WriteHeader(http.StatusOK)
 
+		//nolint:gosec // data is served with image/jpeg Content-Type and nosniff header.
 		if _, err = w.Write(data); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 

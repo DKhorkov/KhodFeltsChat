@@ -8,4 +8,6 @@ const (
 	ImageJPEGContentType             = "image/jpeg"
 	ApplicationJavaScriptContentType = "application/javascript"
 	ServiceWorkerAllowedHeaderName   = "Service-Worker-Allowed"
+	ContentTypeOptionsHeaderName     = "X-Content-Type-Options"
+	NoSniffContentTypeOption         = "nosniff"
 )

@@ -18,7 +18,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func createMultipartRequest(t *testing.T, userID uint64) *http.Request {
+func createMultipartRequest(t *testing.T) *http.Request {
 	t.Helper()
 
 	var buf bytes.Buffer
@@ -36,7 +36,7 @@ func createMultipartRequest(t *testing.T, userID uint64) *http.Request {
 	req := httptest.NewRequest(http.MethodPut, "/api/users/me/avatar", &buf)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, userID)
+	ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, uint64(1))
 
 	return req.WithContext(ctx)
 }
@@ -52,10 +52,8 @@ func TestHandler(t *testing.T) {
 		checkResponse  func(t *testing.T, rr *httptest.ResponseRecorder)
 	}{
 		{
-			name: "successful avatar upload",
-			setupRequest: func(t *testing.T) *http.Request {
-				return createMultipartRequest(t, 1)
-			},
+			name:         "successful avatar upload",
+			setupRequest: createMultipartRequest,
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
 				m.EXPECT().
 					UpdateAvatar(gomock.Any(), uint64(1), gomock.Any()).
@@ -92,10 +90,8 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name: "invalid image format",
-			setupRequest: func(t *testing.T) *http.Request {
-				return createMultipartRequest(t, 1)
-			},
+			name:         "invalid image format",
+			setupRequest: createMultipartRequest,
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
 				m.EXPECT().
 					UpdateAvatar(gomock.Any(), uint64(1), gomock.Any()).
@@ -104,10 +100,8 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name: "file too large",
-			setupRequest: func(t *testing.T) *http.Request {
-				return createMultipartRequest(t, 1)
-			},
+			name:         "file too large",
+			setupRequest: createMultipartRequest,
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
 				m.EXPECT().
 					UpdateAvatar(gomock.Any(), uint64(1), gomock.Any()).
@@ -116,10 +110,8 @@ func TestHandler(t *testing.T) {
 			expectedStatus: http.StatusRequestEntityTooLarge,
 		},
 		{
-			name: "internal server error",
-			setupRequest: func(t *testing.T) *http.Request {
-				return createMultipartRequest(t, 1)
-			},
+			name:         "internal server error",
+			setupRequest: createMultipartRequest,
 			setupMock: func(m *mockusecases.MockUsersUseCases) {
 				m.EXPECT().
 					UpdateAvatar(gomock.Any(), uint64(1), gomock.Any()).
