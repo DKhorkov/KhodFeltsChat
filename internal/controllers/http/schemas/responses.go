@@ -84,6 +84,18 @@ type Forbidden struct {
 	Error string
 }
 
+// RequestEntityTooLarge message returned when uploaded file exceeds size limit
+// swagger:response RequestEntityTooLarge
+type RequestEntityTooLarge struct {
+	// HTTP Status Code
+	// in: header
+	StatusCode int
+
+	// Description of the situation
+	// in: body
+	Error string
+}
+
 // SeeOther message returned when redirect to another URL was made
 // swagger:response SeeOther
 type SeeOther struct {

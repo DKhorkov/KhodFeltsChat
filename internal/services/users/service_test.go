@@ -847,13 +847,21 @@ func TestService_UpdateUser(t *testing.T) {
 						})
 				},
 				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
+					// First call: get existing user
 					ur.EXPECT().
-						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
+						GetUserByID(gomock.Any(), uint64(1)).
+						Return(&domains.User{
 							ID:       1,
-							Username: pointers.New("newusername"),
-						}).
+							Username: "oldusername",
+							Email:    "user@example.com",
+						}, nil)
+
+					// Second call: update with patched user
+					ur.EXPECT().
+						UpdateUser(gomock.Any(), gomock.Any()).
 						Return(nil)
 
+					// Third call: get updated user
 					ur.EXPECT().
 						GetUserByID(gomock.Any(), uint64(1)).
 						Return(updatedUser, nil)
@@ -883,6 +891,10 @@ func TestService_UpdateUser(t *testing.T) {
 				},
 				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
 					ur.EXPECT().
+						GetUserByID(gomock.Any(), uint64(1)).
+						Return(existingUser, nil)
+
+					ur.EXPECT().
 						UpdateUser(gomock.Any(), gomock.Any()).
 						Return(errors.New("database error"))
 				},
@@ -910,6 +922,10 @@ func TestService_UpdateUser(t *testing.T) {
 						})
 				},
 				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
+					ur.EXPECT().
+						GetUserByID(gomock.Any(), uint64(1)).
+						Return(existingUser, nil)
+
 					ur.EXPECT().
 						UpdateUser(gomock.Any(), gomock.Any()).
 						Return(nil)
@@ -943,10 +959,15 @@ func TestService_UpdateUser(t *testing.T) {
 				},
 				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
 					ur.EXPECT().
-						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
+						GetUserByID(gomock.Any(), uint64(1)).
+						Return(&domains.User{
 							ID:       1,
-							Username: pointers.New("oldusername"),
-						}).
+							Username: "oldusername",
+							Email:    "user@example.com",
+						}, nil)
+
+					ur.EXPECT().
+						UpdateUser(gomock.Any(), gomock.Any()).
 						Return(nil)
 
 					ur.EXPECT().
@@ -978,11 +999,8 @@ func TestService_UpdateUser(t *testing.T) {
 				},
 				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
 					ur.EXPECT().
-						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
-							ID:       999,
-							Username: pointers.New("newusername"),
-						}).
-						Return(sql.ErrNoRows)
+						GetUserByID(gomock.Any(), uint64(999)).
+						Return(nil, sql.ErrNoRows)
 				},
 			},
 			args: args{
@@ -1010,14 +1028,16 @@ func TestService_UpdateUser(t *testing.T) {
 				},
 				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
 					ur.EXPECT().
-						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
-							ID: 1,
-						}).
+						GetUserByID(gomock.Any(), uint64(1)).
+						Return(&domains.User{ID: 1, Username: "oldname"}, nil)
+
+					ur.EXPECT().
+						UpdateUser(gomock.Any(), gomock.Any()).
 						Return(nil)
 
 					ur.EXPECT().
 						GetUserByID(gomock.Any(), uint64(1)).
-						Return(&domains.User{ID: 1, Username: ""}, nil)
+						Return(&domains.User{ID: 1, Username: "oldname"}, nil)
 				},
 			},
 			args: args{
@@ -1026,7 +1046,7 @@ func TestService_UpdateUser(t *testing.T) {
 					ID: 1,
 				},
 			},
-			want:    &domains.User{ID: 1},
+			want:    &domains.User{ID: 1, Username: "oldname"},
 			wantErr: false,
 		},
 	}

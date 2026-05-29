@@ -17,14 +17,19 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/auth/verify_email"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/chats/create"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/chats/user_chats"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/files/download"
+	"githu
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/chat_messages"
 	delete_message "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/delete"
 	get_message "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/get"
 	update_message "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/update"
 	get_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/get"
-	update_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/update"
 	me "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/me"
+ngs/update"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/de
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/delete_avatar"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/update"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/update_avatar"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/user_by_id"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/users"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/web_push/subscribe"
@@ -64,6 +69,10 @@ const (
 	UpdateMessageURL  = MessagesURL + "/{%s}"
 	GetMessageByIDURL = MessagesURL + "/{%s}"
 
+	AvatarURL       = MeURL + "/avatar"
+	FilesURL        = "/files"
+	FileDownloadURL = FilesURL + "/download/{%s}"
+
 	WebPushURL            = "/web-push"
 	WebPushSubscribeURL   = WebPushURL + "/subscribe"
 	WebPushUnsubscribeURL = WebPushSubscribeURL + "/{%s}"
@@ -80,6 +89,7 @@ func SetupHandlers(
 	messagesUseCases interfaces.MessagesUseCases,
 	settingsUseCases interfaces.SettingsUseCases,
 	webPushSubscriptionsUseCases interfaces.WebPushSubscriptionsUseCases,
+	fileStorageUseCases interfaces.FileStorageUseCases,
 	logger logging.Logger,
 	upgrader interfaces.Upgrader,
 	natsPublisher customnats.Publisher,
@@ -119,6 +129,10 @@ func SetupHandlers(
 		get_message.Handler(messagesUseCases),
 	)
 	getMux.Handle(WebPushVAPIDKeyURL, vapid_key.Handler(vapidPublicKey))
+	getMux.Handle(
+		fmt.Sprintf(FileDownloadURL, download.FileRouteKey),
+		download.Handler(fileStorageUseCases),
+	)
 
 	postMux := apiMux.Methods(http.MethodPost).Subrouter()
 	postMux.Handle(UsersURL, register.Handler(authUseCases))
@@ -141,6 +155,7 @@ func SetupHandlers(
 
 	putMux := apiMux.Methods(http.MethodPut).Subrouter()
 	putMux.Handle(MeURL, update.Handler(usersUseCases))
+	putMux.Handle(AvatarURL, update_avatar.Handler(usersUseCases))
 	putMux.Handle(SettingsURL, update_settings.Handler(settingsUseCases))
 	putMux.Handle(SessionsURL, refresh_tokens.Handler(authUseCases, cookiesConfig))
 	putMux.Handle(
@@ -149,6 +164,7 @@ func SetupHandlers(
 	)
 
 	deleteMux := apiMux.Methods(http.MethodDelete).Subrouter()
+	deleteMux.Handle(AvatarURL, delete_avatar.Handler(usersUseCases))
 	deleteMux.Handle(AllSessionsURL, logout_all.Handler(authUseCases, cookiesConfig))
 	deleteMux.Handle(SessionsURL, logout.Handler(authUseCases, cookiesConfig))
 	deleteMux.Handle(

@@ -7,6 +7,7 @@ import (
 	mappers "github.com/DKhorkov/kfc/internal/controllers/http/mappers/users"
 	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"github.com/DKhorkov/kfc/internal/domains"
+	"github.com/DKhorkov/libs/pointers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -212,6 +213,52 @@ func TestMapUser(t *testing.T) {
 			skipFields: []string{"Password"},
 		},
 		{
+			name: "Пользователь с аватаром",
+			input: domains.User{
+				ID:             808,
+				Username:       "avatar_user",
+				Email:          "avatar@example.com",
+				EmailConfirmed: true,
+				Password:       "hash",
+				CreatedAt:      now,
+				UpdatedAt:      now,
+				AvatarPath:     pointers.New("https://kfc.webtm.ru/api/files/download/550e8400.jpg"),
+			},
+			expected: schemas.User{
+				ID:             808,
+				Username:       "avatar_user",
+				Email:          "avatar@example.com",
+				EmailConfirmed: true,
+				CreatedAt:      now,
+				UpdatedAt:      now,
+				AvatarPath:     pointers.New("https://kfc.webtm.ru/api/files/download/550e8400.jpg"),
+			},
+			skipFields: []string{"Password"},
+		},
+		{
+			name: "Пользователь без аватара (nil)",
+			input: domains.User{
+				ID:             909,
+				Username:       "no_avatar_user",
+				Email:          "noavatar@example.com",
+				EmailConfirmed: true,
+				Password:       "hash",
+				CreatedAt:      now,
+				UpdatedAt:      now,
+				AvatarPath:     nil,
+			},
+			expected: schemas.User{
+				ID:             909,
+				Username:       "no_avatar_user",
+				Email:          "noavatar@example.com",
+				EmailConfirmed: true,
+				CreatedAt:      now,
+				UpdatedAt:      now,
+				AvatarPath:     nil,
+			},
+			skipFields: []string{"Password"},
+		},
+		{
 			name: "Пользователь с нулевым ID",
 			input: domains.User{
 				ID:             0,
@@ -310,6 +357,7 @@ func TestMapUser(t *testing.T) {
 			assert.Equal(t, tt.expected.EmailConfirmed, result.EmailConfirmed)
 			assert.Equal(t, tt.expected.CreatedAt, result.CreatedAt)
 			assert.Equal(t, tt.expected.UpdatedAt, result.UpdatedAt)
+			assert.Equal(t, tt.expected.AvatarPath, result.AvatarPath)
 		})
 	}
 }
@@ -754,6 +802,7 @@ func TestMapUsers(t *testing.T) {
 				assert.Equal(t, expectedUser.EmailConfirmed, result[i].EmailConfirmed)
 				assert.Equal(t, expectedUser.CreatedAt, result[i].CreatedAt)
 				assert.Equal(t, expectedUser.UpdatedAt, result[i].UpdatedAt)
+				assert.Equal(t, expectedUser.AvatarPath, result[i].AvatarPath)
 			}
 
 			// Для больших слайсов проверяем производительность

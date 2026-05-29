@@ -72,6 +72,14 @@ Sentinel-ошибки для каждого домена. Позволяют в�
 | `ErrWebPushSubscriptionExpired` | Push-подписка истекла |
 | `ErrWebPushNotificationRejected` | Push-уведомление отклонено |
 
+### file_storage.go — хранилище файлов
+
+| Ошибка | Описание |
+|---|---|
+| `ErrFileNotFound` | Файл не найден в хранилище |
+| `ErrInvalidImageFormat` | Формат изображения не поддерживается |
+| `ErrFileTooLarge` | Размер файла превышает допустимый лимит |
+
 ## Зависимости
 
 Только стандартная библиотека (`errors`).

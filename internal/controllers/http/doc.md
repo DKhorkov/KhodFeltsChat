@@ -24,6 +24,7 @@ middleware, регистрирует обработчики и управляе�
 - `POST /api/users/password/forget/{token}`, `POST /api/users/email/verify`,
   `POST /api/users/password/forget` — сброс/восстановление пароля.
 - `GET /api/web-push/vapid-key` — публичный VAPID-ключ для регистрации push-подписок.
+- `GET /api/files/{filename}` — скачивание публичных файлов (в том числе аватаров) без авторизации.
 
 ## Graceful Shutdown
 
@@ -34,6 +35,6 @@ middleware, регистрирует обработчики и управляе�
 ## Зависимости
 
 - `gorilla/mux` — маршрутизация.
-- `internal/controllers/http/handlers` — регистрация обработчиков.
-- `internal/interfaces` — usecase-интерфейсы.
+- `internal/controllers/http/handlers` — регистрация обработчиков; принимает `fileStorageUseCases` как дополнительный параметр для обработки файлов/аватаров.
+- `internal/interfaces` — usecase-интерфейсы, включая `FileStorageUseCases`.
 - OpenTelemetry, Prometheus.

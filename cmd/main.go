@@ -14,6 +14,7 @@ import (
 	authrepository "github.com/DKhorkov/kfc/internal/repositories/auth"
 	chatsrepository "github.com/DKhorkov/kfc/internal/repositories/chats"
 	emailsrepository "github.com/DKhorkov/kfc/internal/repositories/emails"
+	filestoragerepository "github.com/DKhorkov/kfc/internal/repositories/file_s
 	messagesrepository "github.com/DKhorkov/kfc/internal/repositories/messages"
 	settingsrepository "github.com/DKhorkov/kfc/internal/repositories/settings"
 	usersrepository "github.com/DKhorkov/kfc/internal/repositories/users"
@@ -21,6 +22,8 @@ import (
 	webpushsubscriptionsrepository "github.com/DKhorkov/kfc/internal/repositories/web_push_subscriptions"
 	authservice "github.com/DKhorkov/kfc/internal/services/auth"
 	chatsservice "github.com/DKhorkov/kfc/internal/services/chats"
+chats"
+	filestorageservice "github.com/DKhorkov/kfc/internal/services
 	messagesservice "github.com/DKhorkov/kfc/internal/services/messages"
 	notificationsservice "github.com/DKhorkov/kfc/internal/services/notifications"
 	settingsservice "github.com/DKhorkov/kfc/internal/services/settings"
@@ -29,6 +32,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/uow"
 	authusecases "github.com/DKhorkov/kfc/internal/usecases/auth"
 	chatsusecases "github.com/DKhorkov/kfc/internal/usecases/chats"
+	filestorageusecases "github.com/DKhorkov/kfc/internal/usecases/file_storage"
 	messagesusecases "github.com/DKhorkov/kfc/internal/usecases/messages"
 	notificaionsusecases "github.com/DKhorkov/kfc/internal/usecases/notifications"
 	settingsusecases "github.com/DKhorkov/kfc/internal/usecases/settings"
@@ -275,10 +279,28 @@ func main() {
 		settingsusecases.New(settingsService),
 	)
 
+	fileStorageService := filestorageservice.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.Services.FileStorage,
+		filestorageservice.New(
+			filestoragerepository.NewTraceDecorator(
+				traceProvider,
+				cfg.Tracing.Spans.Repositories.FileStorage,
+				filestoragerepository.New(cfg.FileStorage.BasePath, logger),
+			),
+		),
+	)
+
+	fileStorageUseCases := filestorageusecases.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.UseCases.FileStorage,
+		filestorageusecases.New(fileStorageService, cfg.FileStorage),
+	)
+
 	usersUseCases := usersusecases.NewTraceDecorator(
 		traceProvider,
 		cfg.Tracing.Spans.UseCases.Users,
-		usersusecases.New(usersService, cfg.Security, cfg.Validation),
+		usersusecases.New(usersService, fileStorageUseCases, cfg.Security, cfg.Validation, cfg.FileStorage),
 	)
 
 	messagesUseCases := messagesusecases.NewTraceDecorator(
@@ -423,6 +445,7 @@ func main() {
 		messagesUseCases,
 		settingsUseCases,
 		webPushSubscriptionsUseCases,
+		fileStorageUseCases,
 		logger,
 		traceProvider,
 		upgrader,

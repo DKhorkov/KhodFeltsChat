@@ -81,6 +81,10 @@
     flex-shrink: 0;
 }
 
+img.navbar__profile-avatar {
+    object-fit: cover;
+}
+
 .navbar__profile-name {
     font-size: var(--font-sm);
     font-weight: 500;
@@ -253,4 +257,51 @@
     .profile-modal {
         width: calc(100vw - var(--space-xl) * 2);
     }
+}
+
+/* ═══════════════════════════════════════
+   Avatar context menu (profile modal)
+   ═══════════════════════════════════════ */
+
+.profile-modal__avatar-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.profile-modal__avatar {
+    cursor: pointer;
+}
+
+.avatar-context-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 4px 0;
+    min-width: 160px;
+    margin-top: 4px;
+}
+
+.avatar-context-menu__item {
+    display: block;
+    width: 100%;
+    padding: 8px 16px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.avatar-context-menu__item:hover {
+    background: var(--bg-hover);
+}
+
+.avatar-context-menu__item--danger {
+    color: var(--danger);
 }

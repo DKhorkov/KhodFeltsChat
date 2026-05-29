@@ -47,6 +47,15 @@
 | `TokenTTL` | `15 мин` | Время жизни одноразового токена |
 | `InitCacheValue` | `1` | Начальное значение счётчика попыток |
 
+### image.go — утилиты для работы с изображениями
+
+| Функция | Сигнатура | Назначение |
+|---|---|---|
+| `DecodeImage` | `(data []byte) (image.Image, error)` | Декодирует изображение из байтов; поддерживает PNG, JPEG, GIF и WebP (через `golang.org/x/image/webp`) |
+| `ResizeImage` | `(src image.Image, width, height int) image.Image` | Масштабирует изображение до указанных размеров с интерполяцией CatmullRom |
+| `ExtractUUIDFromURL` | `(avatarURL string) string` | Извлекает UUID из URL аватара (имя файла без расширения `.jpg`) |
+
 ## Зависимости
 
-Только стандартная библиотека (`time`, `time/tzdata`).
+- Стандартная библиотека (`time`, `time/tzdata`, `image`, `bytes`, `net/url`, `path`, `strings`).
+- `golang.org/x/image/draw`, `golang.org/x/image/webp` — масштабирование и декодирование WebP.

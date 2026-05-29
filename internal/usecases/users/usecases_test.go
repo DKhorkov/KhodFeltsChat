@@ -153,7 +153,7 @@ func TestUseCases_GetUsers(t *testing.T) {
 				UsernameRegExps: []string{"^[a-zA-Z0-9_]{3,20}$"},
 			}
 
-			uc := users.New(mockUsersService, securityConfig, validationConfig)
+			uc := users.New(mockUsersService, nil, securityConfig, validationConfig, config.FileStorageConfig{})
 
 			// Act
 			got, err := uc.GetUsers(tt.args.ctx, tt.args.filters, tt.args.pagination)
@@ -285,7 +285,7 @@ func TestUseCases_GetUserByID(t *testing.T) {
 			securityConfig := security.Config{HashCost: 10}
 			validationConfig := config.ValidationConfig{}
 
-			uc := users.New(mockUsersService, securityConfig, validationConfig)
+			uc := users.New(mockUsersService, nil, securityConfig, validationConfig, config.FileStorageConfig{})
 
 			// Act
 			got, err := uc.GetUserByID(tt.args.ctx, tt.args.id)
@@ -494,7 +494,7 @@ func TestUseCases_UpdateUser(t *testing.T) {
 				UsernameRegExps: tt.fields.validationRules,
 			}
 
-			uc := users.New(mockUsersService, securityConfig, validationConfig)
+			uc := users.New(mockUsersService, nil, securityConfig, validationConfig, config.FileStorageConfig{})
 
 			// Act
 			got, err := uc.UpdateUser(tt.args.ctx, tt.args.userData)

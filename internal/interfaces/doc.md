@@ -11,6 +11,7 @@
 - **WSBroadcaster** — `BroadcastMessageDeleted(ctx, chatID, messageID)` — рассылка WS-события удаления сообщения всем участникам чата; `SendMessageDeletedToUser(ctx, chatID, messageID, userID)` — отправка события удаления только конкретному пользователю (удаление у себя); `BroadcastMessageEdited(ctx, chatID, messageID, text)` — рассылка WS-события редактирования сообщения всем участникам чата
 
 ### Repositories
+- **FileStorageRepository** — работа с локальным хранилищем файлов: `SaveFile(ctx, filename, data) error`, `DeleteFile(ctx, filename) error`, `GetFile(ctx, filename) ([]byte, error)`
 - **UsersRepository** — CRUD пользователей
 - **AuthRepository** — регистрация, токены (мультисессионность: GetRefreshTokenByValue, ExpireAllUserRefreshTokens), verify email, change password
 - **ChatsRepository** — чаты, участники, is_read статусы, `GetChatByID`
@@ -20,6 +21,7 @@
 - **WebPushSubscriptionsRepository** — подписки на push-уведомления (CRUD)
 
 ### Services
+- **FileStorageService** — сервис хранилища файлов: `SaveFile`, `DeleteFile`, `GetFile`; оборачивает `FileStorageRepository` и применяет валидацию формата/размера
 - **UsersService**, **AuthService**, **MessagesService** (включая `DeleteMessage`, `UpdateMessage`) — бизнес-логика
 - **ChatsService** — чаты + `GetChatByID`
 - **NotificationsService** — email (`SendVerifyEmailMessage`, `SendForgetPasswordMessage`, `SendNewMessageEmail`) + web push (`SendWebPushNotification(subscription, message)`)
@@ -27,11 +29,13 @@
 - **WebPushSubscriptionsService** — CRUD push-подписок
 
 ### Use Cases
-- **UsersUseCases**, **AuthUseCases**, **ChatsUseCases** — верхний уровень
+- **UsersUseCases** — верхний уровень; дополнительно содержит методы `UpdateAvatar(ctx, userID, imageData) error` и `DeleteAvatar(ctx, userID) error` для управления аватаром пользователя
+- **AuthUseCases**, **ChatsUseCases** — верхний уровень
 - **MessagesUseCases** (embeds MessagesService) — сообщения + save через WS
 - **NotificationsUseCases** — уведомления с явным разделением по каналам: `SendNewMessageByEmail(userID, payload)`, `SendNewMessageByWebPush(userID, payload)`, `SendVerifyEmailMessage(userID)`, `SendForgetPasswordMessage(userID)`
 - **SettingsUseCases** — настройки пользователя
 - **WebPushSubscriptionsUseCases** — чистый CRUD подписок: `CreateWebPushSubscription`, `DeleteWebPushSubscription`
+- **FileStorageUseCases** — операции с файловым хранилищем: `Upload(ctx, path, data)`, `Download(ctx, path)`, `Delete(ctx, path)`
 
 ### Workers
 - **MessageHandler** — `func(msg *nats.Msg)` — обработчик NATS сообщений

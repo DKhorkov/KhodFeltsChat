@@ -23,12 +23,29 @@ HTTP-обработчики REST API, сгруппированные по пре
 
 ## Users
 
-| Обработчик  | Метод | Путь             |
-|-------------|-------|------------------|
-| me          | GET   | /api/users/me    |
-| update      | PUT   | /api/users/me    |
-| user_by_id  | GET   | /api/users/{id}  |
-| users       | GET   | /api/users       |
+| Обработчик    | Метод  | Путь                      |
+|---------------|--------|---------------------------|
+| me            | GET    | /api/users/me             |
+| update        | PUT    | /api/users/me             |
+| update_avatar | PUT    | /api/users/me/avatar      |
+| delete_avatar | DELETE | /api/users/me/avatar      |
+| user_by_id    | GET    | /api/users/{id}           |
+| users         | GET    | /api/users                |
+
+### update_avatar
+Загружает или заменяет аватар текущего пользователя. Принимает `multipart/form-data` с полем `avatar`. Сохраняет файл через `FileStorageService` и обновляет `avatar_path` пользователя. Возвращает `AvatarURL` — публично доступный URL для скачивания аватара.
+
+### delete_avatar
+Удаляет аватар текущего пользователя. Вызывает `UsersUseCases.DeleteAvatar`, который удаляет файл из хранилища и сбрасывает `avatar_path`.
+
+## Files
+
+| Обработчик      | Метод | Путь                   |
+|-----------------|-------|------------------------|
+| download_file   | GET   | /api/files/{filename}  |
+
+### download_file
+Отдаёт содержимое файла из локального хранилища по имени файла. Маршрут не требует аутентификации (входит в bypass-список). Используется для публичного доступа к аватарам пользователей.
 
 ## Settings
 
@@ -83,7 +100,8 @@ HTTP-обработчики REST API, сгруппированные по пре
 ## Зависимости
 
 - `internal/usecases/*` — бизнес-логика.
-- `internal/controllers/http/schemas` — структуры запросов/ответов.
+- `internal/interfaces` — включая `FileStorageUseCases` для обработчиков файлов/аватаров.
+- `internal/controllers/http/schemas` — структуры запросов/ответов; содержит `AvatarURL` и `FileDownloadURL`.
 - `internal/controllers/http/mappers` — конвертация домен → схема.
 - `internal/controllers/http/handlers/common` — shared утилиты.
 - `gorilla/websocket`.

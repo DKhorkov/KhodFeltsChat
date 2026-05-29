@@ -11,7 +11,14 @@
     <div class="modal-content profile-modal" id="modal-my-profile-content">
         <button class="modal-content__close" id="btn-close-my-profile" aria-label="Закрыть">&times;</button>
         <div class="profile-modal__header">
-            <div class="profile-modal__avatar" id="my-profile-avatar"></div>
+            <div class="profile-modal__avatar-wrapper">
+                <div class="profile-modal__avatar" id="my-profile-avatar"></div>
+                <div class="avatar-context-menu" id="avatar-context-menu" style="display: none;">
+                    <button class="avatar-context-menu__item" id="btn-change-avatar">Изменить фото</button>
+                    <button class="avatar-context-menu__item avatar-context-menu__item--danger" id="btn-delete-avatar" style="display: none;">Удалить фото</button>
+                </div>
+                <input type="file" id="avatar-file-input" accept="image/*" style="display: none;">
+            </div>
             <div class="profile-modal__title">
                 <h2 id="my-profile-username"></h2>
                 <span class="profile-modal__email" id="my-profile-email"></span>

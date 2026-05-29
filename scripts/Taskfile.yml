@@ -354,6 +354,8 @@ tasks:
           description: "WEB странички"
         - name: web-pushes
           description: "WEB пуши для уведомления пользователей"
+        - name: files
+          description: "Работа с файлами"
         
         securityDefinitions:
           cookieAuth:

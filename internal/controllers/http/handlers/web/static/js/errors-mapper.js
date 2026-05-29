@@ -44,6 +44,11 @@ const errorMapping = [
     { key: 'only message author can perform this action', message: 'Только автор сообщения может выполнить это действие' },
     { key: 'message not found', message: 'Сообщение не найдено' },
 
+    // File Storage
+    { key: 'invalid image format: supported formats are jpeg, png, webp, gif', message: 'Неподдерживаемый формат изображения. Допустимые форматы: JPEG, PNG, WebP, GIF' },
+    { key: 'file too large', message: 'Файл слишком большой' },
+    { key: 'file not found', message: 'Файл не найден' },
+
     // Chats
     { key: 'user is not a chat member', message: 'У вас нет доступа к этому чату' },
     { key: 'chat already exists', message: 'Такой чат уже существует' },

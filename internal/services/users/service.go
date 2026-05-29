@@ -145,7 +145,24 @@ func (s *Service) UpdateUser(
 		func(ctx context.Context, tx pg.Transaction) error {
 			usersRepository := s.newUsersRepositoryFunc(tx)
 
-			err = usersRepository.UpdateUser(ctx, userData)
+			user, err = usersRepository.GetUserByID(ctx, userData.ID)
+			if err != nil {
+				return err
+			}
+
+			if userData.Username != nil {
+				user.Username = *userData.Username
+			}
+
+			if userData.AvatarPath != nil {
+				if *userData.AvatarPath == "" {
+					user.AvatarPath = nil
+				} else {
+					user.AvatarPath = userData.AvatarPath
+				}
+			}
+
+			err = usersRepository.UpdateUser(ctx, *user)
 			if err != nil {
 				return err
 			}

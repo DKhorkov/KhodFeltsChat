@@ -242,26 +242,72 @@ async function ensureBrowserWebPushSubscription() {
 }
 
 async function removeBrowserWebPushSubscription() {
-    if (!('serviceWorker' in navigator)) return;
+    try {
+        if (!('serviceWorker' in navigator)) return;
 
-    const registration = await navigator.serviceWorker.getRegistration('/web/sw.js');
-    if (!registration) return;
+        const registration = await navigator.serviceWorker.getRegistration('/web/sw.js');
+        if (!registration) return;
 
-    const subscription = await registration.pushManager.getSubscription();
-    if (!subscription) return;
+        const subscription = await registration.pushManager.getSubscription();
+        if (!subscription) return;
 
-    await subscription.unsubscribe();
+        await subscription.unsubscribe();
 
-    const subId = localStorage.getItem('webPushSubscriptionId');
-    if (subId) {
-        try {
+        const subId = localStorage.getItem('webPushSubscriptionId');
+        if (subId) {
             await fetchWithAuth('/api/web-push/subscribe/' + subId, { method: 'DELETE' });
-        } catch (err) {
-            console.error('Unsubscribe error:', err);
+            localStorage.removeItem('webPushSubscriptionId');
         }
-
-        localStorage.removeItem('webPushSubscriptionId');
+    } catch (err) {
+        console.error('Failed to remove web push subscription:', err);
     }
+}
+
+function createNavbarAvatar(user) {
+    if (user.avatarPath) {
+        const img = document.createElement('img');
+        img.className = 'navbar__profile-avatar';
+        img.src = user.avatarPath;
+        img.alt = user.username;
+        img.onerror = function () {
+            const fallback = document.createElement('div');
+            fallback.className = 'navbar__profile-avatar';
+            fallback.textContent = user.username.charAt(0).toUpperCase();
+            img.replaceWith(fallback);
+        };
+
+        return img;
+    }
+
+    const div = document.createElement('div');
+    div.className = 'navbar__profile-avatar';
+    div.textContent = user.username.charAt(0).toUpperCase();
+
+    return div;
+}
+
+function updateProfileAvatarDisplay(user) {
+    const el = document.getElementById('my-profile-avatar');
+    el.innerHTML = '';
+
+    if (user.avatarPath) {
+        const img = document.createElement('img');
+        img.src = user.avatarPath;
+        img.alt = user.username;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.borderRadius = 'inherit';
+        img.style.objectFit = 'cover';
+        img.onerror = function () {
+            el.innerHTML = '';
+            el.textContent = user.username.charAt(0).toUpperCase();
+        };
+        el.appendChild(img);
+    } else {
+        el.textContent = user.username.charAt(0).toUpperCase();
+    }
+
+    el.style.cursor = 'pointer';
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -290,9 +336,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         profile.type = 'button';
         profile.className = 'navbar__profile';
 
-        const avatar = document.createElement('div');
-        avatar.className = 'navbar__profile-avatar';
-        avatar.textContent = currentUser.username.charAt(0).toUpperCase();
+        const avatar = createNavbarAvatar(currentUser);
 
         const name = document.createElement('span');
         name.className = 'navbar__profile-name';
@@ -325,8 +369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!modal) return;
 
     async function openMyProfileModal(user) {
-        document.getElementById('my-profile-avatar').textContent =
-            user.username.charAt(0).toUpperCase();
+        updateProfileAvatarDisplay(user);
         document.getElementById('my-profile-username').textContent = user.username;
         document.getElementById('my-profile-email').textContent = user.email;
 
@@ -450,14 +493,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 currentUser = await resp.json();
 
                 // Обновляем модалку
-                document.getElementById('my-profile-avatar').textContent =
-                    currentUser.username.charAt(0).toUpperCase();
+                updateProfileAvatarDisplay(currentUser);
                 document.getElementById('my-profile-username').textContent = currentUser.username;
 
                 // Обновляем навбар
-                const navAvatar = document.querySelector('.navbar__profile-avatar');
+                const oldNavAvatar = document.querySelector('.navbar__profile-avatar');
+                if (oldNavAvatar) {
+                    const newNavAvatar = createNavbarAvatar(currentUser);
+                    oldNavAvatar.replaceWith(newNavAvatar);
+                }
+
                 const navName = document.querySelector('.navbar__profile-name');
-                if (navAvatar) navAvatar.textContent = currentUser.username.charAt(0).toUpperCase();
                 if (navName) navName.textContent = currentUser.username;
 
                 e.target.username.value = '';
@@ -465,6 +511,92 @@ document.addEventListener('DOMContentLoaded', async () => {
             } catch (err) {
                 showError('Ошибка сети: ' + err.message);
             }
+        });
+    }
+
+    // Аватар: контекстное меню (загрузка / удаление фото)
+    const avatarEl = document.getElementById('my-profile-avatar');
+    const avatarContextMenu = document.getElementById('avatar-context-menu');
+    const avatarFileInput = document.getElementById('avatar-file-input');
+    const btnDeleteAvatar = document.getElementById('btn-delete-avatar');
+
+    if (avatarEl && avatarContextMenu) {
+        avatarEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            btnDeleteAvatar.style.display = currentUser.avatarPath ? '' : 'none';
+            avatarContextMenu.style.display = avatarContextMenu.style.display === 'none' ? '' : 'none';
+        });
+
+        document.getElementById('btn-change-avatar').addEventListener('click', () => {
+            avatarContextMenu.style.display = 'none';
+            avatarFileInput.click();
+        });
+
+        avatarFileInput.addEventListener('change', async () => {
+            const file = avatarFileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            try {
+                const resp = await fetchWithAuth('/api/users/me/avatar', {
+                    method: 'PUT',
+                    body: formData,
+                });
+
+                if (resp.ok) {
+                    const avatarURL = await resp.text();
+                    currentUser.avatarPath = avatarURL;
+                    updateProfileAvatarDisplay(currentUser);
+
+                    const oldNavAvatar = document.querySelector('.navbar__profile-avatar');
+                    if (oldNavAvatar) {
+                        const newNavAvatar = createNavbarAvatar(currentUser);
+                        oldNavAvatar.replaceWith(newNavAvatar);
+                    }
+
+                    showInfo('Аватар обновлён');
+                } else {
+                    const text = await resp.text();
+                    showError(typeof mapError === 'function' ? mapError(text) : text);
+                }
+            } catch (err) {
+                showError('Ошибка сети: ' + err.message);
+            }
+
+            avatarFileInput.value = '';
+        });
+
+        btnDeleteAvatar.addEventListener('click', async () => {
+            avatarContextMenu.style.display = 'none';
+
+            try {
+                const resp = await fetchWithAuth('/api/users/me/avatar', {
+                    method: 'DELETE',
+                });
+
+                if (resp.ok) {
+                    currentUser.avatarPath = null;
+                    updateProfileAvatarDisplay(currentUser);
+
+                    const oldNavAvatar = document.querySelector('.navbar__profile-avatar');
+                    if (oldNavAvatar) {
+                        const newNavAvatar = createNavbarAvatar(currentUser);
+                        oldNavAvatar.replaceWith(newNavAvatar);
+                    }
+
+                    showInfo('Аватар удалён');
+                } else {
+                    showError('Не удалось удалить аватар');
+                }
+            } catch (err) {
+                showError('Ошибка сети: ' + err.message);
+            }
+        });
+
+        document.addEventListener('click', () => {
+            avatarContextMenu.style.display = 'none';
         });
     }
 
@@ -561,44 +693,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     const emailNewMsgToggle = document.getElementById('toggle-email-new-message');
     if (emailNewMsgToggle) {
         emailNewMsgToggle.addEventListener('click', async () => {
-            if (!currentSettings) return;
+            try {
+                if (!currentSettings) return;
 
-            currentSettings.emailConsents = toggleConsent(currentSettings.emailConsents, CONSENT_NEW_MESSAGE);
-            updateSwitchUI(emailNewMsgToggle, hasConsent(currentSettings.emailConsents, CONSENT_NEW_MESSAGE));
-            await saveSettings({ emailConsents: currentSettings.emailConsents });
+                currentSettings.emailConsents = toggleConsent(currentSettings.emailConsents, CONSENT_NEW_MESSAGE);
+                updateSwitchUI(emailNewMsgToggle, hasConsent(currentSettings.emailConsents, CONSENT_NEW_MESSAGE));
+                await saveSettings({ emailConsents: currentSettings.emailConsents });
+            } catch (err) {
+                console.error('Failed to toggle email notifications:', err);
+            }
         });
     }
 
     const webPushNewMsgToggle = document.getElementById('toggle-webpush-new-message');
     if (webPushNewMsgToggle) {
         webPushNewMsgToggle.addEventListener('click', async () => {
-            if (!currentSettings) return;
+            try {
+                if (!currentSettings) return;
 
-            const turningOn = !hasConsent(currentSettings.webPushConsents, CONSENT_NEW_MESSAGE);
+                const turningOn = !hasConsent(currentSettings.webPushConsents, CONSENT_NEW_MESSAGE);
 
-            if (turningOn) {
-                if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                    showInfo('Web Push-уведомления не поддерживаются вашим браузером');
-                    return;
+                if (turningOn) {
+                    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                        showInfo('Web Push-уведомления не поддерживаются вашим браузером');
+                        return;
+                    }
+
+                    if (Notification.permission === 'denied') {
+                        showInfo('Уведомления заблокированы в настройках браузера');
+                        return;
+                    }
+
+                    const ok = await ensureBrowserWebPushSubscription();
+                    if (!ok) {
+                        showInfo('Не удалось подписаться на Web Push-уведомления');
+                        return;
+                    }
+                } else {
+                    await removeBrowserWebPushSubscription();
                 }
 
-                if (Notification.permission === 'denied') {
-                    showInfo('Уведомления заблокированы в настройках браузера');
-                    return;
-                }
-
-                const ok = await ensureBrowserWebPushSubscription();
-                if (!ok) {
-                    showInfo('Не удалось подписаться на Web Push-уведомления');
-                    return;
-                }
-            } else {
-                await removeBrowserWebPushSubscription();
+                currentSettings.webPushConsents = toggleConsent(currentSettings.webPushConsents, CONSENT_NEW_MESSAGE);
+                updateSwitchUI(webPushNewMsgToggle, hasConsent(currentSettings.webPushConsents, CONSENT_NEW_MESSAGE));
+                await saveSettings({ webPushConsents: currentSettings.webPushConsents });
+            } catch (err) {
+                console.error('Failed to toggle web push notifications:', err);
             }
-
-            currentSettings.webPushConsents = toggleConsent(currentSettings.webPushConsents, CONSENT_NEW_MESSAGE);
-            updateSwitchUI(webPushNewMsgToggle, hasConsent(currentSettings.webPushConsents, CONSENT_NEW_MESSAGE));
-            await saveSettings({ webPushConsents: currentSettings.webPushConsents });
         });
     }
 
