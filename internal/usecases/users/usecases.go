@@ -17,27 +17,33 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	avatarFileExtension = ".jpg"
+	imageWidth          = 256
+	imageHeight         = 256
+)
+
 type UseCases struct {
-	usersService        interfaces.UsersService
-	fileStorageUseCases interfaces.FileStorageUseCases
-	securityConfig      security.Config
-	validationConfig    config.ValidationConfig
-	fileStorageConfig   config.FileStorageConfig
+	usersService       interfaces.UsersService
+	fileStorageService interfaces.FileStorageService
+	securityConfig     security.Config
+	validationConfig   config.ValidationConfig
+	fileStorageConfig  config.FileStorageConfig
 }
 
 func New(
 	usersService interfaces.UsersService,
-	fileStorageUseCases interfaces.FileStorageUseCases,
+	fileStorageService interfaces.FileStorageService,
 	securityConfig security.Config,
 	validationConfig config.ValidationConfig,
 	fileStorageConfig config.FileStorageConfig,
 ) *UseCases {
 	return &UseCases{
-		usersService:        usersService,
-		fileStorageUseCases: fileStorageUseCases,
-		securityConfig:      securityConfig,
-		validationConfig:    validationConfig,
-		fileStorageConfig:   fileStorageConfig,
+		usersService:       usersService,
+		fileStorageService: fileStorageService,
+		securityConfig:     securityConfig,
+		validationConfig:   validationConfig,
+		fileStorageConfig:  fileStorageConfig,
 	}
 }
 
@@ -67,16 +73,18 @@ func (u *UseCases) UpdateUser(
 		return nil, err
 	}
 
-	return u.usersService.UpdateUser(
-		ctx,
-		domains.UpdateUserDTO{
-			ID:       user.ID,
-			Username: userData.Username,
-		},
-	)
+	if userData.Username != nil {
+		user.Username = *userData.Username
+	}
+
+	return u.usersService.UpdateUser(ctx, *user)
 }
 
-func (u *UseCases) UpdateAvatar(ctx context.Context, userID uint64, data io.Reader) (string, error) {
+func (u *UseCases) UpdateAvatar(
+	ctx context.Context,
+	userID uint64,
+	data io.Reader,
+) (string, error) {
 	rawData, err := io.ReadAll(io.LimitReader(data, int64(u.fileStorageConfig.MaxSize)+1))
 	if err != nil {
 		return "", err
@@ -91,7 +99,7 @@ func (u *UseCases) UpdateAvatar(ctx context.Context, userID uint64, data io.Read
 		return "", fmt.Errorf("%w: %w", customerrors.ErrInvalidImageFormat, err)
 	}
 
-	resized := common.ResizeImage(img, 256, 256)
+	resized := common.ResizeImage(img, imageWidth, imageHeight)
 
 	var buf bytes.Buffer
 	if err = jpeg.Encode(&buf, resized, &jpeg.Options{Quality: 85}); err != nil {
@@ -106,22 +114,24 @@ func (u *UseCases) UpdateAvatar(ctx context.Context, userID uint64, data io.Read
 	if user.AvatarPath != nil {
 		oldUUID := common.ExtractUUIDFromURL(*user.AvatarPath)
 		if oldUUID != "" {
-			_ = u.fileStorageUseCases.Delete(ctx, oldUUID+".jpg")
+			if err = u.fileStorageService.Delete(ctx, oldUUID+avatarFileExtension); err != nil {
+				return "", err
+			}
 		}
 	}
 
 	fileUUID := uuid.New().String()
-	fileName := fileUUID + ".jpg"
+	fileName := fileUUID + avatarFileExtension
 
-	avatarURL, err := u.fileStorageUseCases.Upload(ctx, fileName, bytes.NewReader(buf.Bytes()))
-	if err != nil {
+	if err = u.fileStorageService.Upload(ctx, fileName, bytes.NewReader(buf.Bytes())); err != nil {
 		return "", err
 	}
 
-	if _, err = u.usersService.UpdateUser(ctx, domains.UpdateUserDTO{
-		ID:         userID,
-		AvatarPath: &avatarURL,
-	}); err != nil {
+	avatarURL := u.fileStorageConfig.BaseDownloadURL + "/" + fileName
+
+	user.AvatarPath = &avatarURL
+
+	if _, err = u.usersService.UpdateUser(ctx, *user); err != nil {
 		return "", err
 	}
 
@@ -140,17 +150,14 @@ func (u *UseCases) DeleteAvatar(ctx context.Context, userID uint64) error {
 
 	oldUUID := common.ExtractUUIDFromURL(*user.AvatarPath)
 	if oldUUID != "" {
-		if err = u.fileStorageUseCases.Delete(ctx, oldUUID+".jpg"); err != nil {
+		if err = u.fileStorageService.Delete(ctx, oldUUID+avatarFileExtension); err != nil {
 			return err
 		}
 	}
 
-	emptyPath := ""
+	user.AvatarPath = nil
 
-	_, err = u.usersService.UpdateUser(ctx, domains.UpdateUserDTO{
-		ID:         userID,
-		AvatarPath: &emptyPath,
-	})
+	_, err = u.usersService.UpdateUser(ctx, *user)
 
 	return err
 }

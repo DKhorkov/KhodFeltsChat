@@ -27,8 +27,12 @@ func TestHandler(t *testing.T) {
 		{
 			name: "successful avatar delete",
 			setupRequest: func(t *testing.T) *http.Request {
-				req := httptest.NewRequest(http.MethodDelete, "/api/users/me/avatar", nil)
-				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, uint64(1))
+				req := httptest.NewRequest(http.MethodDelete, "/api/users/me/avatar", http.NoBody)
+				ctx := contextlib.WithValue(
+					req.Context(),
+					authmiddleware.UserIDContextKey,
+					uint64(1),
+				)
 
 				return req.WithContext(ctx)
 			},
@@ -42,7 +46,7 @@ func TestHandler(t *testing.T) {
 		{
 			name: "unauthorized - no user id in context",
 			setupRequest: func(t *testing.T) *http.Request {
-				return httptest.NewRequest(http.MethodDelete, "/api/users/me/avatar", nil)
+				return httptest.NewRequest(http.MethodDelete, "/api/users/me/avatar", http.NoBody)
 			},
 			setupMock:      func(m *mockusecases.MockUsersUseCases) {},
 			expectedStatus: http.StatusUnauthorized,
@@ -50,8 +54,12 @@ func TestHandler(t *testing.T) {
 		{
 			name: "user not found",
 			setupRequest: func(t *testing.T) *http.Request {
-				req := httptest.NewRequest(http.MethodDelete, "/api/users/me/avatar", nil)
-				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, uint64(999))
+				req := httptest.NewRequest(http.MethodDelete, "/api/users/me/avatar", http.NoBody)
+				ctx := contextlib.WithValue(
+					req.Context(),
+					authmiddleware.UserIDContextKey,
+					uint64(999),
+				)
 
 				return req.WithContext(ctx)
 			},
@@ -65,8 +73,12 @@ func TestHandler(t *testing.T) {
 		{
 			name: "internal server error",
 			setupRequest: func(t *testing.T) *http.Request {
-				req := httptest.NewRequest(http.MethodDelete, "/api/users/me/avatar", nil)
-				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, uint64(1))
+				req := httptest.NewRequest(http.MethodDelete, "/api/users/me/avatar", http.NoBody)
+				ctx := contextlib.WithValue(
+					req.Context(),
+					authmiddleware.UserIDContextKey,
+					uint64(1),
+				)
 
 				return req.WithContext(ctx)
 			},

@@ -23,6 +23,7 @@ func createTestJPEG(width, height int) []byte {
 	}
 
 	var buf bytes.Buffer
+
 	_ = jpeg.Encode(&buf, img, &jpeg.Options{Quality: 85})
 
 	return buf.Bytes()
@@ -38,6 +39,7 @@ func createTestPNG(width, height int) []byte {
 	}
 
 	var buf bytes.Buffer
+
 	_ = png.Encode(&buf, img)
 
 	return buf.Bytes()

@@ -222,7 +222,9 @@ func TestMapUser(t *testing.T) {
 				Password:       "hash",
 				CreatedAt:      now,
 				UpdatedAt:      now,
-				AvatarPath:     pointers.New("https://kfc.webtm.ru/api/files/download/550e8400.jpg"),
+				AvatarPath: pointers.New(
+					"https://kfc.webtm.ru/api/files/download/550e8400.jpg",
+				),
 			},
 			expected: schemas.User{
 				ID:             808,
@@ -231,7 +233,9 @@ func TestMapUser(t *testing.T) {
 				EmailConfirmed: true,
 				CreatedAt:      now,
 				UpdatedAt:      now,
-				AvatarPath:     pointers.New("https://kfc.webtm.ru/api/files/download/550e8400.jpg"),
+				AvatarPath: pointers.New(
+					"https://kfc.webtm.ru/api/files/download/550e8400.jpg",
+				),
 			},
 			skipFields: []string{"Password"},
 		},

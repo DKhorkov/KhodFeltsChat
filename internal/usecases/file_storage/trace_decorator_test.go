@@ -143,7 +143,11 @@ func TestTraceDecorator_Upload(t *testing.T) {
 				mockBase,
 			)
 
-			result, err := decorator.Upload(context.Background(), tt.path, bytes.NewReader([]byte("data")))
+			result, err := decorator.Upload(
+				context.Background(),
+				tt.path,
+				bytes.NewReader([]byte("data")),
+			)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

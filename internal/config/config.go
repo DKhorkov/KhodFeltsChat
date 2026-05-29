@@ -165,10 +165,16 @@ func New() Config {
 			TTL:             loadenv.GetEnvAsInt("WEB_PUSH_TTL", 86400),
 		},
 		FileStorage: FileStorageConfig{
-			BasePath:        loadenv.GetEnv("FILE_STORAGE_BASE_PATH", "uploads"),
-			BaseUploadURL:   loadenv.GetEnv("FILE_STORAGE_BASE_UPLOAD_URL", "http://localhost:8080/api/files/upload"),
-			BaseDownloadURL: loadenv.GetEnv("FILE_STORAGE_BASE_DOWNLOAD_URL", "http://localhost:8080/api/files/download"),
-			MaxSize:         loadenv.GetEnvAsInt("FILE_STORAGE_MAX_SIZE", 20*1024*1024),
+			BasePath: loadenv.GetEnv("FILE_STORAGE_BASE_PATH", "uploads"),
+			BaseUploadURL: loadenv.GetEnv(
+				"FILE_STORAGE_BASE_UPLOAD_URL",
+				"http://localhost:8080/api/files/upload",
+			),
+			BaseDownloadURL: loadenv.GetEnv(
+				"FILE_STORAGE_BASE_DOWNLOAD_URL",
+				"http://localhost:8080/api/files/download",
+			),
+			MaxSize: loadenv.GetEnvAsInt("FILE_STORAGE_MAX_SIZE", 20*1024*1024),
 		},
 		NATS: NATSConfig{
 			ClientURL: fmt.Sprintf(

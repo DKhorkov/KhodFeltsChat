@@ -64,7 +64,11 @@ func (d *TraceDecorator) UpdateUser(
 	return d.base.UpdateUser(ctx, userData)
 }
 
-func (d *TraceDecorator) UpdateAvatar(ctx context.Context, userID uint64, data io.Reader) (string, error) {
+func (d *TraceDecorator) UpdateAvatar(
+	ctx context.Context,
+	userID uint64,
+	data io.Reader,
+) (string, error) {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
 

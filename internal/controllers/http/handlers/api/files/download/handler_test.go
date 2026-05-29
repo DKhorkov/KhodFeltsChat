@@ -71,7 +71,11 @@ func TestHandler(t *testing.T) {
 
 			handler := download.Handler(mockUC)
 
-			req := httptest.NewRequest(http.MethodGet, "/api/files/download/"+tt.fileName, nil)
+			req := httptest.NewRequest(
+				http.MethodGet,
+				"/api/files/download/"+tt.fileName,
+				http.NoBody,
+			)
 			req = mux.SetURLVars(req, map[string]string{
 				download.FileRouteKey: tt.fileName,
 			})

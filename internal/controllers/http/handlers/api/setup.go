@@ -18,16 +18,14 @@ import (
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/chats/create"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/chats/user_chats"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/files/download"
-	"githu
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/chat_messages"
 	delete_message "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/delete"
 	get_message "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/get"
 	update_message "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/update"
 	get_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/get"
-	me "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/me"
-ngs/update"
-	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/de
+	update_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/update"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/delete_avatar"
+	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/me"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/update"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/update_avatar"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/user_by_id"

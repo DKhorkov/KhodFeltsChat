@@ -38,7 +38,7 @@ func TestRepository_Download(t *testing.T) {
 	repo := filestorage.New(basePath, mocks.NewMockLogger(ctrl))
 
 	expected := []byte("test file content")
-	err := os.WriteFile(filepath.Join(basePath, "test.jpg"), expected, 0644)
+	err := os.WriteFile(filepath.Join(basePath, "test.jpg"), expected, 0o644)
 	require.NoError(t, err)
 
 	result, err := repo.Download(context.Background(), "test.jpg")
@@ -65,7 +65,7 @@ func TestRepository_Delete(t *testing.T) {
 	repo := filestorage.New(basePath, mocks.NewMockLogger(ctrl))
 
 	filePath := filepath.Join(basePath, "test.jpg")
-	err := os.WriteFile(filePath, []byte("content"), 0644)
+	err := os.WriteFile(filePath, []byte("content"), 0o644)
 	require.NoError(t, err)
 
 	err = repo.Delete(context.Background(), "test.jpg")

@@ -63,6 +63,7 @@ func Handler(u interfaces.UsersUseCases) http.HandlerFunc {
 
 			return
 		}
+
 		defer func() {
 			if err = file.Close(); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)

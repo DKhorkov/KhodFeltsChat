@@ -810,14 +810,8 @@ func TestService_UpdateUser(t *testing.T) {
 	}
 
 	type args struct {
-		ctx      context.Context
-		userData domains.UpdateUserDTO
-	}
-
-	existingUser := &domains.User{
-		ID:       1,
-		Username: "oldusername",
-		Email:    "user@example.com",
+		ctx  context.Context
+		user domains.User
 	}
 
 	updatedUser := &domains.User{
@@ -835,7 +829,7 @@ func TestService_UpdateUser(t *testing.T) {
 		err     error
 	}{
 		{
-			name: "successfully update username",
+			name: "successfully update user",
 			fields: fields{
 				mockUOW: func(uow *mockuow.MockUnitOfWork) {
 					uow.EXPECT().
@@ -847,21 +841,10 @@ func TestService_UpdateUser(t *testing.T) {
 						})
 				},
 				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
-					// First call: get existing user
-					ur.EXPECT().
-						GetUserByID(gomock.Any(), uint64(1)).
-						Return(&domains.User{
-							ID:       1,
-							Username: "oldusername",
-							Email:    "user@example.com",
-						}, nil)
-
-					// Second call: update with patched user
 					ur.EXPECT().
 						UpdateUser(gomock.Any(), gomock.Any()).
 						Return(nil)
 
-					// Third call: get updated user
 					ur.EXPECT().
 						GetUserByID(gomock.Any(), uint64(1)).
 						Return(updatedUser, nil)
@@ -869,9 +852,10 @@ func TestService_UpdateUser(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				userData: domains.UpdateUserDTO{
+				user: domains.User{
 					ID:       1,
-					Username: pointers.New("newusername"),
+					Username: "newusername",
+					Email:    "user@example.com",
 				},
 			},
 			want:    updatedUser,
@@ -891,19 +875,15 @@ func TestService_UpdateUser(t *testing.T) {
 				},
 				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
 					ur.EXPECT().
-						GetUserByID(gomock.Any(), uint64(1)).
-						Return(existingUser, nil)
-
-					ur.EXPECT().
 						UpdateUser(gomock.Any(), gomock.Any()).
 						Return(errors.New("database error"))
 				},
 			},
 			args: args{
 				ctx: context.Background(),
-				userData: domains.UpdateUserDTO{
+				user: domains.User{
 					ID:       1,
-					Username: pointers.New("newusername"),
+					Username: "newusername",
 				},
 			},
 			want:    nil,
@@ -923,10 +903,6 @@ func TestService_UpdateUser(t *testing.T) {
 				},
 				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
 					ur.EXPECT().
-						GetUserByID(gomock.Any(), uint64(1)).
-						Return(existingUser, nil)
-
-					ur.EXPECT().
 						UpdateUser(gomock.Any(), gomock.Any()).
 						Return(nil)
 
@@ -937,117 +913,13 @@ func TestService_UpdateUser(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				userData: domains.UpdateUserDTO{
+				user: domains.User{
 					ID:       1,
-					Username: pointers.New("newusername"),
+					Username: "newusername",
 				},
 			},
 			want:    nil,
 			wantErr: true,
-		},
-		{
-			name: "update with same username",
-			fields: fields{
-				mockUOW: func(uow *mockuow.MockUnitOfWork) {
-					uow.EXPECT().
-						Do(gomock.Any(), gomock.Any()).
-						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
-							tx := &struct{ pg.Transaction }{}
-
-							return fn(ctx, tx)
-						})
-				},
-				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
-					ur.EXPECT().
-						GetUserByID(gomock.Any(), uint64(1)).
-						Return(&domains.User{
-							ID:       1,
-							Username: "oldusername",
-							Email:    "user@example.com",
-						}, nil)
-
-					ur.EXPECT().
-						UpdateUser(gomock.Any(), gomock.Any()).
-						Return(nil)
-
-					ur.EXPECT().
-						GetUserByID(gomock.Any(), uint64(1)).
-						Return(existingUser, nil)
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				userData: domains.UpdateUserDTO{
-					ID:       1,
-					Username: pointers.New("oldusername"),
-				},
-			},
-			want:    existingUser,
-			wantErr: false,
-		},
-		{
-			name: "update non-existent user",
-			fields: fields{
-				mockUOW: func(uow *mockuow.MockUnitOfWork) {
-					uow.EXPECT().
-						Do(gomock.Any(), gomock.Any()).
-						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
-							tx := &struct{ pg.Transaction }{}
-
-							return fn(ctx, tx)
-						})
-				},
-				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
-					ur.EXPECT().
-						GetUserByID(gomock.Any(), uint64(999)).
-						Return(nil, sql.ErrNoRows)
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				userData: domains.UpdateUserDTO{
-					ID:       999,
-					Username: pointers.New("newusername"),
-				},
-			},
-			want:    nil,
-			wantErr: true,
-			err:     sql.ErrNoRows,
-		},
-		{
-			name: "update user with empty username",
-			fields: fields{
-				mockUOW: func(uow *mockuow.MockUnitOfWork) {
-					uow.EXPECT().
-						Do(gomock.Any(), gomock.Any()).
-						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
-							tx := &struct{ pg.Transaction }{}
-
-							return fn(ctx, tx)
-						})
-				},
-				mockUsersRepository: func(ur *mockrepositories.MockUsersRepository) {
-					ur.EXPECT().
-						GetUserByID(gomock.Any(), uint64(1)).
-						Return(&domains.User{ID: 1, Username: "oldname"}, nil)
-
-					ur.EXPECT().
-						UpdateUser(gomock.Any(), gomock.Any()).
-						Return(nil)
-
-					ur.EXPECT().
-						GetUserByID(gomock.Any(), uint64(1)).
-						Return(&domains.User{ID: 1, Username: "oldname"}, nil)
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				userData: domains.UpdateUserDTO{
-					ID: 1,
-				},
-			},
-			want:    &domains.User{ID: 1, Username: "oldname"},
-			wantErr: false,
 		},
 	}
 
@@ -1076,7 +948,7 @@ func TestService_UpdateUser(t *testing.T) {
 			s := service.New(mockUOW, newUsersRepoFunc)
 
 			// Act
-			got, err := s.UpdateUser(tt.args.ctx, tt.args.userData)
+			got, err := s.UpdateUser(tt.args.ctx, tt.args.user)
 
 			// Assert
 			if tt.wantErr {

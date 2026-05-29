@@ -39,8 +39,8 @@ func ResizeImage(src image.Image, width, height int) image.Image {
 	return dst
 }
 
-func ExtractUUIDFromURL(URL string) string {
-	u, err := url.Parse(URL)
+func ExtractUUIDFromURL(data string) string {
+	u, err := url.Parse(data)
 	if err != nil {
 		return ""
 	}

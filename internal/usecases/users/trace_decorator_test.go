@@ -680,7 +680,11 @@ func TestTraceDecorator_UpdateAvatar(t *testing.T) {
 				mockBase,
 			)
 
-			result, err := decorator.UpdateAvatar(context.Background(), tt.userID, bytes.NewReader([]byte("image")))
+			result, err := decorator.UpdateAvatar(
+				context.Background(),
+				tt.userID,
+				bytes.NewReader([]byte("image")),
+			)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

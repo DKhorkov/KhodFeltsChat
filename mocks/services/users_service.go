@@ -102,16 +102,16 @@ func (mr *MockUsersServiceMockRecorder) GetUsers(ctx, filters, pagination any) *
 }
 
 // UpdateUser mocks base method.
-func (m *MockUsersService) UpdateUser(ctx context.Context, userProfileData domains.UpdateUserDTO) (*domains.User, error) {
+func (m *MockUsersService) UpdateUser(ctx context.Context, user domains.User) (*domains.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateUser", ctx, userProfileData)
+	ret := m.ctrl.Call(m, "UpdateUser", ctx, user)
 	ret0, _ := ret[0].(*domains.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateUser indicates an expected call of UpdateUser.
-func (mr *MockUsersServiceMockRecorder) UpdateUser(ctx, userProfileData any) *gomock.Call {
+func (mr *MockUsersServiceMockRecorder) UpdateUser(ctx, user any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockUsersService)(nil).UpdateUser), ctx, userProfileData)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockUsersService)(nil).UpdateUser), ctx, user)
 }

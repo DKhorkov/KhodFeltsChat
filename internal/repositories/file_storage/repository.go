@@ -11,6 +11,8 @@ import (
 	"github.com/DKhorkov/libs/logging"
 )
 
+const permission = 0o755
+
 type Repository struct {
 	basePath string
 	logger   logging.Logger
@@ -26,7 +28,7 @@ func New(basePath string, logger logging.Logger) *Repository {
 func (r *Repository) Upload(ctx context.Context, path string, data io.Reader) error {
 	fullPath := filepath.Join(r.basePath, path)
 
-	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(fullPath), permission); err != nil {
 		return err
 	}
 

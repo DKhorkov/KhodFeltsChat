@@ -14,7 +14,7 @@ import (
 	authrepository "github.com/DKhorkov/kfc/internal/repositories/auth"
 	chatsrepository "github.com/DKhorkov/kfc/internal/repositories/chats"
 	emailsrepository "github.com/DKhorkov/kfc/internal/repositories/emails"
-	filestoragerepository "github.com/DKhorkov/kfc/internal/repositories/file_s
+	filestoragerepository "github.com/DKhorkov/kfc/internal/repositories/file_storage"
 	messagesrepository "github.com/DKhorkov/kfc/internal/repositories/messages"
 	settingsrepository "github.com/DKhorkov/kfc/internal/repositories/settings"
 	usersrepository "github.com/DKhorkov/kfc/internal/repositories/users"
@@ -22,8 +22,7 @@ import (
 	webpushsubscriptionsrepository "github.com/DKhorkov/kfc/internal/repositories/web_push_subscriptions"
 	authservice "github.com/DKhorkov/kfc/internal/services/auth"
 	chatsservice "github.com/DKhorkov/kfc/internal/services/chats"
-chats"
-	filestorageservice "github.com/DKhorkov/kfc/internal/services
+	filestorageservice "github.com/DKhorkov/kfc/internal/services/file_storage"
 	messagesservice "github.com/DKhorkov/kfc/internal/services/messages"
 	notificationsservice "github.com/DKhorkov/kfc/internal/services/notifications"
 	settingsservice "github.com/DKhorkov/kfc/internal/services/settings"
@@ -300,7 +299,13 @@ func main() {
 	usersUseCases := usersusecases.NewTraceDecorator(
 		traceProvider,
 		cfg.Tracing.Spans.UseCases.Users,
-		usersusecases.New(usersService, fileStorageUseCases, cfg.Security, cfg.Validation, cfg.FileStorage),
+		usersusecases.New(
+			usersService,
+			fileStorageService,
+			cfg.Security,
+			cfg.Validation,
+			cfg.FileStorage,
+		),
 	)
 
 	messagesUseCases := messagesusecases.NewTraceDecorator(

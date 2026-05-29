@@ -91,9 +91,11 @@ func TestUseCases_Upload(t *testing.T) {
 
 			if tt.wantErr {
 				assert.Error(t, err)
+
 				if tt.err != nil {
 					assert.Contains(t, err.Error(), tt.err.Error())
 				}
+
 				assert.Empty(t, got)
 			} else {
 				assert.NoError(t, err)
@@ -174,6 +176,7 @@ func TestUseCases_Download(t *testing.T) {
 
 			if tt.wantErr {
 				assert.Error(t, err)
+
 				if tt.err != nil {
 					assert.Contains(t, err.Error(), tt.err.Error())
 				}
@@ -253,6 +256,7 @@ func TestUseCases_Delete(t *testing.T) {
 
 			if tt.wantErr {
 				assert.Error(t, err)
+
 				if tt.err != nil {
 					assert.Contains(t, err.Error(), tt.err.Error())
 				}

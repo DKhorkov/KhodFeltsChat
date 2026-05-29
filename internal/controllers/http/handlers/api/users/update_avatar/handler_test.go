@@ -70,7 +70,7 @@ func TestHandler(t *testing.T) {
 		{
 			name: "unauthorized - no user id in context",
 			setupRequest: func(t *testing.T) *http.Request {
-				return httptest.NewRequest(http.MethodPut, "/api/users/me/avatar", nil)
+				return httptest.NewRequest(http.MethodPut, "/api/users/me/avatar", http.NoBody)
 			},
 			setupMock:      func(m *mockusecases.MockUsersUseCases) {},
 			expectedStatus: http.StatusUnauthorized,
@@ -78,9 +78,13 @@ func TestHandler(t *testing.T) {
 		{
 			name: "missing avatar file",
 			setupRequest: func(t *testing.T) *http.Request {
-				req := httptest.NewRequest(http.MethodPut, "/api/users/me/avatar", nil)
+				req := httptest.NewRequest(http.MethodPut, "/api/users/me/avatar", http.NoBody)
 				req.Header.Set("Content-Type", "multipart/form-data; boundary=xxx")
-				ctx := contextlib.WithValue(req.Context(), authmiddleware.UserIDContextKey, uint64(1))
+				ctx := contextlib.WithValue(
+					req.Context(),
+					authmiddleware.UserIDContextKey,
+					uint64(1),
+				)
 
 				return req.WithContext(ctx)
 			},

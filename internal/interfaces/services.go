@@ -18,7 +18,7 @@ type UsersService interface {
 	) ([]domains.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*domains.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*domains.User, error)
-	UpdateUser(ctx context.Context, userProfileData domains.UpdateUserDTO) (*domains.User, error)
+	UpdateUser(ctx context.Context, user domains.User) (*domains.User, error)
 }
 
 //go:generate mockgen -source=services.go -destination=../../mocks/services/auth_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService,FileStorageService
