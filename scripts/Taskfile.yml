@@ -15,6 +15,7 @@ tasks:
       - task: create_grafana_folder
       - task: prepare_prometheus
       - task: create_logs_folder
+      - task: create_uploads_folder
       - task: docker_build_prod
       - task: docker_run_prod
       - task: migrate
@@ -27,6 +28,7 @@ tasks:
       - task: create_grafana_folder
       - task: prepare_prometheus
       - task: create_logs_folder
+      - task: create_uploads_folder
       - task: docker_build_local
       - task: docker_run_local
       - task: migrate
@@ -38,6 +40,14 @@ tasks:
     cmds:
       - mkdir -p grafana
       - sudo chmod -R 777 grafana
+
+  create_uploads_folder:
+    desc: "Create uploads folder for docker volume purposes."
+    internal: true
+    dir: ../
+    cmds:
+      - mkdir -p uploads
+      - sudo chmod -R 777 uploads
 
   prepare_prometheus:
     desc: "Prepares Prometheus config."
