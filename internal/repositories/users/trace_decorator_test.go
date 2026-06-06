@@ -632,17 +632,22 @@ func TestTraceDecorator_GetUsers(t *testing.T) {
 func TestTraceDecorator_UpdateUser(t *testing.T) {
 	t.Parallel()
 
+	now := time.Now()
+
 	tests := []struct {
 		name          string
-		userData      domains.UpdateUserDTO
+		user          domains.User
 		setupMocks    func(*mocktracing.MockProvider, *mockrepositories.MockUsersRepository, *mocktracing.MockSpan)
 		expectedError error
 	}{
 		{
 			name: "successful update user with tracing",
-			userData: domains.UpdateUserDTO{
-				ID:       1,
-				Username: pointers.New("updated_user"),
+			user: domains.User{
+				ID:        1,
+				Username:  "updated_user",
+				Email:     "user@example.com",
+				CreatedAt: now,
+				UpdatedAt: now,
 			},
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
@@ -656,19 +661,17 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 					})
 
 				mockBase.EXPECT().
-					UpdateUser(gomock.Any(), domains.UpdateUserDTO{
-						ID:       1,
-						Username: pointers.New("updated_user"),
-					}).
+					UpdateUser(gomock.Any(), gomock.Any()).
 					Return(nil)
 			},
 			expectedError: nil,
 		},
 		{
 			name: "user not found",
-			userData: domains.UpdateUserDTO{
+			user: domains.User{
 				ID:       999,
-				Username: pointers.New("nonexistent"),
+				Username: "nonexistent",
+				Email:    "nonexistent@example.com",
 			},
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
@@ -687,9 +690,10 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 		},
 		{
 			name: "duplicate username error",
-			userData: domains.UpdateUserDTO{
+			user: domains.User{
 				ID:       1,
-				Username: pointers.New("existing_username"),
+				Username: "existing_username",
+				Email:    "user@example.com",
 			},
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
@@ -708,9 +712,10 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 		},
 		{
 			name: "database error",
-			userData: domains.UpdateUserDTO{
+			user: domains.User{
 				ID:       1,
-				Username: pointers.New("test"),
+				Username: "test",
+				Email:    "test@example.com",
 			},
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
@@ -754,7 +759,7 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 			decorator := users.NewTraceDecorator(mockProvider, spanConfig, mockBase)
 
 			ctx := context.Background()
-			err := decorator.UpdateUser(ctx, tt.userData)
+			err := decorator.UpdateUser(ctx, tt.user)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

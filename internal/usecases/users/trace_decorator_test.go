@@ -1,6 +1,7 @@
 package users_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
@@ -601,6 +602,181 @@ func TestTraceDecorator_UpdateUser(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.expectedUser, user)
+		})
+	}
+}
+
+func TestTraceDecorator_UpdateAvatar(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		userID        uint64
+		setupMocks    func(*mocktracing.MockProvider, *mockusecases.MockUsersUseCases, *mocktracing.MockSpan)
+		expectedURL   string
+		expectedError error
+	}{
+		{
+			name:   "successful update avatar with tracing",
+			userID: 1,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockUsersUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					UpdateAvatar(gomock.Any(), uint64(1), gomock.Any()).
+					Return("http://localhost/files/download/uuid.jpg", nil)
+			},
+			expectedURL:   "http://localhost/files/download/uuid.jpg",
+			expectedError: nil,
+		},
+		{
+			name:   "update avatar error with tracing",
+			userID: 1,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockUsersUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					UpdateAvatar(gomock.Any(), uint64(1), gomock.Any()).
+					Return("", errors.New("file too large"))
+			},
+			expectedURL:   "",
+			expectedError: errors.New("file too large"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockusecases.NewMockUsersUseCases(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			tt.setupMocks(mockProvider, mockBase, mockSpan)
+
+			decorator := users.NewTraceDecorator(
+				mockProvider,
+				tracing.SpanConfig{
+					Events: tracing.SpanEventsConfig{
+						Start: tracing.SpanEventConfig{Name: "start"},
+						End:   tracing.SpanEventConfig{Name: "end"},
+					},
+				},
+				mockBase,
+			)
+
+			result, err := decorator.UpdateAvatar(
+				context.Background(),
+				tt.userID,
+				bytes.NewReader([]byte("image")),
+			)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.expectedURL, result)
+		})
+	}
+}
+
+func TestTraceDecorator_DeleteAvatar(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		userID        uint64
+		setupMocks    func(*mocktracing.MockProvider, *mockusecases.MockUsersUseCases, *mocktracing.MockSpan)
+		expectedError error
+	}{
+		{
+			name:   "successful delete avatar with tracing",
+			userID: 1,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockUsersUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, _ string, _ ...trace.SpanStartOption) (context.Context, trace.Span) {
+						return ctx, mockSpan
+					})
+
+				mockBase.EXPECT().
+					DeleteAvatar(gomock.Any(), uint64(1)).
+					Return(nil)
+			},
+			expectedError: nil,
+		},
+		{
+			name:   "delete avatar error with tracing",
+			userID: 999,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockusecases.MockUsersUseCases,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					DeleteAvatar(gomock.Any(), uint64(999)).
+					Return(errors.New("user not found"))
+			},
+			expectedError: errors.New("user not found"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			mockProvider := mocktracing.NewMockProvider(ctrl)
+			mockBase := mockusecases.NewMockUsersUseCases(ctrl)
+			mockSpan := mocktracing.NewMockSpan()
+
+			tt.setupMocks(mockProvider, mockBase, mockSpan)
+
+			decorator := users.NewTraceDecorator(
+				mockProvider,
+				tracing.SpanConfig{
+					Events: tracing.SpanEventsConfig{
+						Start: tracing.SpanEventConfig{Name: "start"},
+						End:   tracing.SpanEventConfig{Name: "end"},
+					},
+				},
+				mockBase,
+			)
+
+			err := decorator.DeleteAvatar(context.Background(), tt.userID)
+
+			if tt.expectedError != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

@@ -17,7 +17,7 @@
 | `GetUserByUsername(ctx, username)` | Поиск пользователя по имени (точное совпадение) |
 | `GetUserByEmail(ctx, email)` | Поиск пользователя по email (точное совпадение) |
 | `GetUsers(ctx, filters, pagination)` | Список пользователей с постраничной выдачей; если передан `filters.Username`, применяется фильтр `ILIKE` |
-| `UpdateUser(ctx, UpdateUserDTO)` | Обновляет изменяемые поля пользователя (`username`, `updated_at`) |
+| `UpdateUser(ctx, domains.User)` | Обновляет изменяемые поля пользователя (`username`, `avatar_path`, `updated_at`); принимает полный доменный объект `domains.User`; пустая строка в `AvatarPath` записывается как NULL/пустое значение (сброс аватара) |
 
 ### GetUsers — детали
 
@@ -30,7 +30,7 @@
 - `pg.Transaction` — все запросы выполняются в рамках переданной транзакции
 - `github.com/Masterminds/squirrel` — построитель SQL-запросов
 - `github.com/DKhorkov/libs/logging` — логирование ошибок закрытия rows
-- `github.com/DKhorkov/kfc/internal/domains` — типы `User`, `UpdateUserDTO`, `UsersFilters`, `Pagination`
+- `github.com/DKhorkov/kfc/internal/domains` — типы `User`, `UsersFilters`, `Pagination`
 
 ## Trace-декоратор
 

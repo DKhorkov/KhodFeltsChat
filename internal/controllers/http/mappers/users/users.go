@@ -13,6 +13,7 @@ func MapUser(user domains.User) schemas.User {
 		EmailConfirmed: user.EmailConfirmed,
 		CreatedAt:      user.CreatedAt,
 		UpdatedAt:      user.UpdatedAt,
+		AvatarPath:     user.AvatarPath,
 	}
 }
 

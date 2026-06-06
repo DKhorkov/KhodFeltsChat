@@ -2,12 +2,13 @@ package interfaces
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/DKhorkov/kfc/internal/domains"
 )
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/users_service.go -package=mockservices -exclude_interfaces=AuthService,ChatsService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/users_service.go -package=mockservices -exclude_interfaces=AuthService,ChatsService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService,FileStorageService
 type UsersService interface {
 	GetUserByID(ctx context.Context, id uint64) (*domains.User, error)
 	GetUsers(
@@ -17,10 +18,10 @@ type UsersService interface {
 	) ([]domains.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*domains.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*domains.User, error)
-	UpdateUser(ctx context.Context, userProfileData domains.UpdateUserDTO) (*domains.User, error)
+	UpdateUser(ctx context.Context, user domains.User) (*domains.User, error)
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/auth_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/auth_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService,FileStorageService
 type AuthService interface {
 	RegisterUser(ctx context.Context, userData domains.RegisterDTO) (*domains.User, error)
 	CreateRefreshToken(
@@ -39,7 +40,7 @@ type AuthService interface {
 	SendVerifyEmailMessage(ctx context.Context, email string) error
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/chats_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/chats_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService,FileStorageService
 type ChatsService interface {
 	GetChatByID(ctx context.Context, chatID uint64) (*domains.Chat, error)
 	GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error)
@@ -52,7 +53,7 @@ type ChatsService interface {
 	PrivateChatExists(ctx context.Context, members []domains.User) (bool, error)
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/messages_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,ChatsService,NotificationsService,SettingsService,WebPushSubscriptionsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/messages_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,ChatsService,NotificationsService,SettingsService,WebPushSubscriptionsService,FileStorageService
 type MessagesService interface {
 	SaveMessage(ctx context.Context, message domains.Message) (*domains.Message, error)
 	GetChatMessages(
@@ -66,7 +67,7 @@ type MessagesService interface {
 	UpdateMessage(ctx context.Context, dto domains.UpdateMessageDTO) (*domains.Message, error)
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/notifications_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,AuthService,SettingsService,WebPushSubscriptionsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/notifications_service.go -package=mockservices -exclude_interfaces=UsersService,ChatsService,MessagesService,AuthService,SettingsService,WebPushSubscriptionsService,FileStorageService
 type NotificationsService interface {
 	SendVerifyEmailMessage(ctx context.Context, user domains.User) error
 	SendForgetPasswordMessage(ctx context.Context, user domains.User) error
@@ -83,13 +84,13 @@ type NotificationsService interface {
 	) error
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/settings_service.go -package=mockservices -exclude_interfaces=AuthService,UsersService,ChatsService,MessagesService,NotificationsService,WebPushSubscriptionsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/settings_service.go -package=mockservices -exclude_interfaces=AuthService,UsersService,ChatsService,MessagesService,NotificationsService,WebPushSubscriptionsService,FileStorageService
 type SettingsService interface {
 	GetSettingsByUserID(ctx context.Context, userID uint64) (*domains.Settings, error)
 	UpdateSettings(ctx context.Context, settings domains.Settings) (*domains.Settings, error)
 }
 
-//go:generate mockgen -source=services.go -destination=../../mocks/services/web_push_subscriptions_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,ChatsService,MessagesService,NotificationsService,SettingsService
+//go:generate mockgen -source=services.go -destination=../../mocks/services/web_push_subscriptions_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,ChatsService,MessagesService,NotificationsService,SettingsService,FileStorageService
 type WebPushSubscriptionsService interface {
 	CreateWebPushSubscription(
 		ctx context.Context,
@@ -100,4 +101,11 @@ type WebPushSubscriptionsService interface {
 		userID uint64,
 	) ([]domains.WebPushSubscription, error)
 	DeleteWebPushSubscription(ctx context.Context, id uint64) error
+}
+
+//go:generate mockgen -source=services.go -destination=../../mocks/services/file_storage_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,ChatsService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService
+type FileStorageService interface {
+	Upload(ctx context.Context, path string, data io.Reader) error
+	Download(ctx context.Context, path string) ([]byte, error)
+	Delete(ctx context.Context, path string) error
 }

@@ -63,8 +63,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Обработка postMessage от Service Worker (переход в чат по push-уведомлению):
     navigator.serviceWorker?.addEventListener('message', async (event) => {
-        if (event.data?.type === 'open-chat' && event.data.chatId) {
-            await openChatById(Number(event.data.chatId));
+        try {
+            if (event.data?.type === 'open-chat' && event.data.chatId) {
+                await openChatById(Number(event.data.chatId));
+            }
+        } catch (err) {
+            console.error('Failed to open chat from push notification:', err);
         }
     });
 
@@ -249,6 +253,53 @@ function debouncedLoadChats() {
     loadChatsTimer = setTimeout(loadChats, CHAT_LIST_DEBOUNCE_MS);
 }
 
+function updateProfileAvatar(elementId, user) {
+    const el = document.getElementById(elementId);
+    el.innerHTML = '';
+
+    if (user.avatarPath) {
+        const img = document.createElement('img');
+        img.src = user.avatarPath;
+        img.alt = user.username;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.borderRadius = 'inherit';
+        img.style.objectFit = 'cover';
+        img.onerror = function () {
+            el.innerHTML = '';
+            el.textContent = user.username.charAt(0).toUpperCase();
+        };
+        el.appendChild(img);
+    } else {
+        el.textContent = user.username.charAt(0).toUpperCase();
+    }
+}
+
+function createAvatarElement(className, user, titleOverride) {
+    const displayName = titleOverride || user.username;
+
+    if (user.avatarPath) {
+        const img = document.createElement('img');
+        img.className = className;
+        img.src = user.avatarPath;
+        img.alt = displayName;
+        img.onerror = function () {
+            const fallback = document.createElement('div');
+            fallback.className = className;
+            fallback.textContent = displayName.charAt(0).toUpperCase();
+            img.replaceWith(fallback);
+        };
+
+        return img;
+    }
+
+    const div = document.createElement('div');
+    div.className = className;
+    div.textContent = displayName.charAt(0).toUpperCase();
+
+    return div;
+}
+
 function renderChatList(chats) {
     chatsList = chats;
 
@@ -262,11 +313,11 @@ function renderChatList(chats) {
 
         const title = getChatTitle(chat);
 
-        const avatar = document.createElement('div');
-        avatar.className = 'chat-item__avatar';
+        const otherMember = getOtherMember(chat);
+        const avatarUser = otherMember || { username: title, avatarPath: null };
+        const avatar = createAvatarElement('chat-item__avatar', avatarUser, title);
         avatar.dataset.chatId = chat.id;
         avatar.dataset.action = 'avatar';
-        avatar.textContent = title.charAt(0).toUpperCase();
 
         const info = document.createElement('div');
         info.className = 'chat-item__info';
@@ -377,10 +428,14 @@ async function selectChat(chat) {
 
     // Подписка на подгрузку старых сообщений при скролле вверх:
     msgList.onscroll = async () => {
-        if (msgList.scrollTop <= 10 && !isLoadingMore && hasMoreMessages) {
-            const prevHeight = msgList.scrollHeight;
-            await loadMoreMessages();
-            msgList.scrollTop = msgList.scrollHeight - prevHeight;
+        try {
+            if (msgList.scrollTop <= 10 && !isLoadingMore && hasMoreMessages) {
+                const prevHeight = msgList.scrollHeight;
+                await loadMoreMessages();
+                msgList.scrollTop = msgList.scrollHeight - prevHeight;
+            }
+        } catch (err) {
+            console.error('Failed to load more messages:', err);
         }
     };
 }
@@ -881,7 +936,7 @@ function closeMemberProfile() {
 }
 
 function showMemberProfile(user) {
-    document.getElementById('member-avatar').textContent = user.username.charAt(0).toUpperCase();
+    updateProfileAvatar('member-avatar', user);
     document.getElementById('member-username').textContent = user.username;
     document.getElementById('member-email').textContent = user.email;
 
@@ -891,6 +946,20 @@ function showMemberProfile(user) {
         (user.emailConfirmed ? 'profile-modal__value--success' : 'profile-modal__value--warning');
 
     document.getElementById('member-created-at').textContent = formatDate(user.createdAt);
+
+    const memberAvatarEl = document.getElementById('member-avatar');
+    if (user.avatarPath) {
+        memberAvatarEl.style.cursor = 'pointer';
+        memberAvatarEl.onclick = () => {
+            if (typeof window.openAvatarZoom === 'function') {
+                window.openAvatarZoom(user.avatarPath);
+            }
+        };
+    } else {
+        memberAvatarEl.style.cursor = 'default';
+        memberAvatarEl.onclick = null;
+    }
+
     document.getElementById('modal-member-profile').style.display = '';
 }
 
@@ -912,7 +981,9 @@ function setupGroupChatModal() {
 function showGroupChatInfo(chat) {
     const title = getChatTitle(chat);
 
-    document.getElementById('group-chat-avatar').textContent = title.charAt(0).toUpperCase();
+    const groupAvatarEl = document.getElementById('group-chat-avatar');
+    groupAvatarEl.innerHTML = '';
+    groupAvatarEl.textContent = title.charAt(0).toUpperCase();
     document.getElementById('group-chat-title').textContent = title;
 
     const descEl = document.getElementById('group-chat-description');
@@ -936,9 +1007,7 @@ function showGroupChatInfo(chat) {
             showMemberProfile(member);
         });
 
-        const avatar = document.createElement('div');
-        avatar.className = 'user-item__avatar';
-        avatar.textContent = member.username.charAt(0).toUpperCase();
+        const avatar = createAvatarElement('user-item__avatar', member);
 
         const info = document.createElement('div');
         info.className = 'user-item__info';
@@ -1099,9 +1168,7 @@ async function searchUsersForCreate(query, selectedUserIds) {
                 }
             });
 
-            const avatar = document.createElement('div');
-            avatar.className = 'user-item__avatar';
-            avatar.textContent = user.username.charAt(0).toUpperCase();
+            const avatar = createAvatarElement('user-item__avatar', user);
 
             const info = document.createElement('div');
             info.className = 'user-item__info';
@@ -1191,9 +1258,7 @@ async function searchUsersGlobal(query) {
                 showMemberProfile(user);
             });
 
-            const avatar = document.createElement('div');
-            avatar.className = 'user-item__avatar';
-            avatar.textContent = user.username.charAt(0).toUpperCase();
+            const avatar = createAvatarElement('user-item__avatar', user);
 
             const info = document.createElement('div');
             info.className = 'user-item__info';
@@ -1402,14 +1467,24 @@ function setupContextMenu() {
     });
 
     document.getElementById('ctx-delete-for-me').addEventListener('click', async () => {
-        menu.style.display = 'none';
-        await deleteMessage(contextMenuMessageId, false);
+        try {
+            menu.style.display = 'none';
+            await deleteMessage(contextMenuMessageId, false);
+        } catch (err) {
+            console.error('Failed to delete message:', err);
+        }
+
         restoreInputFocus();
     });
 
     document.getElementById('ctx-delete-for-all').addEventListener('click', async () => {
-        menu.style.display = 'none';
-        await deleteMessage(contextMenuMessageId, true);
+        try {
+            menu.style.display = 'none';
+            await deleteMessage(contextMenuMessageId, true);
+        } catch (err) {
+            console.error('Failed to delete message:', err);
+        }
+
         restoreInputFocus();
     });
 }

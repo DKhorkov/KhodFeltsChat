@@ -34,6 +34,7 @@ const (
 	userIDColumnName         = "user_id"
 	emailConfirmedColumnName = "email_confirmed"
 	passwordColumnName       = "password"
+	avatarPathColumnName     = "avatar_path"
 
 	existsSubquery = "EXISTS (?)"
 
@@ -73,6 +74,7 @@ func (repo *Repository) GetChatMembers(
 		passwordColumnName,
 		createdAtColumnName,
 		updatedAtColumnName,
+		avatarPathColumnName,
 	}
 
 	for i, column := range columnsForSelect {

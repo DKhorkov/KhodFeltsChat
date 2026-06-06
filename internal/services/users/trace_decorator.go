@@ -78,7 +78,7 @@ func (d *TraceDecorator) GetUserByUsername(
 
 func (d *TraceDecorator) UpdateUser(
 	ctx context.Context,
-	userData domains.UpdateUserDTO,
+	user domains.User,
 ) (*domains.User, error) {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
@@ -86,5 +86,5 @@ func (d *TraceDecorator) UpdateUser(
 	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
 	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
 
-	return d.base.UpdateUser(ctx, userData)
+	return d.base.UpdateUser(ctx, user)
 }

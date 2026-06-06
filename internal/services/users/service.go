@@ -133,11 +133,11 @@ func (s *Service) GetUserByUsername(
 
 func (s *Service) UpdateUser(
 	ctx context.Context,
-	userData domains.UpdateUserDTO,
+	user domains.User,
 ) (*domains.User, error) {
 	var (
-		user *domains.User
-		err  error
+		updatedUser *domains.User
+		err         error
 	)
 
 	err = s.uow.Do(
@@ -145,12 +145,12 @@ func (s *Service) UpdateUser(
 		func(ctx context.Context, tx pg.Transaction) error {
 			usersRepository := s.newUsersRepositoryFunc(tx)
 
-			err = usersRepository.UpdateUser(ctx, userData)
+			err = usersRepository.UpdateUser(ctx, user)
 			if err != nil {
 				return err
 			}
 
-			if user, err = usersRepository.GetUserByID(ctx, userData.ID); err != nil {
+			if updatedUser, err = usersRepository.GetUserByID(ctx, user.ID); err != nil {
 				return err
 			}
 
@@ -161,5 +161,5 @@ func (s *Service) UpdateUser(
 		return nil, err
 	}
 
-	return user, nil
+	return updatedUser, nil
 }

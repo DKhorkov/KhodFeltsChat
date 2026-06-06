@@ -68,7 +68,7 @@ handlers/
 
 ## Зависимости
 
-- `internal/controllers/http/handlers/api` — регистрация API-обработчиков.
+- `internal/controllers/http/handlers/api` — регистрация API-обработчиков; принимает `fileStorageUseCases` (`interfaces.FileStorageUseCases`) как дополнительный параметр для маршрутов работы с файлами.
 - `gorilla/mux` — маршрутизация.
 - `go-openapi/runtime/middleware` — Swagger UI.
 - `prometheus/client_golang` — метрики.

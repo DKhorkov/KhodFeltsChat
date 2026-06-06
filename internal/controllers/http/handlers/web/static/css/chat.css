@@ -106,6 +106,10 @@
     box-shadow: 0 0 0 2px var(--accent);
 }
 
+img.chat-item__avatar {
+    object-fit: cover;
+}
+
 .chat-item__info {
     flex: 1;
     min-width: 0;
@@ -632,6 +636,10 @@
     transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
 }
 
+img.user-item__avatar {
+    object-fit: cover;
+}
+
 .user-item--clickable .user-item__avatar:hover,
 .user-item--selectable .user-item__avatar:hover {
     transform: scale(1.12);
@@ -881,3 +889,4 @@
         width: 100%;
     }
 }
+

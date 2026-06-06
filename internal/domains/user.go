@@ -10,11 +10,13 @@ type User struct {
 	Password       string    `json:"password"`
 	CreatedAt      time.Time `json:"createdAt"`
 	UpdatedAt      time.Time `json:"updatedAt"`
+	AvatarPath     *string   `json:"avatarPath"`
 }
 
 type UpdateUserDTO struct {
-	ID       uint64  `json:"id"`
-	Username *string `json:"username,omitempty"`
+	ID         uint64  `json:"id"`
+	Username   *string `json:"username,omitempty"`
+	AvatarPath *string `json:"avatarPath,omitempty"`
 }
 
 type UsersFilters struct {

@@ -81,6 +81,10 @@
     flex-shrink: 0;
 }
 
+img.navbar__profile-avatar {
+    object-fit: cover;
+}
+
 .navbar__profile-name {
     font-size: var(--font-sm);
     font-weight: 500;
@@ -253,4 +257,93 @@
     .profile-modal {
         width: calc(100vw - var(--space-xl) * 2);
     }
+}
+
+/* ═══════════════════════════════════════
+   Avatar context menu (profile modal)
+   ═══════════════════════════════════════ */
+
+.profile-modal__avatar-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.profile-modal__avatar {
+    cursor: pointer;
+}
+
+.avatar-context-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-xs) 0;
+    min-width: 160px;
+    margin-top: var(--space-xs);
+}
+
+.avatar-context-menu__item {
+    display: block;
+    width: 100%;
+    padding: var(--space-sm) var(--space-lg);
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    font-size: var(--font-md);
+    color: var(--text-primary);
+    transition: background var(--transition-base);
+}
+
+.avatar-context-menu__item:hover {
+    background: var(--bg-hover);
+}
+
+.avatar-context-menu__item--danger {
+    color: var(--danger);
+}
+
+.avatar-context-menu__item--danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* ═══════════════════════════════════════
+   Avatar zoom overlay
+   ═══════════════════════════════════════ */
+
+.avatar-zoom-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-zoom-overlay__img {
+    width: 80vmin;
+    height: 80vmin;
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+}
+
+.avatar-zoom-overlay__close {
+    position: absolute;
+    top: var(--space-lg);
+    right: var(--space-lg);
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 32px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
 }

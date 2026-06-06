@@ -47,6 +47,7 @@ func New(
 	messagesUseCases interfaces.MessagesUseCases,
 	settingsUseCases interfaces.SettingsUseCases,
 	webPushSubscriptionsUseCases interfaces.WebPushSubscriptionsUseCases,
+	fileStorageUseCases interfaces.FileStorageUseCases,
 	logger logging.Logger,
 	traceProvider tracing.Provider,
 	upgrader interfaces.Upgrader,
@@ -140,6 +141,16 @@ func New(
 					Methods: []string{http.MethodGet},
 				},
 				{
+					Path: regexp.MustCompile(
+						`^` + handlers.APIPrefix + strings.ReplaceAll(
+							api.FileDownloadURL,
+							"{%s}",
+							"",
+						) + `(.+)$`,
+					),
+					Methods: []string{http.MethodGet},
+				},
+				{
 					Path:    regexp.MustCompile(`^` + handlers.WebPrefix),
 					Methods: []string{http.MethodGet},
 				},
@@ -158,6 +169,7 @@ func New(
 		messagesUseCases,
 		settingsUseCases,
 		webPushSubscriptionsUseCases,
+		fileStorageUseCases,
 		logger,
 		upgrader,
 		natsPublisher,

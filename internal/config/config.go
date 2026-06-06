@@ -164,6 +164,18 @@ func New() Config {
 			VAPIDContact:    loadenv.GetEnv("VAPID_CONTACT", "admin@example.com"),
 			TTL:             loadenv.GetEnvAsInt("WEB_PUSH_TTL", 86400),
 		},
+		FileStorage: FileStorageConfig{
+			BasePath: loadenv.GetEnv("FILE_STORAGE_BASE_PATH", "uploads"),
+			BaseUploadURL: loadenv.GetEnv(
+				"FILE_STORAGE_BASE_UPLOAD_URL",
+				"http://localhost:8080/api/files/upload",
+			),
+			BaseDownloadURL: loadenv.GetEnv(
+				"FILE_STORAGE_BASE_DOWNLOAD_URL",
+				"http://localhost:8080/api/files/download",
+			),
+			MaxSize: loadenv.GetEnvAsInt("FILE_STORAGE_MAX_SIZE", 20*1024*1024),
+		},
 		NATS: NATSConfig{
 			ClientURL: fmt.Sprintf(
 				"nats://%s:%d",
@@ -556,6 +568,41 @@ func New() Config {
 							},
 						},
 					},
+					FileStorage: tracing.SpanConfig{
+						Name: "FileStorage repository",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling FileStorage Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from FileStorage Repository",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
 				},
 				Services: SpanServices{
 					Auth: tracing.SpanConfig{
@@ -792,6 +839,41 @@ func New() Config {
 							},
 							End: tracing.SpanEventConfig{
 								Name: "Received response from WebPushSubscriptions service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
+					FileStorage: tracing.SpanConfig{
+						Name: "FileStorage service",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling FileStorage service",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from FileStorage service",
 								Opts: []trace.EventOption{
 									trace.WithAttributes(
 										attribute.String(
@@ -1050,6 +1132,41 @@ func New() Config {
 							},
 						},
 					},
+					FileStorage: tracing.SpanConfig{
+						Name: "FileStorage useCases",
+						Opts: []trace.SpanStartOption{
+							trace.WithAttributes(
+								attribute.String(
+									"Environment",
+									loadenv.GetEnv("ENVIRONMENT", "local"),
+								),
+							),
+						},
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling FileStorage useCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from FileStorage useCases",
+								Opts: []trace.EventOption{
+									trace.WithAttributes(
+										attribute.String(
+											"Environment",
+											loadenv.GetEnv("ENVIRONMENT", "local"),
+										),
+									),
+								},
+							},
+						},
+					},
 				},
 				Handlers: SpanHandlers{
 					EmailNotification: tracing.SpanConfig{
@@ -1182,6 +1299,7 @@ type SpanRepositories struct {
 	Settings             tracing.SpanConfig
 	WebPushSubscriptions tracing.SpanConfig
 	WebPush              tracing.SpanConfig
+	FileStorage          tracing.SpanConfig
 }
 
 type SpanServices struct {
@@ -1192,6 +1310,7 @@ type SpanServices struct {
 	Notifications        tracing.SpanConfig
 	Settings             tracing.SpanConfig
 	WebPushSubscriptions tracing.SpanConfig
+	FileStorage          tracing.SpanConfig
 }
 
 type SpanUseCases struct {
@@ -1202,6 +1321,7 @@ type SpanUseCases struct {
 	Notifications        tracing.SpanConfig
 	Settings             tracing.SpanConfig
 	WebPushSubscriptions tracing.SpanConfig
+	FileStorage          tracing.SpanConfig
 }
 
 type SpanHandlers struct {
@@ -1265,6 +1385,13 @@ type WebPushConfig struct {
 	TTL             int
 }
 
+type FileStorageConfig struct {
+	BasePath        string
+	BaseUploadURL   string
+	BaseDownloadURL string
+	MaxSize         int
+}
+
 type Config struct {
 	HTTP        HTTPConfig
 	Security    security.Config
@@ -1282,4 +1409,5 @@ type Config struct {
 	Websocket   WebsocketConfig
 	NATS        NATSConfig
 	WebPush     WebPushConfig
+	FileStorage FileStorageConfig
 }

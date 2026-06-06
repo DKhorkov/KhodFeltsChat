@@ -71,6 +71,45 @@
     background: var(--accent-hover);
 }
 
+.alert-modal__btn--danger {
+    background: var(--danger);
+    color: var(--text-on-accent);
+}
+
+.alert-modal__btn--danger:hover {
+    opacity: 0.9;
+}
+
+.alert-modal__btn--primary {
+    background: var(--accent);
+    color: var(--text-on-accent);
+}
+
+.alert-modal__btn--primary:hover {
+    background: var(--accent-hover);
+}
+
+.alert-modal__btn--secondary {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.alert-modal__btn--secondary:hover {
+    background: var(--border);
+}
+
+.alert-modal__actions {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: center;
+}
+
+.alert-modal__actions .alert-modal__btn {
+    flex: 1;
+    padding: var(--space-md) var(--space-lg);
+    min-width: 0;
+}
+
 /* ═══════════════════════════════════════
    Адаптивность
    ═══════════════════════════════════════ */

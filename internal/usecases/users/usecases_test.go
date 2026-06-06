@@ -153,7 +153,13 @@ func TestUseCases_GetUsers(t *testing.T) {
 				UsernameRegExps: []string{"^[a-zA-Z0-9_]{3,20}$"},
 			}
 
-			uc := users.New(mockUsersService, securityConfig, validationConfig)
+			uc := users.New(
+				mockUsersService,
+				nil,
+				securityConfig,
+				validationConfig,
+				config.FileStorageConfig{},
+			)
 
 			// Act
 			got, err := uc.GetUsers(tt.args.ctx, tt.args.filters, tt.args.pagination)
@@ -285,7 +291,13 @@ func TestUseCases_GetUserByID(t *testing.T) {
 			securityConfig := security.Config{HashCost: 10}
 			validationConfig := config.ValidationConfig{}
 
-			uc := users.New(mockUsersService, securityConfig, validationConfig)
+			uc := users.New(
+				mockUsersService,
+				nil,
+				securityConfig,
+				validationConfig,
+				config.FileStorageConfig{},
+			)
 
 			// Act
 			got, err := uc.GetUserByID(tt.args.ctx, tt.args.id)
@@ -346,9 +358,10 @@ func TestUseCases_UpdateUser(t *testing.T) {
 						GetUserByID(gomock.Any(), uint64(1)).
 						Return(existingUser, nil)
 					us.EXPECT().
-						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
+						UpdateUser(gomock.Any(), domains.User{
 							ID:       1,
-							Username: pointers.New("newusername"),
+							Username: "newusername",
+							Email:    "user@example.com",
 						}).
 						Return(updatedUser, nil)
 				},
@@ -410,29 +423,6 @@ func TestUseCases_UpdateUser(t *testing.T) {
 			err:     errors.New("update failed"),
 		},
 		{
-			name: "empty username",
-			fields: fields{
-				validationRules: []string{"^[a-zA-Z0-9_]{3,20}$"},
-				mockUsersService: func(us *mockservices.MockUsersService) {
-					us.EXPECT().
-						GetUserByID(gomock.Any(), uint64(1)).
-						Return(existingUser, nil)
-					us.EXPECT().
-						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
-							ID: 1,
-						}).
-						Return(updatedUser, nil)
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				userData: domains.UpdateUserDTO{
-					ID: 1,
-				},
-			},
-			want: updatedUser,
-		},
-		{
 			name: "username too long",
 			fields: fields{
 				validationRules: []string{"^[a-zA-Z0-9_]{3,20}$"},
@@ -456,9 +446,10 @@ func TestUseCases_UpdateUser(t *testing.T) {
 						GetUserByID(gomock.Any(), uint64(1)).
 						Return(existingUser, nil)
 					us.EXPECT().
-						UpdateUser(gomock.Any(), domains.UpdateUserDTO{
+						UpdateUser(gomock.Any(), domains.User{
 							ID:       1,
-							Username: pointers.New("oldusername"), // То же самое имя
+							Username: "oldusername",
+							Email:    "user@example.com",
 						}).
 						Return(existingUser, nil)
 				},
@@ -494,7 +485,13 @@ func TestUseCases_UpdateUser(t *testing.T) {
 				UsernameRegExps: tt.fields.validationRules,
 			}
 
-			uc := users.New(mockUsersService, securityConfig, validationConfig)
+			uc := users.New(
+				mockUsersService,
+				nil,
+				securityConfig,
+				validationConfig,
+				config.FileStorageConfig{},
+			)
 
 			// Act
 			got, err := uc.UpdateUser(tt.args.ctx, tt.args.userData)

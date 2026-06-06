@@ -15,11 +15,12 @@ import (
 const (
 	usersTableName = "users"
 
-	idColumnName        = "id"
-	usernameColumnName  = "username"
-	emailColumnName     = "email"
-	createdAtColumnName = "created_at"
-	updatedAtColumnName = "updated_at"
+	idColumnName         = "id"
+	usernameColumnName   = "username"
+	emailColumnName      = "email"
+	createdAtColumnName  = "created_at"
+	updatedAtColumnName  = "updated_at"
+	avatarPathColumnName = "avatar_path"
 
 	desc = "DESC"
 	asc  = "ASC"
@@ -187,17 +188,16 @@ func (repo *Repository) GetUsers(
 
 func (repo *Repository) UpdateUser(
 	ctx context.Context,
-	userData domains.UpdateUserDTO,
+	user domains.User,
 ) error {
 	builder := sq.
 		Update(usersTableName).
-		Where(sq.Eq{idColumnName: userData.ID}).
+		Where(sq.Eq{idColumnName: user.ID}).
+		Set(usernameColumnName, user.Username).
+		Set(emailColumnName, user.Email).
+		Set(avatarPathColumnName, user.AvatarPath).
 		Set(updatedAtColumnName, time.Now()).
 		PlaceholderFormat(sq.Dollar) // pq postgres driver works only with $ placeholders
-
-	if userData.Username != nil {
-		builder = builder.Set(usernameColumnName, userData.Username)
-	}
 
 	stmt, params, err := builder.ToSql()
 	if err != nil {

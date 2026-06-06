@@ -427,17 +427,13 @@ func (s *RepositoryTestSuite) TestGetUsers_EmptyResult() {
 
 func (s *RepositoryTestSuite) TestUpdateUser_Success() {
 	// Тест 1: Обновление имени пользователя (email_confirmed и password не должны изменяться)
-	userData := domains.UpdateUserDTO{
-		ID:       1,
-		Username: pointers.New("updated_john"),
-	}
-
-	// Получаем оригинальные данные пользователя
 	originalUser, err := s.repository.GetUserByID(s.ctx, 1)
 	s.NoError(err)
 	s.NotNil(originalUser)
 
-	// Обновляем пользователя
+	userData := *originalUser
+	userData.Username = "updated_john"
+
 	err = s.repository.UpdateUser(s.ctx, userData)
 	s.NoError(err)
 
@@ -453,10 +449,12 @@ func (s *RepositoryTestSuite) TestUpdateUser_Success() {
 	s.Equal(originalUser.Password, updatedUser.Password)
 
 	// Тест 2: Обновление другого пользователя
-	userData = domains.UpdateUserDTO{
-		ID:       2,
-		Username: pointers.New("updated_jane"),
-	}
+	originalUser2, err := s.repository.GetUserByID(s.ctx, 2)
+	s.NoError(err)
+	s.NotNil(originalUser2)
+
+	userData = *originalUser2
+	userData.Username = "updated_jane"
 
 	err = s.repository.UpdateUser(s.ctx, userData)
 	s.NoError(err)
@@ -468,22 +466,19 @@ func (s *RepositoryTestSuite) TestUpdateUser_Success() {
 	s.False(updatedUser.EmailConfirmed) // Должно остаться false
 }
 
-func (s *RepositoryTestSuite) TestUpdateUser_EmptyUsername() {
-	// Тест: Обновление с пустым именем пользователя
-	userData := domains.UpdateUserDTO{
-		ID: 1,
-	}
+func (s *RepositoryTestSuite) TestUpdateUser_NoChanges() {
+	// Тест: Обновление полной сущности без изменений — поля должны сохраниться.
+	originalUser, err := s.repository.GetUserByID(s.ctx, 1)
+	s.NoError(err)
+	s.NotNil(originalUser)
 
-	err := s.repository.UpdateUser(s.ctx, userData)
+	err = s.repository.UpdateUser(s.ctx, *originalUser)
 	s.NoError(err)
 
-	// Проверяем, что имя пользователя не стало пустым
 	user, err := s.repository.GetUserByID(s.ctx, 1)
 	s.NoError(err)
 	s.NotNil(user)
-	s.NotEmpty(user.Username)
-
-	// Проверяем, что другие поля не изменились
+	s.Equal(originalUser.Username, user.Username)
 	s.Equal("john@example.com", user.Email)
 	s.True(user.EmailConfirmed)
 	s.Equal("$2a$10$hashedpassword1", user.Password)
@@ -491,13 +486,15 @@ func (s *RepositoryTestSuite) TestUpdateUser_EmptyUsername() {
 
 func (s *RepositoryTestSuite) TestUpdateUser_LongUsername() {
 	// Тест: Обновление с длинным именем пользователя
-	longUsername := "very_long_username_that_exceeds_normal_length_but_should_work"
-	userData := domains.UpdateUserDTO{
-		ID:       1,
-		Username: &longUsername,
-	}
+	originalUser, err := s.repository.GetUserByID(s.ctx, 1)
+	s.NoError(err)
+	s.NotNil(originalUser)
 
-	err := s.repository.UpdateUser(s.ctx, userData)
+	longUsername := "very_long_username_that_exceeds_normal_length_but_should_work"
+	userData := *originalUser
+	userData.Username = longUsername
+
+	err = s.repository.UpdateUser(s.ctx, userData)
 	s.NoError(err)
 
 	user, err := s.repository.GetUserByID(s.ctx, 1)
@@ -512,10 +509,7 @@ func (s *RepositoryTestSuite) TestUpdateUser_SameUsername() {
 	s.NoError(err)
 	s.NotNil(originalUser)
 
-	userData := domains.UpdateUserDTO{
-		ID:       1,
-		Username: &originalUser.Username, // То же самое имя
-	}
+	userData := *originalUser // То же самое имя
 
 	err = s.repository.UpdateUser(s.ctx, userData)
 	s.NoError(err)
@@ -539,9 +533,9 @@ func (s *RepositoryTestSuite) TestUpdateUser_SameUsername() {
 
 func (s *RepositoryTestSuite) TestUpdateUser_NotFound() {
 	// Тест: Попытка обновить несуществующего пользователя
-	userData := domains.UpdateUserDTO{
+	userData := domains.User{
 		ID:       999,
-		Username: pointers.New("new_username"),
+		Username: "new_username",
 	}
 
 	err := s.repository.UpdateUser(s.ctx, userData)
@@ -555,12 +549,14 @@ func (s *RepositoryTestSuite) TestUpdateUser_NotFound() {
 
 func (s *RepositoryTestSuite) TestUpdateUser_SpecialCharacters() {
 	// Тест: Обновление с именем, содержащим специальные символы
-	userData := domains.UpdateUserDTO{
-		ID:       1,
-		Username: pointers.New("user-name.with.dots_and_underscores"),
-	}
+	originalUser, err := s.repository.GetUserByID(s.ctx, 1)
+	s.NoError(err)
+	s.NotNil(originalUser)
 
-	err := s.repository.UpdateUser(s.ctx, userData)
+	userData := *originalUser
+	userData.Username = "user-name.with.dots_and_underscores"
+
+	err = s.repository.UpdateUser(s.ctx, userData)
 	s.NoError(err)
 
 	user, err := s.repository.GetUserByID(s.ctx, 1)
@@ -571,18 +567,18 @@ func (s *RepositoryTestSuite) TestUpdateUser_SpecialCharacters() {
 
 func (s *RepositoryTestSuite) TestUpdateUser_ConcurrentUpdates() {
 	// Тест: Проверка, что последнее обновление сохраняется
-	userData1 := domains.UpdateUserDTO{
-		ID:       1,
-		Username: pointers.New("first_update"),
-	}
+	originalUser, err := s.repository.GetUserByID(s.ctx, 1)
+	s.NoError(err)
+	s.NotNil(originalUser)
 
-	userData2 := domains.UpdateUserDTO{
-		ID:       1,
-		Username: pointers.New("second_update"),
-	}
+	userData1 := *originalUser
+	userData1.Username = "first_update"
+
+	userData2 := *originalUser
+	userData2.Username = "second_update"
 
 	// Выполняем два обновления последовательно
-	err := s.repository.UpdateUser(s.ctx, userData1)
+	err = s.repository.UpdateUser(s.ctx, userData1)
 	s.NoError(err)
 
 	err = s.repository.UpdateUser(s.ctx, userData2)
@@ -604,10 +600,8 @@ func (s *RepositoryTestSuite) TestUpdateUser_EmailConfirmedNotChanged() {
 	s.False(user.EmailConfirmed)
 
 	// Обновляем username
-	userData := domains.UpdateUserDTO{
-		ID:       2,
-		Username: pointers.New("updated_username"),
-	}
+	userData := *user
+	userData.Username = "updated_username"
 
 	err = s.repository.UpdateUser(s.ctx, userData)
 	s.NoError(err)
@@ -629,10 +623,8 @@ func (s *RepositoryTestSuite) TestUpdateUser_PasswordNotChanged() {
 	originalPassword := originalUser.Password
 
 	// Обновляем username
-	userData := domains.UpdateUserDTO{
-		ID:       1,
-		Username: pointers.New("updated_username"),
-	}
+	userData := *originalUser
+	userData.Username = "updated_username"
 
 	err = s.repository.UpdateUser(s.ctx, userData)
 	s.NoError(err)

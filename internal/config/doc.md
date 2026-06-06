@@ -30,6 +30,7 @@ type Config struct {
     Websocket   WebsocketConfig   // HandshakeTimeout
     NATS        NATSConfig        // URL, subjects, worker/publisher names, pool size
     WebPush     WebPushConfig     // VAPID ключи для Web Push уведомлений
+    FileStorage FileStorageConfig // настройки локального хранилища файлов/аватаров
 }
 ```
 
@@ -45,9 +46,10 @@ type Config struct {
 | `security.Config` | `HASH_COST`, `JWT_*`, `REFRESH/ACCESS_TOKEN_JWT_TTL` |
 | `CookiesConfig` | `COOKIES_ACCESS_TOKEN_*`, `COOKIES_REFRESH_TOKEN_*` |
 | `NATSConfig` | `NATS_HOST`, `NATS_CLIENT_PORT`, `NATS_EMAIL_NOTIFICATION_SUBJECT`, `NATS_EMAIL_NOTIFICATION_WORKER_NAME`, `NATS_PUSH_NOTIFICATION_*` |
-| `TracingConfig` | `TRACING_SERVICE_NAME`, `TRACING_JAEGER_HOST`, `TRACING_API_TRACES_PORT` |
+| `TracingConfig` | `TRACING_SERVICE_NAME`, `TRACING_JAEGER_HOST`, `TRACING_API_TRACES_PORT`; `SpanUseCases` включает поле `FileStorage` для трассировки юзкейсов файлового хранилища |
 | `WebsocketConfig` | `WEBSOCKET_HANDSHAKE_TIMEOUT` |
 | `WebPushConfig` | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_CONTACT` (без `mailto:` — библиотека добавит сама), `WEB_PUSH_TTL` |
+| `FileStorageConfig` | `FILE_STORAGE_BASE_PATH` — корневая директория для хранения файлов; `FILE_STORAGE_BASE_UPLOAD_URL`, `FILE_STORAGE_BASE_DOWNLOAD_URL` — базовые URL для загрузки/скачивания; `FILE_STORAGE_MAX_SIZE` — максимальный размер файла в байтах (тип `int`) |
 
 Путь к файлу логов формируется как `logs/<дата>.log` с использованием `common.Timezone` (Europe/Moscow).
 
