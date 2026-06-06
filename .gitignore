@@ -31,6 +31,7 @@ go.work.sum
 *.log
 logs/
 grafana/
+/uploads
 *.db
 bench.txt
 prometheus.yml

@@ -240,6 +240,11 @@ definitions:
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
     User:
         properties:
+            avatarPath:
+                description: Avatar URL of the user.
+                example: https://kfc.webtm.ru/api/files/download/550e8400-e29b-41d4-a716-446655440000.jpg
+                type: string
+                x-go-name: AvatarPath
             createdAt:
                 description: Represents datetime when user was registered.
                 format: date-time
@@ -431,6 +436,22 @@ paths:
             summary: GetChatMessages
             tags:
                 - messages
+    /api/files/download/{file}:
+        get:
+            description: Downloads a file by name. Public endpoint (no auth required).
+            operationId: DownloadFile
+            responses:
+                "200":
+                    $ref: '#/responses/OK'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            summary: DownloadFile
+            tags:
+                - files
     /api/messages/{id}:
         delete:
             description: Deletes a message by ID. If forAll is true, deletes for all chat members (author only).
@@ -810,6 +831,52 @@ paths:
             summary: UpdateCurrentUser
             tags:
                 - users
+    /api/users/me/avatar:
+        delete:
+            description: Deletes the avatar of the current user.
+            operationId: DeleteAvatar
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: DeleteAvatar
+            tags:
+                - users
+        put:
+            consumes:
+                - multipart/form-data
+            description: |-
+                Uploads or updates the avatar of the current user.
+                Accepts multipart/form-data with an "avatar" file field.
+                Image is resized to 256x256 JPEG.
+            operationId: UpdateAvatar
+            responses:
+                "200":
+                    $ref: '#/responses/OK'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "413":
+                    $ref: '#/responses/RequestEntityTooLarge'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: UpdateAvatar
+            tags:
+                - users
     /api/users/me/settings:
         get:
             description: Provides settings of the current authorized User.
@@ -1170,6 +1237,15 @@ responses:
                     in: header
                 format: int64
                 type: integer
+    RequestEntityTooLarge:
+        description: RequestEntityTooLarge message returned when uploaded file exceeds size limit
+        headers:
+            StatusCode:
+                description: |-
+                    HTTP Status Code
+                    in: header
+                format: int64
+                type: integer
     SeeOther:
         description: SeeOther message returned when redirect to another URL was made
         headers:
@@ -1217,6 +1293,8 @@ tags:
   description: "WEB странички"
 - name: web-pushes
   description: "WEB пуши для уведомления пользователей"
+- name: files
+  description: "Работа с файлами"
 
 securityDefinitions:
   cookieAuth:
