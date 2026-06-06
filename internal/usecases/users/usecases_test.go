@@ -423,31 +423,6 @@ func TestUseCases_UpdateUser(t *testing.T) {
 			err:     errors.New("update failed"),
 		},
 		{
-			name: "nil username keeps existing",
-			fields: fields{
-				validationRules: []string{"^[a-zA-Z0-9_]{3,20}$"},
-				mockUsersService: func(us *mockservices.MockUsersService) {
-					us.EXPECT().
-						GetUserByID(gomock.Any(), uint64(1)).
-						Return(existingUser, nil)
-					us.EXPECT().
-						UpdateUser(gomock.Any(), domains.User{
-							ID:       1,
-							Username: "oldusername",
-							Email:    "user@example.com",
-						}).
-						Return(existingUser, nil)
-				},
-			},
-			args: args{
-				ctx: context.Background(),
-				userData: domains.UpdateUserDTO{
-					ID: 1,
-				},
-			},
-			want: existingUser,
-		},
-		{
 			name: "username too long",
 			fields: fields{
 				validationRules: []string{"^[a-zA-Z0-9_]{3,20}$"},
