@@ -45,7 +45,7 @@ const errorMapping = [
     { key: 'message not found', message: 'Сообщение не найдено' },
 
     // File Storage
-    { key: 'invalid image format: supported formats are jpeg, png, webp, gif', message: 'Неподдерживаемый формат изображения. Допустимые форматы: JPEG, PNG, WebP, GIF' },
+    { key: 'invalid image format', message: 'Неподдерживаемый формат изображения. Допустимые форматы: JPEG, PNG, WebP, GIF' },
     { key: 'file too large', message: 'Файл слишком большой' },
     { key: 'file not found', message: 'Файл не найден' },
 
