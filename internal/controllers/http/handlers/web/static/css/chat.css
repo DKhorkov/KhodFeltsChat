@@ -890,33 +890,3 @@ img.user-item__avatar {
     }
 }
 
-/* ═══════════════════════════════════════
-   Avatar zoom overlay
-   ═══════════════════════════════════════ */
-
-.avatar-zoom-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 2000;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.avatar-zoom-overlay__img {
-    max-width: 90vw;
-    max-height: 90vh;
-    border-radius: 8px;
-}
-
-.avatar-zoom-overlay__close {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    background: none;
-    border: none;
-    color: white;
-    font-size: 32px;
-    cursor: pointer;
-}

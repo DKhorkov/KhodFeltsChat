@@ -251,6 +251,18 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 | `.web-push-banner__btn` | Кнопка «Разрешить» |
 | `.web-push-banner__close` | Кнопка закрытия баннера |
 
+### Контекстное меню и увеличение аватара (navbar.css)
+
+| Класс | Описание |
+|-------|----------|
+| `.profile-modal__avatar-wrapper` | Обёртка аватара (`position: relative`, якорь для меню) |
+| `.avatar-context-menu` | Выпадающее меню под аватаром (фон `--bg-surface`, граница `--border`, `z-index: 1000`) |
+| `.avatar-context-menu__item` | Пункт меню (полная ширина, hover `--bg-hover`) |
+| `.avatar-context-menu__item--danger` | Опасный пункт (цвет `--danger`, hover с красным оттенком) |
+| `.avatar-zoom-overlay` | Полноэкранный оверлей для увеличенного аватара (`z-index: 2000`, фон `rgba(0,0,0,0.85)`) |
+| `.avatar-zoom-overlay__img` | Картинка аватара (`max: 90vw/90vh`) |
+| `.avatar-zoom-overlay__close` | Кнопка «×» в правом верхнем углу |
+
 ### Анимации
 
 | Имя | Описание |
@@ -323,6 +335,10 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 | `.alert-modal__btn` | Кнопка OK |
 | `.alert-modal__btn--error` | Красная кнопка |
 | `.alert-modal__btn--info` | Синяя кнопка (`--accent`) |
+| `.alert-modal__btn--danger` | Красная кнопка (`--danger`) — для подтверждения опасного действия |
+| `.alert-modal__btn--primary` | Кнопка-акцент (`--accent`) — для нейтрального подтверждения |
+| `.alert-modal__btn--secondary` | Серая кнопка (`--bg-hover`) — для «Отмена» |
+| `.alert-modal__actions` | Контейнер двух кнопок (flex, gap, fill width) для модалки подтверждения |
 
 ---
 

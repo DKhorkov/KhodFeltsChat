@@ -297,6 +297,7 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 | `showAlert(message, type)` | Создаёт и показывает модалку с сообщением. Удаляет предыдущую. Закрытие: кнопка OK, overlay, Escape (capture phase). Автофокус на кнопку OK. |
 | `showError(message)` | Показывает модалку ошибки (красная, иконка ❌). |
 | `showInfo(message)` | Показывает информационную модалку (синяя, иконка ℹ️). |
+| `showConfirmDelete(message, onConfirm, options?)` | Модалка подтверждения удаления с кнопками «Отмена» и «Удалить» (иконка ❓). При подтверждении вызывает `onConfirm()`. `options`: `title`, `confirmText`, `cancelText`, `confirmType` (`'danger'` или `'primary'`). |
 
 ### emoji-picker.js — Emoji picker
 

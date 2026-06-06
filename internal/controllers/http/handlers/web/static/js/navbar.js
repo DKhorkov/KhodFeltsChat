@@ -433,7 +433,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.style.display !== 'none') {
+        if (e.key !== 'Escape') return;
+
+        const zoomOpen = avatarZoomOverlay && avatarZoomOverlay.style.display !== 'none';
+        if (zoomOpen) return; // Зум закроет свой обработчик
+
+        if (modal.style.display !== 'none') {
             closeMyProfileModal();
             e.stopImmediatePropagation();
         }
@@ -514,17 +519,60 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Аватар: контекстное меню (загрузка / удаление фото)
+    // Аватар: контекстное меню (открытие / загрузка / удаление фото)
     const avatarEl = document.getElementById('my-profile-avatar');
     const avatarContextMenu = document.getElementById('avatar-context-menu');
     const avatarFileInput = document.getElementById('avatar-file-input');
+    const btnOpenAvatar = document.getElementById('btn-open-avatar');
     const btnDeleteAvatar = document.getElementById('btn-delete-avatar');
+    const avatarZoomOverlay = document.getElementById('avatar-zoom-overlay');
+    const avatarZoomImg = document.getElementById('avatar-zoom-img');
+    const btnCloseAvatarZoom = document.getElementById('btn-close-avatar-zoom');
+
+    function openAvatarZoom(src) {
+        if (!src || !avatarZoomOverlay) return;
+        avatarZoomImg.src = src;
+        avatarZoomOverlay.style.display = '';
+    }
+
+    function closeAvatarZoom() {
+        if (!avatarZoomOverlay) return;
+        avatarZoomOverlay.style.display = 'none';
+        avatarZoomImg.src = '';
+    }
+
+    if (btnCloseAvatarZoom) {
+        btnCloseAvatarZoom.addEventListener('click', closeAvatarZoom);
+    }
+
+    if (avatarZoomOverlay) {
+        avatarZoomOverlay.addEventListener('click', (e) => {
+            if (e.target === avatarZoomOverlay) closeAvatarZoom();
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && avatarZoomOverlay && avatarZoomOverlay.style.display !== 'none') {
+            closeAvatarZoom();
+            e.stopImmediatePropagation();
+        }
+    });
+
+    // Доступ из chat.js для открытия зума по аватару участника
+    window.openAvatarZoom = openAvatarZoom;
 
     if (avatarEl && avatarContextMenu) {
         avatarEl.addEventListener('click', (e) => {
             e.stopPropagation();
-            btnDeleteAvatar.style.display = currentUser.avatarPath ? '' : 'none';
+            const hasAvatar = !!currentUser.avatarPath;
+            btnOpenAvatar.style.display = hasAvatar ? '' : 'none';
+            btnDeleteAvatar.style.display = hasAvatar ? '' : 'none';
             avatarContextMenu.style.display = avatarContextMenu.style.display === 'none' ? '' : 'none';
+        });
+
+        btnOpenAvatar.addEventListener('click', () => {
+            avatarContextMenu.style.display = 'none';
+            openAvatarZoom(currentUser.avatarPath);
         });
 
         document.getElementById('btn-change-avatar').addEventListener('click', () => {
@@ -568,31 +616,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             avatarFileInput.value = '';
         });
 
-        btnDeleteAvatar.addEventListener('click', async () => {
+        btnDeleteAvatar.addEventListener('click', () => {
             avatarContextMenu.style.display = 'none';
 
-            try {
-                const resp = await fetchWithAuth('/api/users/me/avatar', {
-                    method: 'DELETE',
-                });
+            showConfirmDelete('Вы уверены, что хотите удалить фото профиля?', async () => {
+                try {
+                    const resp = await fetchWithAuth('/api/users/me/avatar', {
+                        method: 'DELETE',
+                    });
 
-                if (resp.ok) {
-                    currentUser.avatarPath = null;
-                    updateProfileAvatarDisplay(currentUser);
+                    if (resp.ok) {
+                        currentUser.avatarPath = null;
+                        updateProfileAvatarDisplay(currentUser);
 
-                    const oldNavAvatar = document.querySelector('.navbar__profile-avatar');
-                    if (oldNavAvatar) {
-                        const newNavAvatar = createNavbarAvatar(currentUser);
-                        oldNavAvatar.replaceWith(newNavAvatar);
+                        const oldNavAvatar = document.querySelector('.navbar__profile-avatar');
+                        if (oldNavAvatar) {
+                            const newNavAvatar = createNavbarAvatar(currentUser);
+                            oldNavAvatar.replaceWith(newNavAvatar);
+                        }
+
+                        showInfo('Аватар удалён');
+                    } else {
+                        showError('Не удалось удалить аватар');
                     }
-
-                    showInfo('Аватар удалён');
-                } else {
-                    showError('Не удалось удалить аватар');
+                } catch (err) {
+                    showError('Ошибка сети: ' + err.message);
                 }
-            } catch (err) {
-                showError('Ошибка сети: ' + err.message);
-            }
+            });
         });
 
         document.addEventListener('click', () => {

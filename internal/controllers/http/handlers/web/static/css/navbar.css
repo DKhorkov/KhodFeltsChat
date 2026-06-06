@@ -277,25 +277,26 @@ img.navbar__profile-avatar {
     top: 100%;
     left: 0;
     z-index: 1000;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    padding: 4px 0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-xs) 0;
     min-width: 160px;
-    margin-top: 4px;
+    margin-top: var(--space-xs);
 }
 
 .avatar-context-menu__item {
     display: block;
     width: 100%;
-    padding: 8px 16px;
+    padding: var(--space-sm) var(--space-lg);
     border: none;
     background: none;
     cursor: pointer;
     text-align: left;
-    font-size: 14px;
+    font-size: var(--font-md);
     color: var(--text-primary);
+    transition: background var(--transition-base);
 }
 
 .avatar-context-menu__item:hover {
@@ -304,4 +305,42 @@ img.navbar__profile-avatar {
 
 .avatar-context-menu__item--danger {
     color: var(--danger);
+}
+
+.avatar-context-menu__item--danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* ═══════════════════════════════════════
+   Avatar zoom overlay
+   ═══════════════════════════════════════ */
+
+.avatar-zoom-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-zoom-overlay__img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+}
+
+.avatar-zoom-overlay__close {
+    position: absolute;
+    top: var(--space-lg);
+    right: var(--space-lg);
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 32px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
 }

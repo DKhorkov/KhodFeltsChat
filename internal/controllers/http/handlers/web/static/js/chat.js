@@ -923,17 +923,6 @@ function setupMemberProfileModal() {
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) closeMemberProfile();
     });
-
-    // Оверлей увеличения аватара
-    const zoomOverlay = document.getElementById('avatar-zoom-overlay');
-
-    document.getElementById('btn-close-avatar-zoom').addEventListener('click', () => {
-        zoomOverlay.style.display = 'none';
-    });
-
-    zoomOverlay.addEventListener('click', (e) => {
-        if (e.target === zoomOverlay) zoomOverlay.style.display = 'none';
-    });
 }
 
 function closeMemberProfile() {
@@ -962,8 +951,9 @@ function showMemberProfile(user) {
     if (user.avatarPath) {
         memberAvatarEl.style.cursor = 'pointer';
         memberAvatarEl.onclick = () => {
-            document.getElementById('avatar-zoom-img').src = user.avatarPath;
-            document.getElementById('avatar-zoom-overlay').style.display = '';
+            if (typeof window.openAvatarZoom === 'function') {
+                window.openAvatarZoom(user.avatarPath);
+            }
         };
     } else {
         memberAvatarEl.style.cursor = 'default';
