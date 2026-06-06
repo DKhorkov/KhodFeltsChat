@@ -326,8 +326,11 @@ img.navbar__profile-avatar {
 }
 
 .avatar-zoom-overlay__img {
+    width: 80vmin;
+    height: 80vmin;
     max-width: 90vw;
     max-height: 90vh;
+    object-fit: contain;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
 }
