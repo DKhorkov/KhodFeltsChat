@@ -263,6 +263,44 @@ async function removeBrowserWebPushSubscription() {
     }
 }
 
+// Конвертирует выбранный пользователем файл в JPEG через canvas.
+// Нужно для iOS: камера и галерея отдают HEIC, который сервер не декодирует.
+// Заодно ужимаем до maxDim по длинной стороне — сервер всё равно ресайзит до 256×256.
+function convertImageToJpeg(file, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+
+        img.onload = () => {
+            URL.revokeObjectURL(url);
+
+            const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+            const w = Math.round(img.naturalWidth * scale);
+            const h = Math.round(img.naturalHeight * scale);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+
+            canvas.toBlob(
+                (blob) => blob ? resolve(blob) : reject(new Error('canvas.toBlob вернул null')),
+                'image/jpeg',
+                quality,
+            );
+        };
+
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('не удалось прочитать файл как изображение'));
+        };
+
+        img.src = url;
+    });
+}
+
 function createNavbarAvatar(user) {
     if (user.avatarPath) {
         const img = document.createElement('img');
@@ -584,8 +622,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             const file = avatarFileInput.files[0];
             if (!file) return;
 
+            let upload;
+            try {
+                upload = await convertImageToJpeg(file, 1024, 0.9);
+            } catch (err) {
+                showError('Не удалось обработать изображение: ' + err.message);
+                avatarFileInput.value = '';
+                return;
+            }
+
             const formData = new FormData();
-            formData.append('avatar', file);
+            formData.append('avatar', upload, 'avatar.jpg');
 
             try {
                 const resp = await fetchWithAuth('/api/users/me/avatar', {
