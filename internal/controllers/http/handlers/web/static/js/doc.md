@@ -39,6 +39,9 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 | `isLoadingMore` / `hasMoreMessages` | Флаги пагинации сообщений. |
 | `returnToGroupChat` | Чат для возврата из профиля участника в модалку группового чата. |
 | `chatsList` | Массив текущих чатов для делегированного обработчика кликов (обновляется в `renderChatList`). |
+| `unreadCount` | Счётчик новых сообщений в открытом чате с момента отскролла от низа. Сбрасывается, когда последнее сообщение снова видно. |
+| `isAtBottom` | Видно ли последнее сообщение открытого чата (управляется `IntersectionObserver` на последнем `.message-bubble`). |
+| `lastMessageObserver` | `IntersectionObserver` на последнем `.message-bubble` (root — `#messages-list`, threshold 0.1). |
 
 **Инициализация:**
 
@@ -53,8 +56,8 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 | Функция | Описание |
 |---------|----------|
 | `connectWebSocket()` | Подключается к `ws(s)://.../api/ws`. Обрабатывает события `new_message`, `message_deleted`, `message_edited`. Все обработчики вызываются как async с `.catch()` для перехвата ошибок. Toast для сообщений из других чатов. При закрытии — автопереподключение через 3 сек. |
-| `handleNewMessage(message)` | (async) Добавляет сообщение в текущий чат, прокручивает вниз. Toast для сообщений из других чатов. Обновляет список чатов. |
-| `handleMessageDeleted(payload)` | (async) Удаляет сообщение из UI по `payload.messageId`. Пересчитывает позицию разделителя «Новые сообщения» через `updateUnreadDivider()`. Логирует предупреждение если ID не найден. Обновляет список чатов. |
+| `handleNewMessage(message)` | (async) Обрабатывает входящее сообщение. В открытом чате: снимок `wasAtBottom` ДО рендера, затем `appendMessageBubble`. Если своё или `wasAtBottom` — `scrollToBottom()` (follow mode); иначе — инкремент `unreadCount` без скролла. Toast для сообщений из других чатов. Обновляет список чатов. |
+| `handleMessageDeleted(payload)` | (async) Удаляет сообщение из UI по `payload.messageId`. Пересчитывает позицию разделителя «Новые сообщения» через `updateUnreadDivider()`. Переподписывает observer на новый последний bubble через `reobserveLastMessage()`. Логирует предупреждение если ID не найден. Обновляет список чатов. |
 | `handleMessageEdited(payload)` | (async) Обрабатывает WS-событие `message_edited`. Получает обновлённое сообщение через `GET /api/messages/{id}`, обновляет текст и время в DOM-элементе. Обновляет список чатов. |
 
 **Список чатов:**
@@ -88,7 +91,7 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 | `createMessageBubble(message)` | Создаёт DOM-элемент пузыря сообщения (sender, time, text). Свои сообщения помечаются классом `--own`. |
 | `isFirstUnread(message, index)` | Определяет, является ли сообщение первым непрочитанным (для разделителя). |
 | `updateUnreadDivider()` | Пересчитывает позицию единственного разделителя «Новые сообщения»: убирает старый, находит первое непрочитанное сообщение через `isFirstUnread()` и вставляет divider перед его bubble. Аналог реактивного пересчёта в GUI-версии. |
-| `scrollToBottom()` | Прокрутка контейнера сообщений вниз через `requestAnimationFrame`. |
+| `scrollToBottom()` | Прокрутка контейнера сообщений вниз через `requestAnimationFrame` (мгновенно). Используется при открытии чата, отправке своего сообщения и в follow mode. |
 | `formatTime(dateStr)` | Форматирует дату в `ru-RU` локали (`toLocaleString`). |
 | `formatDate(dateStr)` | Форматирует дату в `ru-RU` локали (день, месяц, год). |
 
@@ -127,6 +130,17 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 | `restoreInputFocus()` | Восстанавливает фокус на input после действия контекстного меню, если input был в фокусе при открытии меню (предотвращает закрытие клавиатуры на мобильных). |
 | `closeContextMenu()` | Закрывает контекстное меню. |
 | `deleteMessage(messageId, forAll)` | Удаляет сообщение через `DELETE /api/messages/{id}`. UI обновляется по WS-событию `message_deleted` от сервера. |
+
+**Кнопка «к последнему сообщению»:**
+
+| Функция | Описание |
+|---------|----------|
+| `setupScrollDownButton()` | Вешает обработчик клика на `#btn-scroll-down`, создаёт `IntersectionObserver` с root `#messages-list` и threshold 0.1. Регистрируется один раз в `DOMContentLoaded`. |
+| `onLastMessageVisibilityChange(entries)` | Колбэк observer. Обновляет `isAtBottom`, при появлении последнего сообщения в viewport сбрасывает `unreadCount`, обновляет UI. |
+| `updateScrollDownUI()` | Показывает/скрывает кнопку по `isAtBottom` (через атрибут `hidden`). Бейдж скрыт при `unreadCount === 0`, иначе показывает число или «99+». |
+| `reobserveLastMessage()` | `disconnect()` + `observe()` нового последнего `.message-bubble`. Вызывается в `selectChat()` (после загрузки), `appendMessageBubble()` и `handleMessageDeleted()`. |
+| `resetScrollDownState()` | Сброс `unreadCount = 0`, `isAtBottom = true`, `observer.disconnect()`, обновление UI. Вызывается в `closeChat()` и в начале `selectChat()` (после `scrollToBottom`). |
+| `onScrollDownClick()` | Smooth scroll к низу контейнера (`scrollTo({ behavior: 'smooth' })`). Сброс счётчика и скрытие кнопки происходят через observer, когда последнее сообщение становится видимым. |
 
 **Emoji picker:**
 

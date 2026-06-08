@@ -243,6 +243,7 @@ img.chat-item__avatar {
     flex-direction: column;
     gap: 0;
     background: var(--bg-surface);
+    position: relative;
 }
 
 .conversation__composer-row {
@@ -890,3 +891,67 @@ img.user-item__avatar {
     }
 }
 
+/* ═══════════════════════════════════════
+   Кнопка «к последнему сообщению»
+   Селектор повышенной специфичности нужен, чтобы не наследовать
+   padding / border-radius / align-self от `.conversation__composer button`.
+   ═══════════════════════════════════════ */
+.conversation__composer button.conversation__scroll-down {
+    position: absolute;
+    right: 16px;
+    bottom: 100%;
+    margin-bottom: 12px;
+    padding: 0;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--text-on-accent);
+    cursor: pointer;
+    opacity: 0.65;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: opacity var(--transition-base), transform var(--transition-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+.conversation__composer button.conversation__scroll-down:hover {
+    opacity: 1;
+}
+
+.conversation__composer button.conversation__scroll-down:active {
+    transform: scale(0.95);
+}
+
+.conversation__scroll-down-icon {
+    pointer-events: none;
+}
+
+.conversation__scroll-down-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 20px;
+    text-align: center;
+    pointer-events: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 600px) {
+    .conversation__composer button.conversation__scroll-down {
+        width: 40px;
+        height: 40px;
+        right: 12px;
+    }
+}

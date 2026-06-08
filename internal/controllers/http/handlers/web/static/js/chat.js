@@ -24,6 +24,11 @@ let editingMessage = null;  // сообщение, которое редакти
 let contextMenuMessageId = null; // ID сообщения для контекстного меню
 let contextMenuInputWasFocused = false; // был ли input в фокусе при открытии меню
 
+// Состояние кнопки "к последнему сообщению":
+let unreadCount = 0;
+let isAtBottom = true;
+let lastMessageObserver = null;
+
 // ═══════════════════════════════════════
 // Инициализация
 // ═══════════════════════════════════════
@@ -52,6 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupMobileViewportResize();
     setupContextMenu();
     setupReplyCancel();
+    setupScrollDownButton();
 
     // Открытие чата из push-уведомления (по query-параметру):
     const params = new URLSearchParams(window.location.search);
@@ -171,9 +177,18 @@ function connectWebSocket() {
 
 async function handleNewMessage(message) {
     if (selectedChatId === message.chatId) {
+        const isOwn = message.sender.id === currentUser.id;
+        const wasAtBottom = isAtBottom;
+
         messages.push(message);
         appendMessageBubble(message);
-        scrollToBottom();
+
+        if (isOwn || wasAtBottom) {
+            scrollToBottom();
+        } else {
+            unreadCount += 1;
+            updateScrollDownUI();
+        }
     }
 
     // Показываем toast, если сообщение не от текущего пользователя
@@ -194,6 +209,7 @@ async function handleMessageDeleted(payload) {
             const bubble = document.querySelector(`.message-bubble[data-message-id="${payload.messageId}"]`);
             if (bubble) bubble.remove();
             updateUnreadDivider();
+            reobserveLastMessage();
         } else {
             console.warn('message_deleted: сообщение не найдено в текущем списке', payload.messageId);
         }
@@ -422,6 +438,8 @@ async function selectChat(chat) {
 
     await loadMessages(chat.id, 0);
     scrollToBottom();
+    resetScrollDownState();
+    reobserveLastMessage();
 
     // Обновляем active в списке:
     debouncedLoadChats();
@@ -527,6 +545,7 @@ function appendMessageBubble(message) {
     }
 
     container.appendChild(createMessageBubble(message));
+    reobserveLastMessage();
 }
 
 function createMessageBubble(message) {
@@ -627,6 +646,67 @@ function scrollToBottom() {
         const container = document.getElementById('messages-list');
         container.scrollTop = container.scrollHeight;
     });
+}
+
+// ═══════════════════════════════════════
+// Кнопка "к последнему сообщению"
+// ═══════════════════════════════════════
+function setupScrollDownButton() {
+    const btn = document.getElementById('btn-scroll-down');
+    if (btn) {
+        btn.addEventListener('click', onScrollDownClick);
+    }
+
+    const container = document.getElementById('messages-list');
+    lastMessageObserver = new IntersectionObserver(onLastMessageVisibilityChange, {
+        root: container,
+        threshold: 0.1,
+    });
+}
+
+function onLastMessageVisibilityChange(entries) {
+    const last = entries[entries.length - 1];
+    isAtBottom = last.isIntersecting;
+    if (isAtBottom) {
+        unreadCount = 0;
+    }
+    updateScrollDownUI();
+}
+
+function updateScrollDownUI() {
+    const btn = document.getElementById('btn-scroll-down');
+    const badge = document.getElementById('scroll-down-badge');
+    if (!btn || !badge) return;
+
+    btn.hidden = isAtBottom;
+
+    if (unreadCount > 0) {
+        badge.hidden = false;
+        badge.textContent = unreadCount > 99 ? '99+' : String(unreadCount);
+    } else {
+        badge.hidden = true;
+    }
+}
+
+function reobserveLastMessage() {
+    if (!lastMessageObserver) return;
+    lastMessageObserver.disconnect();
+    const container = document.getElementById('messages-list');
+    const bubbles = container.querySelectorAll('.message-bubble');
+    const last = bubbles[bubbles.length - 1];
+    if (last) lastMessageObserver.observe(last);
+}
+
+function resetScrollDownState() {
+    unreadCount = 0;
+    isAtBottom = true;
+    if (lastMessageObserver) lastMessageObserver.disconnect();
+    updateScrollDownUI();
+}
+
+function onScrollDownClick() {
+    const container = document.getElementById('messages-list');
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
 }
 
 function formatTime(dateStr) {
@@ -896,6 +976,9 @@ function closeChat() {
 
     // Сбрасываем ответ:
     cancelReply();
+
+    // Сбрасываем состояние scroll-down:
+    resetScrollDownState();
 }
 
 // ═══════════════════════════════════════
