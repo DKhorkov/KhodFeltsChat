@@ -954,8 +954,6 @@ img.user-item__avatar {
 
 @media (max-width: 600px) {
     .conversation__composer button.conversation__scroll-down {
-        width: 40px;
-        height: 40px;
         right: 12px;
     }
 }
