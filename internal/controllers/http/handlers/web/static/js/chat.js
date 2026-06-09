@@ -25,7 +25,9 @@ let contextMenuMessageId = null; // ID сообщения для контекс�
 let contextMenuInputWasFocused = false; // был ли input в фокусе при открытии меню
 
 // Состояние кнопки "к последнему сообщению":
-let unreadCount = 0;
+// unreadMessageIds — набор ID сообщений, прилетевших пока пользователь был отскроллен вверх.
+// Хранится как Set (а не число), чтобы при удалении сообщения «у всех» корректно вычесть его из badge.
+let unreadMessageIds = new Set();
 let isAtBottom = true;
 let lastMessageObserver = null;
 
@@ -186,7 +188,7 @@ async function handleNewMessage(message) {
         if (isOwn || wasAtBottom) {
             scrollToBottom();
         } else {
-            unreadCount += 1;
+            unreadMessageIds.add(message.id);
             updateScrollDownUI();
         }
     }
@@ -210,6 +212,10 @@ async function handleMessageDeleted(payload) {
             if (bubble) bubble.remove();
             updateUnreadDivider();
             reobserveLastMessage();
+
+            if (unreadMessageIds.delete(payload.messageId)) {
+                updateScrollDownUI();
+            }
         } else {
             console.warn('message_deleted: сообщение не найдено в текущем списке', payload.messageId);
         }
@@ -668,7 +674,7 @@ function onLastMessageVisibilityChange(entries) {
     const last = entries[entries.length - 1];
     isAtBottom = last.isIntersecting;
     if (isAtBottom) {
-        unreadCount = 0;
+        unreadMessageIds.clear();
     }
     updateScrollDownUI();
 }
@@ -680,9 +686,10 @@ function updateScrollDownUI() {
 
     btn.hidden = isAtBottom;
 
-    if (unreadCount > 0) {
+    const count = unreadMessageIds.size;
+    if (count > 0) {
         badge.hidden = false;
-        badge.textContent = unreadCount > 99 ? '99+' : String(unreadCount);
+        badge.textContent = count > 99 ? '99+' : String(count);
     } else {
         badge.hidden = true;
     }
@@ -698,7 +705,7 @@ function reobserveLastMessage() {
 }
 
 function resetScrollDownState() {
-    unreadCount = 0;
+    unreadMessageIds.clear();
     isAtBottom = true;
     if (lastMessageObserver) lastMessageObserver.disconnect();
     updateScrollDownUI();
