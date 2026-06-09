@@ -145,6 +145,7 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 | Класс | Описание |
 |-------|----------|
 | `.conversation__scroll-down` | Полупрозрачная круглая кнопка (44×44px, на mobile 40×40px), позиционирована абсолютно от верхнего края composer (`bottom: 100%` + `margin-bottom`). При hover становится непрозрачной, при active — лёгкое сжатие |
+| `.conversation__scroll-down[hidden]` | `display: none` — переопределяет `display: flex` базового селектора, чтобы атрибут `hidden` фактически скрывал кнопку (без этого правила author-CSS перебивал user-agent `[hidden] { display: none }`) |
 | `.conversation__scroll-down-icon` | Inline SVG-стрелка вниз (22×22px, `currentColor`) |
 | `.conversation__scroll-down-badge` | Бейдж счётчика непрочитанных (правый верхний угол, фон `--danger`, минимум 20×20px, поддерживает «99+») |
 

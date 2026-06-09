@@ -918,6 +918,10 @@ img.user-item__avatar {
     z-index: 5;
 }
 
+.conversation__composer button.conversation__scroll-down[hidden] {
+    display: none;
+}
+
 .conversation__composer button.conversation__scroll-down:hover {
     opacity: 1;
 }
