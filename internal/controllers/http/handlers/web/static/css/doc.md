@@ -135,10 +135,19 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 
 | Класс | Описание |
 |-------|----------|
-| `.conversation__composer` | Контейнер ввода (flex, border-top) |
+| `.conversation__composer` | Контейнер ввода (flex, border-top, `position: relative` — якорь для scroll-down кнопки) |
 | `.conversation__composer-input` | Обёртка textarea |
 | `.conversation__composer-input textarea` | Поле ввода (resize: none, focus → `--accent`) |
 | `.conversation__composer button` | Кнопка отправки (фон `--accent`) |
+
+### Кнопка «к последнему сообщению»
+
+| Класс | Описание |
+|-------|----------|
+| `.conversation__scroll-down` | Полупрозрачная круглая кнопка (44×44px на всех размерах экрана — соответствует Apple HIG / WCAG 2.5.5 минимум для тач-целей), позиционирована абсолютно от верхнего края composer (`bottom: 100%` + `margin-bottom`). На mobile (≤600px) сдвинута на `right: 12px` (вместо 16px). При hover становится непрозрачной, при active — лёгкое сжатие |
+| `.conversation__scroll-down[hidden]` | `display: none` — переопределяет `display: flex` базового селектора, чтобы атрибут `hidden` фактически скрывал кнопку (без этого правила author-CSS перебивал user-agent `[hidden] { display: none }`) |
+| `.conversation__scroll-down-icon` | Inline SVG-стрелка вниз (22×22px, `currentColor`) |
+| `.conversation__scroll-down-badge` | Бейдж счётчика непрочитанных (правый верхний угол, фон `--danger`, минимум 20×20px, поддерживает «99+») |
 
 ### Пузырь сообщения
 
