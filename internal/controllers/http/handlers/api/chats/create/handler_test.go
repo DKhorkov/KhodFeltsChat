@@ -67,7 +67,6 @@ func TestHandler(t *testing.T) {
 					Type:        domains.ChatTypePrivate,
 					CreatedAt:   now,
 					UpdatedAt:   now,
-					IsRead:      true,
 					Members: []domains.User{
 						{
 							ID:             123,
@@ -108,7 +107,6 @@ func TestHandler(t *testing.T) {
 				assert.Equal(t, "private", response["type"])
 				assert.NotNil(t, response["createdAt"])
 				assert.NotNil(t, response["updatedAt"])
-				assert.True(t, response["isRead"].(bool))
 
 				members, ok := response["members"].([]any)
 				require.True(t, ok, "members should be an array")
@@ -137,7 +135,6 @@ func TestHandler(t *testing.T) {
 					Type:        domains.ChatTypeGroup,
 					CreatedAt:   now,
 					UpdatedAt:   now,
-					IsRead:      false,
 					Members: []domains.User{
 						{
 							ID:             123,
@@ -168,7 +165,6 @@ func TestHandler(t *testing.T) {
 				assert.Equal(t, "Group Chat", response["title"])
 				assert.Equal(t, "Test group chat", response["description"])
 				assert.Equal(t, "group", response["type"])
-				assert.False(t, response["isRead"].(bool))
 			},
 		},
 		{
@@ -293,7 +289,6 @@ func TestHandler(t *testing.T) {
 					Type:      domains.ChatTypeGroup,
 					CreatedAt: now,
 					UpdatedAt: now,
-					IsRead:    true,
 					Members: []domains.User{
 						{ID: 456, Username: "user1"},
 						{ID: 789, Username: "user2"},

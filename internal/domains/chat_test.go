@@ -31,7 +31,6 @@ func TestChat_IsValid(t *testing.T) {
 				Type:      domains.ChatTypePrivate,
 				CreatedAt: now,
 				UpdatedAt: now,
-				IsRead:    true,
 				Members:   []domains.User{defaultUser, anotherUser},
 			},
 			expected: true,
@@ -45,7 +44,6 @@ func TestChat_IsValid(t *testing.T) {
 				Type:        domains.ChatTypeGroup,
 				CreatedAt:   now,
 				UpdatedAt:   now,
-				IsRead:      false,
 				Members: []domains.User{
 					defaultUser,
 					anotherUser,
@@ -154,7 +152,6 @@ func TestChat_IsValid(t *testing.T) {
 				Type:        domains.ChatTypeGroup,
 				CreatedAt:   now.Add(-24 * time.Hour),
 				UpdatedAt:   now,
-				IsRead:      true,
 				Members:     []domains.User{defaultUser, anotherUser},
 				Messages: []domains.Message{
 					{ID: 1, Text: "First message"},
@@ -172,7 +169,6 @@ func TestChat_IsValid(t *testing.T) {
 				Type:        domains.ChatTypePrivate,
 				CreatedAt:   now.Add(-24 * time.Hour),
 				UpdatedAt:   now,
-				IsRead:      true,
 				Members:     []domains.User{defaultUser},
 			},
 			expected: false,

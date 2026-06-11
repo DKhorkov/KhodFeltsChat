@@ -15,7 +15,6 @@ func MapChat(chat domains.Chat) schemas.Chat {
 		Type:        string(chat.Type),
 		CreatedAt:   chat.CreatedAt,
 		UpdatedAt:   chat.UpdatedAt,
-		IsRead:      chat.IsRead,
 		UnreadCount: chat.UnreadCount,
 		Members:     users.MapUsers(chat.Members),
 		Messages:    messages.MapMessages(chat.Messages),

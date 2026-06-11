@@ -147,53 +147,6 @@ func (repo *Repository) GetUserChats(
 	userID uint64,
 	pagination *domains.Pagination,
 ) ([]domains.Chat, error) {
-	unreadSubquery := sq.
-		Select(selectExists).
-		From(messagesStatusesTableName).
-		Join(
-			fmt.Sprintf(
-				"%s ON %s.%s = %s.%s",
-				messagesTableName,
-				messagesStatusesTableName,
-				messageIDColumnName,
-				messagesTableName,
-				idColumnName,
-			),
-		).
-		Where(
-			sq.Expr(
-				fmt.Sprintf(
-					"%s.%s = %s.%s",
-					messagesTableName,
-					chatIDColumnName,
-					chatsTableName,
-					idColumnName,
-				),
-			),
-		).
-		Where(
-			sq.Eq{
-				fmt.Sprintf("%s.%s", messagesStatusesTableName, userIDColumnName): userID,
-			},
-		).
-		Where(
-			sq.Eq{
-				fmt.Sprintf("%s.%s", messagesStatusesTableName, isReadColumnName): false,
-			},
-		).
-		Where(
-			sq.Eq{
-				fmt.Sprintf("%s.%s", messagesStatusesTableName, isDeletedColumnName): false,
-			},
-		)
-
-	unreadSQL, unreadArgs, err := unreadSubquery.ToSql()
-	if err != nil {
-		return nil, err
-	}
-
-	isReadColumn := fmt.Sprintf("NOT EXISTS (%s) AS %s", unreadSQL, isReadColumnName)
-
 	unreadCountSubquery := sq.
 		Select("COUNT(*)").
 		From(messagesStatusesTableName).
@@ -252,7 +205,6 @@ func (repo *Repository) GetUserChats(
 
 	builder := sq.
 		Select(columnsForSelect...).
-		Column(isReadColumn, unreadArgs...).
 		Column(unreadCountColumn, unreadCountArgs...).
 		From(chatsTableName).
 		Join(
@@ -403,7 +355,7 @@ func (repo *Repository) GetChatByID(
 
 	columns := pg.GetEntityColumns(chat) // Only pointer to use rows.Scan() successfully
 
-	columns = columns[:len(columns)-3] // Not to paste Members, Messages and IsRead fields to Scan function.
+	columns = columns[:len(columns)-3] // Not to paste UnreadCount, Members, Messages fields to Scan function.
 
 	if err = repo.tx.QueryRowContext(ctx, stmt, params...).Scan(columns...); err != nil {
 		return nil, err

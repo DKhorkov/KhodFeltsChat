@@ -31,7 +31,6 @@ func TestMapChat(t *testing.T) {
 				Type:        domains.ChatTypeGroup,
 				CreatedAt:   now,
 				UpdatedAt:   now.Add(time.Hour),
-				IsRead:      true,
 				UnreadCount: 0,
 				Members: []domains.User{
 					{
@@ -79,7 +78,6 @@ func TestMapChat(t *testing.T) {
 				Type:        "group",
 				CreatedAt:   now,
 				UpdatedAt:   now.Add(time.Hour),
-				IsRead:      true,
 				UnreadCount: 0,
 				Members: []schemas.User{
 					{
@@ -123,7 +121,6 @@ func TestMapChat(t *testing.T) {
 				Type:        domains.ChatTypePrivate,
 				CreatedAt:   now,
 				UpdatedAt:   now,
-				IsRead:      false,
 				UnreadCount: 5,
 				Members: []domains.User{
 					{
@@ -145,7 +142,6 @@ func TestMapChat(t *testing.T) {
 				Type:        "private",
 				CreatedAt:   now,
 				UpdatedAt:   now,
-				IsRead:      false,
 				UnreadCount: 5,
 				Members: []schemas.User{
 					{
@@ -169,7 +165,6 @@ func TestMapChat(t *testing.T) {
 				Type:        domains.ChatTypeGroup,
 				CreatedAt:   now,
 				UpdatedAt:   now,
-				IsRead:      true,
 				Members:     nil,
 				Messages:    nil,
 			},
@@ -180,7 +175,6 @@ func TestMapChat(t *testing.T) {
 				Type:        "group",
 				CreatedAt:   now,
 				UpdatedAt:   now,
-				IsRead:      true,
 				Members:     nil,
 				Messages:    nil,
 			},
@@ -194,7 +188,6 @@ func TestMapChat(t *testing.T) {
 				Type:        domains.ChatTypePrivate,
 				CreatedAt:   now,
 				UpdatedAt:   now,
-				IsRead:      false,
 				Members:     []domains.User{},
 				Messages:    []domains.Message{},
 			},
@@ -205,7 +198,6 @@ func TestMapChat(t *testing.T) {
 				Type:        "private",
 				CreatedAt:   now,
 				UpdatedAt:   now,
-				IsRead:      false,
 				Members:     []schemas.User{},
 				Messages:    []schemas.Message{},
 			},
@@ -219,7 +211,6 @@ func TestMapChat(t *testing.T) {
 				Type:        domains.ChatTypeGroup,
 				CreatedAt:   now,
 				UpdatedAt:   now.Add(2 * time.Hour),
-				IsRead:      true,
 				Members: []domains.User{
 					{
 						ID:             100,
@@ -273,7 +264,6 @@ func TestMapChat(t *testing.T) {
 				Type:        "group",
 				CreatedAt:   now,
 				UpdatedAt:   now.Add(2 * time.Hour),
-				IsRead:      true,
 				Members: []schemas.User{
 					{
 						ID:             100,
@@ -319,7 +309,6 @@ func TestMapChat(t *testing.T) {
 				Type:        domains.ChatTypeGroup,
 				CreatedAt:   now,
 				UpdatedAt:   now,
-				IsRead:      false,
 				Members:     []domains.User{},
 				Messages:    []domains.Message{},
 			},
@@ -330,7 +319,6 @@ func TestMapChat(t *testing.T) {
 				Type:        "group",
 				CreatedAt:   now,
 				UpdatedAt:   now,
-				IsRead:      false,
 				Members:     []schemas.User{},
 				Messages:    []schemas.Message{},
 			},
@@ -344,7 +332,6 @@ func TestMapChat(t *testing.T) {
 				Type:        domains.ChatTypePrivate,
 				CreatedAt:   time.Time{},
 				UpdatedAt:   time.Time{},
-				IsRead:      false,
 				Members:     nil,
 				Messages:    nil,
 			},
@@ -355,7 +342,6 @@ func TestMapChat(t *testing.T) {
 				Type:        "private",
 				CreatedAt:   time.Time{},
 				UpdatedAt:   time.Time{},
-				IsRead:      false,
 				Members:     nil,
 				Messages:    nil,
 			},
@@ -371,7 +357,6 @@ func TestMapChat(t *testing.T) {
 				Type:      domains.ChatTypeGroup,
 				CreatedAt: now,
 				UpdatedAt: now,
-				IsRead:    true,
 				Members: []domains.User{
 					{
 						ID:             1,
@@ -411,7 +396,6 @@ func TestMapChat(t *testing.T) {
 				Type:      "group",
 				CreatedAt: now,
 				UpdatedAt: now,
-				IsRead:    true,
 				Members: []schemas.User{
 					{
 						ID:             1,
@@ -446,7 +430,6 @@ func TestMapChat(t *testing.T) {
 				Type:        domains.ChatType("custom_type"), // Нестандартный тип
 				CreatedAt:   now,
 				UpdatedAt:   now,
-				IsRead:      false,
 				Members:     nil,
 				Messages:    nil,
 			},
@@ -457,7 +440,6 @@ func TestMapChat(t *testing.T) {
 				Type:        "custom_type", // Должен преобразоваться как есть
 				CreatedAt:   now,
 				UpdatedAt:   now,
-				IsRead:      false,
 				Members:     nil,
 				Messages:    nil,
 			},
@@ -477,7 +459,6 @@ func TestMapChat(t *testing.T) {
 			assert.Equal(t, tt.expected.Type, result.Type)
 			assert.Equal(t, tt.expected.CreatedAt, result.CreatedAt)
 			assert.Equal(t, tt.expected.UpdatedAt, result.UpdatedAt)
-			assert.Equal(t, tt.expected.IsRead, result.IsRead)
 			assert.Equal(t, tt.expected.UnreadCount, result.UnreadCount)
 
 			require.Len(t, result.Members, len(tt.expected.Members))
@@ -535,7 +516,6 @@ func TestMapChats(t *testing.T) {
 					Type:        domains.ChatTypePrivate,
 					CreatedAt:   now,
 					UpdatedAt:   now,
-					IsRead:      true,
 					Members:     nil,
 					Messages:    nil,
 				},
@@ -548,7 +528,6 @@ func TestMapChats(t *testing.T) {
 					Type:        "private",
 					CreatedAt:   now,
 					UpdatedAt:   now,
-					IsRead:      true,
 					Members:     nil,
 					Messages:    nil,
 				},
@@ -564,7 +543,6 @@ func TestMapChats(t *testing.T) {
 					Type:        domains.ChatTypePrivate,
 					CreatedAt:   now,
 					UpdatedAt:   now,
-					IsRead:      false,
 					Members: []domains.User{
 						{
 							ID:             1,
@@ -585,7 +563,6 @@ func TestMapChats(t *testing.T) {
 					Type:        domains.ChatTypeGroup,
 					CreatedAt:   now.Add(time.Hour),
 					UpdatedAt:   now.Add(2 * time.Hour),
-					IsRead:      true,
 					Members: []domains.User{
 						{
 							ID:             1,
@@ -632,7 +609,6 @@ func TestMapChats(t *testing.T) {
 					Type:        domains.ChatTypePrivate,
 					CreatedAt:   now.Add(3 * time.Hour),
 					UpdatedAt:   now.Add(4 * time.Hour),
-					IsRead:      false,
 					Members:     []domains.User{},
 					Messages:    []domains.Message{},
 				},
@@ -645,7 +621,6 @@ func TestMapChats(t *testing.T) {
 					Type:        "private",
 					CreatedAt:   now,
 					UpdatedAt:   now,
-					IsRead:      false,
 					Members: []schemas.User{
 						{
 							ID:             1,
@@ -665,7 +640,6 @@ func TestMapChats(t *testing.T) {
 					Type:        "group",
 					CreatedAt:   now.Add(time.Hour),
 					UpdatedAt:   now.Add(2 * time.Hour),
-					IsRead:      true,
 					Members: []schemas.User{
 						{
 							ID:             1,
@@ -705,7 +679,6 @@ func TestMapChats(t *testing.T) {
 					Type:        "private",
 					CreatedAt:   now.Add(3 * time.Hour),
 					UpdatedAt:   now.Add(4 * time.Hour),
-					IsRead:      false,
 					Members:     []schemas.User{},
 					Messages:    []schemas.Message{},
 				},
@@ -723,7 +696,6 @@ func TestMapChats(t *testing.T) {
 						Type:        domains.ChatTypeGroup,
 						CreatedAt:   now,
 						UpdatedAt:   now,
-						IsRead:      i%2 == 0,
 						Members:     nil,
 						Messages:    nil,
 					}
@@ -741,7 +713,6 @@ func TestMapChats(t *testing.T) {
 						Type:        "group",
 						CreatedAt:   now,
 						UpdatedAt:   now,
-						IsRead:      i%2 == 0,
 						Members:     nil,
 						Messages:    nil,
 					}
@@ -760,7 +731,6 @@ func TestMapChats(t *testing.T) {
 					Type:        domains.ChatTypePrivate,
 					CreatedAt:   now,
 					UpdatedAt:   now,
-					IsRead:      false,
 					Members:     nil,
 					Messages:    nil,
 				},
@@ -771,7 +741,6 @@ func TestMapChats(t *testing.T) {
 					Type:        domains.ChatTypeGroup,
 					CreatedAt:   now,
 					UpdatedAt:   now,
-					IsRead:      true,
 					Members:     []domains.User{},
 					Messages:    []domains.Message{},
 				},
@@ -784,7 +753,6 @@ func TestMapChats(t *testing.T) {
 					Type:        "private",
 					CreatedAt:   now,
 					UpdatedAt:   now,
-					IsRead:      false,
 					Members:     nil,
 					Messages:    nil,
 				},
@@ -795,7 +763,6 @@ func TestMapChats(t *testing.T) {
 					Type:        "group",
 					CreatedAt:   now,
 					UpdatedAt:   now,
-					IsRead:      true,
 					Members:     []schemas.User{},
 					Messages:    []schemas.Message{},
 				},
@@ -820,7 +787,6 @@ func TestMapChats(t *testing.T) {
 				assert.Equal(t, expectedChat.Type, result[i].Type)
 				assert.Equal(t, expectedChat.CreatedAt, result[i].CreatedAt)
 				assert.Equal(t, expectedChat.UpdatedAt, result[i].UpdatedAt)
-				assert.Equal(t, expectedChat.IsRead, result[i].IsRead)
 				assert.Equal(t, expectedChat.UnreadCount, result[i].UnreadCount)
 
 				// Проверяем, что исходный слайс не изменился (копирование по индексу)

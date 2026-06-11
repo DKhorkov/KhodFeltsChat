@@ -66,7 +66,6 @@ func TestHandler(t *testing.T) {
 				Type:      domains.ChatTypePrivate,
 				CreatedAt: now.Add(time.Duration(i) * time.Hour),
 				UpdatedAt: now.Add(time.Duration(i) * time.Hour),
-				IsRead:    i%2 == 0,
 				Members: []domains.User{
 					{
 						ID:       userID,
@@ -138,7 +137,6 @@ func TestHandler(t *testing.T) {
 				assert.Equal(t, float64(1), firstChat["id"])
 				assert.Equal(t, "Chat 1", firstChat["title"])
 				assert.Equal(t, "private", firstChat["type"])
-				assert.True(t, firstChat["isRead"].(bool))
 				assert.NotNil(t, firstChat["createdAt"])
 				assert.NotNil(t, firstChat["updatedAt"])
 
@@ -325,7 +323,6 @@ func TestHandler(t *testing.T) {
 						Type:      domains.ChatTypePrivate,
 						CreatedAt: now,
 						UpdatedAt: now,
-						IsRead:    true,
 						Members:   []domains.User{{ID: userID}},
 					},
 					{
@@ -335,7 +332,6 @@ func TestHandler(t *testing.T) {
 						Type:        domains.ChatTypeGroup,
 						CreatedAt:   now.Add(time.Hour),
 						UpdatedAt:   now.Add(time.Hour),
-						IsRead:      false,
 						Members: []domains.User{
 							{ID: userID},
 							{ID: 456},
@@ -378,7 +374,6 @@ func TestHandler(t *testing.T) {
 						Type:      domains.ChatTypePrivate,
 						CreatedAt: now,
 						UpdatedAt: now,
-						IsRead:    true,
 						Members:   []domains.User{{ID: userID}},
 					},
 				}

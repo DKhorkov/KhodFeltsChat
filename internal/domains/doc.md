@@ -14,7 +14,7 @@
 - Метод `IsValid() bool` — проверяет допустимость типа и количество участников:
   - минимум 1 участник для любого чата,
   - ровно 2 участника для приватного чата.
-- Поля: `ID`, `Title`, `Description`, `Type`, `IsRead`, `Members []User`, `Messages []Message`.
+- Поля: `ID`, `Title`, `Description`, `Type`, `UnreadCount`, `Members []User`, `Messages []Message`.
 
 ### Message
 Сообщение в чате. Реализует **паттерн Builder**:

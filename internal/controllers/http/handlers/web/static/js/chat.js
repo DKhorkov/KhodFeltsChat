@@ -362,7 +362,7 @@ function renderChatList(chats) {
         info.className = 'chat-item__info';
 
         const titleEl = document.createElement('div');
-        titleEl.className = 'chat-item__title' + (!chat.isRead ? ' chat-item__title--bold' : '');
+        titleEl.className = 'chat-item__title' + (chat.unreadCount > 0 ? ' chat-item__title--bold' : '');
         titleEl.textContent = title;
         info.appendChild(titleEl);
 

@@ -47,12 +47,6 @@ type Chat struct {
 	// format: date-time
 	UpdatedAt time.Time `json:"updatedAt"`
 
-	// Whether chat was read or not.
-	// required: true
-	// nullable: false
-	// example: true
-	IsRead bool `json:"isRead"`
-
 	// Number of unread non-deleted messages in the chat for the current user.
 	// required: true
 	// nullable: false
