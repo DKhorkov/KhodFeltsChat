@@ -786,6 +786,143 @@ func (s *RepositoryTestSuite) TestReadAllChatMessages_NonExistentChat() {
 	s.NoError(err) // UPDATE без найденных строк не возвращает ошибку
 }
 
+func (s *RepositoryTestSuite) TestGetUserUnreadCount_Success() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	userID := uint64(1)
+
+	// Добавляем непрочитанные статусы для user 1 на сообщения от других пользователей
+	for _, messageID := range []uint64{2, 3, 5} {
+		_, err := s.tx.ExecContext(
+			s.ctx,
+			`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, false)`,
+			messageID, userID,
+		)
+		s.NoError(err)
+	}
+
+	count, err := s.repository.GetUserUnreadCount(s.ctx, userID)
+	s.NoError(err)
+	s.Equal(uint64(3), count)
+}
+
+func (s *RepositoryTestSuite) TestGetUserUnreadCount_NoUnread() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	// createTestMessages создаёт статусы для отправителей с is_read=false.
+	// Помечаем все статусы user 1 как прочитанные.
+	_, err := s.tx.ExecContext(
+		s.ctx,
+		`UPDATE messages_statuses SET is_read = true WHERE user_id = $1`,
+		uint64(1),
+	)
+	s.NoError(err)
+
+	count, err := s.repository.GetUserUnreadCount(s.ctx, uint64(1))
+	s.NoError(err)
+	s.Equal(uint64(0), count)
+}
+
+func (s *RepositoryTestSuite) TestGetUserUnreadCount_IgnoresDeleted() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	userID := uint64(1)
+
+	// Два непрочитанных, один из которых помечен как удалённый — он не должен учитываться
+	_, err := s.tx.ExecContext(
+		s.ctx,
+		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, false)`,
+		uint64(2), userID,
+	)
+	s.NoError(err)
+
+	_, err = s.tx.ExecContext(
+		s.ctx,
+		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, true)`,
+		uint64(3), userID,
+	)
+	s.NoError(err)
+
+	count, err := s.repository.GetUserUnreadCount(s.ctx, userID)
+	s.NoError(err)
+	s.Equal(uint64(1), count)
+}
+
+func (s *RepositoryTestSuite) TestGetUserUnreadCount_IgnoresRead() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	userID := uint64(1)
+
+	_, err := s.tx.ExecContext(
+		s.ctx,
+		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, false)`,
+		uint64(2), userID,
+	)
+	s.NoError(err)
+
+	_, err = s.tx.ExecContext(
+		s.ctx,
+		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, true, false)`,
+		uint64(3), userID,
+	)
+	s.NoError(err)
+
+	count, err := s.repository.GetUserUnreadCount(s.ctx, userID)
+	s.NoError(err)
+	s.Equal(uint64(1), count)
+}
+
+func (s *RepositoryTestSuite) TestGetUserUnreadCount_IsolatedPerUser() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+	s.createTestMessages()
+
+	// Непрочитанное только у user 1
+	_, err := s.tx.ExecContext(
+		s.ctx,
+		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, false)`,
+		uint64(2), uint64(1),
+	)
+	s.NoError(err)
+
+	// user 2 не должен видеть unread, который относится к user 1.
+	// При этом у user 2 уже есть свои статусы как у отправителя — все is_read=false.
+	count1, err := s.repository.GetUserUnreadCount(s.ctx, uint64(1))
+	s.NoError(err)
+	s.Equal(uint64(1), count1)
+
+	// Помечаем все статусы user 2 как прочитанные, чтобы проверить нулевой счётчик
+	_, err = s.tx.ExecContext(
+		s.ctx,
+		`UPDATE messages_statuses SET is_read = true WHERE user_id = $1`,
+		uint64(2),
+	)
+	s.NoError(err)
+
+	count2, err := s.repository.GetUserUnreadCount(s.ctx, uint64(2))
+	s.NoError(err)
+	s.Equal(uint64(0), count2)
+}
+
+func (s *RepositoryTestSuite) TestGetUserUnreadCount_NonExistentUser() {
+	count, err := s.repository.GetUserUnreadCount(s.ctx, uint64(99999))
+	s.NoError(err)
+	s.Equal(uint64(0), count)
+}
+
 func (s *RepositoryTestSuite) TestDeleteMessageForUser_Success() {
 	s.createTestUsers()
 	s.createTestChats()
