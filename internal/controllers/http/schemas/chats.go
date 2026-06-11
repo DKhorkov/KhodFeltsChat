@@ -53,6 +53,13 @@ type Chat struct {
 	// example: true
 	IsRead bool `json:"isRead"`
 
+	// Number of unread non-deleted messages in the chat for the current user.
+	// required: true
+	// nullable: false
+	// minimum: 0
+	// example: 3
+	UnreadCount uint64 `json:"unreadCount"`
+
 	// Members of the chat.
 	// required: false
 	// nullable: true

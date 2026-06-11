@@ -11,7 +11,7 @@
 | `SendVerifyEmailMessage(user)` | Делегирует в emailsRepository |
 | `SendForgetPasswordMessage(user)` | Делегирует в emailsRepository |
 | `SendNewMessageByEmail(recipient, message, chat)` | Делегирует в emailsRepository |
-| `SendNewMessageByWebPush(subscription, message)` | Делегирует в webPushRepository |
+| `SendNewMessageByWebPush(subscription, message, unreadCount)` | Делегирует в webPushRepository. `unreadCount` — текущее число непрочитанных сообщений пользователя, кладётся в push payload для service worker'а |
 
 ## Зависимости
 

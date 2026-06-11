@@ -15,7 +15,7 @@
 | Метод | Описание |
 |-------|----------|
 | `GetChatByID(ctx, id)` | Возвращает чат по ID (без участников и сообщений) |
-| `GetUserChats(ctx, userID, pagination)` | Список чатов пользователя, упорядоченных по времени последнего сообщения (`COALESCE(MAX(messages.created_at), chats.updated_at) DESC`). Статус прочитанности (`is_read`) вычисляется через `NOT EXISTS` подзапрос к `messages_statuses` (фильтр `is_read = false AND is_deleted = false`) |
+| `GetUserChats(ctx, userID, pagination)` | Список чатов пользователя, упорядоченных по времени последнего сообщения (`COALESCE(MAX(messages.created_at), chats.updated_at) DESC`). Статус прочитанности (`is_read`) вычисляется через `NOT EXISTS` подзапрос к `messages_statuses` (фильтр `is_read = false AND is_deleted = false`). Дополнительно возвращается `unread_count` — скалярный подзапрос `COUNT(*)` к `messages_statuses` с теми же фильтрами, используется фронтом для бейджа PWA и числа непрочитанных в списке чатов |
 | `CreateChat(ctx, chat)` | Вставляет чат в `chats`, затем пакетно (bulk) вставляет участников в `chats_members` |
 | `GetChatMembers(ctx, chatID)` | JOIN `users` и `chats_members` — возвращает список участников чата |
 | `PrivateChatExists(ctx, members)` | Проверяет существование приватного чата для набора участников через коррелированные EXISTS-подзапросы |

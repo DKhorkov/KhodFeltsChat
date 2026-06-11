@@ -70,6 +70,13 @@ func (u *UseCases) GetMessageByID(
 	return u.messagesService.GetMessageByID(ctx, userID, messageID)
 }
 
+func (u *UseCases) GetUserUnreadCount(
+	ctx context.Context,
+	userID uint64,
+) (uint64, error) {
+	return u.messagesService.GetUserUnreadCount(ctx, userID)
+}
+
 func (u *UseCases) DeleteMessage(
 	ctx context.Context,
 	dto domains.DeleteMessageDTO,

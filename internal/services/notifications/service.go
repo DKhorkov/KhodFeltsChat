@@ -43,6 +43,7 @@ func (s *Service) SendNewMessageByWebPush(
 	ctx context.Context,
 	subscription domains.WebPushSubscription,
 	message domains.Message,
+	unreadCount uint64,
 ) error {
-	return s.webPushRepository.SendNotification(ctx, subscription, message)
+	return s.webPushRepository.SendNotification(ctx, subscription, message, unreadCount)
 }

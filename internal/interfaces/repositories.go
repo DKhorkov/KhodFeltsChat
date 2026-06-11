@@ -79,6 +79,7 @@ type MessagesRepository interface {
 		isRead bool,
 	) error
 	ReadAllChatMessages(ctx context.Context, userID uint64, chatID uint64) error
+	GetUserUnreadCount(ctx context.Context, userID uint64) (uint64, error)
 	DeleteMessageForUser(ctx context.Context, userID uint64, messageID uint64) error
 	DeleteMessageForAll(ctx context.Context, messageID uint64) error
 	UpdateMessage(ctx context.Context, dto domains.UpdateMessageDTO) error
@@ -110,6 +111,7 @@ type WebPushRepository interface {
 		ctx context.Context,
 		subscription domains.WebPushSubscription,
 		message domains.Message,
+		unreadCount uint64,
 	) error
 }
 

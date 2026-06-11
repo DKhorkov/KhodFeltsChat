@@ -378,6 +378,71 @@ func (s *RepositoryTestSuite) TestGetUserChats_IsReadTrue_WhenAllUnreadMessagesD
 	s.True(chat.IsRead, "Chat should be read when all unread messages are deleted")
 }
 
+func (s *RepositoryTestSuite) TestGetUserChats_UnreadCount_Zero_WhenAllRead() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	userID := uint64(1)
+	chatID := uint64(1)
+
+	s.createMessage(chatID, 2)
+	s.createMessageStatus(1, userID, true, false)
+
+	userChats, err := s.repository.GetUserChats(s.ctx, userID, nil)
+	s.NoError(err)
+
+	chat := s.findChatByID(userChats, chatID)
+	s.NotNil(chat)
+	s.Equal(uint64(0), chat.UnreadCount, "UnreadCount must be 0 when all messages are read")
+}
+
+func (s *RepositoryTestSuite) TestGetUserChats_UnreadCount_CountsUnreadOnly() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	userID := uint64(1)
+	chatID := uint64(1)
+
+	s.createMessage(chatID, 2)
+	s.createMessage(chatID, 2)
+	s.createMessage(chatID, 2)
+
+	s.createMessageStatus(1, userID, false, false) // unread
+	s.createMessageStatus(2, userID, false, false) // unread
+	s.createMessageStatus(3, userID, true, false)  // read
+
+	userChats, err := s.repository.GetUserChats(s.ctx, userID, nil)
+	s.NoError(err)
+
+	chat := s.findChatByID(userChats, chatID)
+	s.NotNil(chat)
+	s.Equal(uint64(2), chat.UnreadCount, "UnreadCount must count only unread non-deleted messages")
+}
+
+func (s *RepositoryTestSuite) TestGetUserChats_UnreadCount_ExcludesDeletedStatuses() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	userID := uint64(1)
+	chatID := uint64(1)
+
+	s.createMessage(chatID, 2)
+	s.createMessage(chatID, 2)
+
+	s.createMessageStatus(1, userID, false, false) // unread, not deleted
+	s.createMessageStatus(2, userID, false, true)  // unread, but deleted for user
+
+	userChats, err := s.repository.GetUserChats(s.ctx, userID, nil)
+	s.NoError(err)
+
+	chat := s.findChatByID(userChats, chatID)
+	s.NotNil(chat)
+	s.Equal(uint64(1), chat.UnreadCount, "UnreadCount must exclude deleted statuses")
+}
+
 func (s *RepositoryTestSuite) TestGetUserChats_UserWithNoChats() {
 	// Тест: Получение чатов пользователя без чатов
 	// Создаем пользователя без чатов

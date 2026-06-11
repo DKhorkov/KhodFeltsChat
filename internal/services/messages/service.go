@@ -144,6 +144,31 @@ func (s *Service) GetMessageByID(
 	return message, nil
 }
 
+func (s *Service) GetUserUnreadCount(
+	ctx context.Context,
+	userID uint64,
+) (uint64, error) {
+	var count uint64
+
+	err := s.uow.Do(
+		ctx,
+		func(ctx context.Context, tx pg.Transaction) error {
+			messagesRepository := s.newMessagesRepositoryFunc(tx)
+
+			var err error
+
+			count, err = messagesRepository.GetUserUnreadCount(ctx, userID)
+
+			return err
+		},
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (s *Service) DeleteMessage(
 	ctx context.Context,
 	dto domains.DeleteMessageDTO,

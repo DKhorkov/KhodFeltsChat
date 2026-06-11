@@ -24,6 +24,7 @@ const (
 	typeColumnName           = "type"
 	chatIDColumnName         = "chat_id"
 	isReadColumnName         = "is_read"
+	unreadCountColumnName    = "unread_count"
 	isDeletedColumnName      = "is_deleted"
 	messageIDColumnName      = "message_id"
 	idColumnName             = "id"
@@ -193,6 +194,53 @@ func (repo *Repository) GetUserChats(
 
 	isReadColumn := fmt.Sprintf("NOT EXISTS (%s) AS %s", unreadSQL, isReadColumnName)
 
+	unreadCountSubquery := sq.
+		Select("COUNT(*)").
+		From(messagesStatusesTableName).
+		Join(
+			fmt.Sprintf(
+				"%s ON %s.%s = %s.%s",
+				messagesTableName,
+				messagesStatusesTableName,
+				messageIDColumnName,
+				messagesTableName,
+				idColumnName,
+			),
+		).
+		Where(
+			sq.Expr(
+				fmt.Sprintf(
+					"%s.%s = %s.%s",
+					messagesTableName,
+					chatIDColumnName,
+					chatsTableName,
+					idColumnName,
+				),
+			),
+		).
+		Where(
+			sq.Eq{
+				fmt.Sprintf("%s.%s", messagesStatusesTableName, userIDColumnName): userID,
+			},
+		).
+		Where(
+			sq.Eq{
+				fmt.Sprintf("%s.%s", messagesStatusesTableName, isReadColumnName): false,
+			},
+		).
+		Where(
+			sq.Eq{
+				fmt.Sprintf("%s.%s", messagesStatusesTableName, isDeletedColumnName): false,
+			},
+		)
+
+	unreadCountSQL, unreadCountArgs, err := unreadCountSubquery.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	unreadCountColumn := fmt.Sprintf("(%s) AS %s", unreadCountSQL, unreadCountColumnName)
+
 	columnsForSelect := []string{
 		fmt.Sprintf("%s.%s", chatsTableName, idColumnName),
 		fmt.Sprintf("%s.%s", chatsTableName, titleColumnName),
@@ -205,6 +253,7 @@ func (repo *Repository) GetUserChats(
 	builder := sq.
 		Select(columnsForSelect...).
 		Column(isReadColumn, unreadArgs...).
+		Column(unreadCountColumn, unreadCountArgs...).
 		From(chatsTableName).
 		Join(
 			fmt.Sprintf(

@@ -70,17 +70,17 @@ func (mr *MockNotificationsServiceMockRecorder) SendNewMessageByEmail(ctx, recip
 }
 
 // SendNewMessageByWebPush mocks base method.
-func (m *MockNotificationsService) SendNewMessageByWebPush(ctx context.Context, subscription domains.WebPushSubscription, message domains.Message) error {
+func (m *MockNotificationsService) SendNewMessageByWebPush(ctx context.Context, subscription domains.WebPushSubscription, message domains.Message, unreadCount uint64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendNewMessageByWebPush", ctx, subscription, message)
+	ret := m.ctrl.Call(m, "SendNewMessageByWebPush", ctx, subscription, message, unreadCount)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SendNewMessageByWebPush indicates an expected call of SendNewMessageByWebPush.
-func (mr *MockNotificationsServiceMockRecorder) SendNewMessageByWebPush(ctx, subscription, message any) *gomock.Call {
+func (mr *MockNotificationsServiceMockRecorder) SendNewMessageByWebPush(ctx, subscription, message, unreadCount any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendNewMessageByWebPush", reflect.TypeOf((*MockNotificationsService)(nil).SendNewMessageByWebPush), ctx, subscription, message)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendNewMessageByWebPush", reflect.TypeOf((*MockNotificationsService)(nil).SendNewMessageByWebPush), ctx, subscription, message, unreadCount)
 }
 
 // SendVerifyEmailMessage mocks base method.

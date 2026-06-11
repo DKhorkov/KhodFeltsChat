@@ -263,8 +263,25 @@ async function loadChats() {
 
         const chats = await resp.json();
         renderChatList(chats);
+        updateAppBadge(chats);
     } catch (err) {
         console.error(err);
+    }
+}
+
+// Единственная точка обновления PWA-бейджа на клиенте.
+// SW дублирует то же действие в push-обработчике.
+function updateAppBadge(chats) {
+    if (!('setAppBadge' in navigator)) return;
+    const total = chats.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+    try {
+        if (total > 0) {
+            navigator.setAppBadge(total);
+        } else {
+            navigator.clearAppBadge();
+        }
+    } catch (err) {
+        console.warn('setAppBadge failed:', err);
     }
 }
 
@@ -361,10 +378,11 @@ function renderChatList(chats) {
         item.appendChild(avatar);
         item.appendChild(info);
 
-        if (!chat.isRead) {
-            const dot = document.createElement('div');
-            dot.className = 'chat-item__unread-dot';
-            item.appendChild(dot);
+        if (chat.unreadCount > 0) {
+            const badge = document.createElement('div');
+            badge.className = 'chat-item__unread-badge';
+            badge.textContent = chat.unreadCount > 99 ? '99+' : String(chat.unreadCount);
+            item.appendChild(badge);
         }
 
         list.appendChild(item);

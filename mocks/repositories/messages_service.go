@@ -113,6 +113,21 @@ func (mr *MockMessagesRepositoryMockRecorder) GetMessageByID(ctx, userID, messag
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMessageByID", reflect.TypeOf((*MockMessagesRepository)(nil).GetMessageByID), ctx, userID, messageID)
 }
 
+// GetUserUnreadCount mocks base method.
+func (m *MockMessagesRepository) GetUserUnreadCount(ctx context.Context, userID uint64) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserUnreadCount", ctx, userID)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserUnreadCount indicates an expected call of GetUserUnreadCount.
+func (mr *MockMessagesRepositoryMockRecorder) GetUserUnreadCount(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserUnreadCount", reflect.TypeOf((*MockMessagesRepository)(nil).GetUserUnreadCount), ctx, userID)
+}
+
 // ReadAllChatMessages mocks base method.
 func (m *MockMessagesRepository) ReadAllChatMessages(ctx context.Context, userID, chatID uint64) error {
 	m.ctrl.T.Helper()

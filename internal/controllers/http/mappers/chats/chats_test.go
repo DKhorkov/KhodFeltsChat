@@ -32,6 +32,7 @@ func TestMapChat(t *testing.T) {
 				CreatedAt:   now,
 				UpdatedAt:   now.Add(time.Hour),
 				IsRead:      true,
+				UnreadCount: 0,
 				Members: []domains.User{
 					{
 						ID:             1,
@@ -79,6 +80,7 @@ func TestMapChat(t *testing.T) {
 				CreatedAt:   now,
 				UpdatedAt:   now.Add(time.Hour),
 				IsRead:      true,
+				UnreadCount: 0,
 				Members: []schemas.User{
 					{
 						ID:             1,
@@ -122,6 +124,7 @@ func TestMapChat(t *testing.T) {
 				CreatedAt:   now,
 				UpdatedAt:   now,
 				IsRead:      false,
+				UnreadCount: 5,
 				Members: []domains.User{
 					{
 						ID:             1,
@@ -143,6 +146,7 @@ func TestMapChat(t *testing.T) {
 				CreatedAt:   now,
 				UpdatedAt:   now,
 				IsRead:      false,
+				UnreadCount: 5,
 				Members: []schemas.User{
 					{
 						ID:             1,
@@ -474,6 +478,7 @@ func TestMapChat(t *testing.T) {
 			assert.Equal(t, tt.expected.CreatedAt, result.CreatedAt)
 			assert.Equal(t, tt.expected.UpdatedAt, result.UpdatedAt)
 			assert.Equal(t, tt.expected.IsRead, result.IsRead)
+			assert.Equal(t, tt.expected.UnreadCount, result.UnreadCount)
 
 			require.Len(t, result.Members, len(tt.expected.Members))
 
@@ -816,6 +821,7 @@ func TestMapChats(t *testing.T) {
 				assert.Equal(t, expectedChat.CreatedAt, result[i].CreatedAt)
 				assert.Equal(t, expectedChat.UpdatedAt, result[i].UpdatedAt)
 				assert.Equal(t, expectedChat.IsRead, result[i].IsRead)
+				assert.Equal(t, expectedChat.UnreadCount, result[i].UnreadCount)
 
 				// Проверяем, что исходный слайс не изменился (копирование по индексу)
 				if i < len(tt.input) {
