@@ -148,14 +148,15 @@ func (s *Service) GetUserUnreadCount(
 	ctx context.Context,
 	userID uint64,
 ) (uint64, error) {
-	var count uint64
+	var (
+		count uint64
+		err   error
+	)
 
-	err := s.uow.Do(
+	err = s.uow.Do(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
 			messagesRepository := s.newMessagesRepositoryFunc(tx)
-
-			var err error
 
 			count, err = messagesRepository.GetUserUnreadCount(ctx, userID)
 
