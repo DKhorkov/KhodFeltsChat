@@ -853,7 +853,10 @@ func (s *RepositoryTestSuite) createMessage(chatID, senderID uint64) {
 	s.NoError(err)
 }
 
-func (s *RepositoryTestSuite) createMessageStatus(messageID, userID uint64, isRead, isDeleted bool) {
+func (s *RepositoryTestSuite) createMessageStatus(
+	messageID, userID uint64,
+	isRead, isDeleted bool,
+) {
 	_, err := s.tx.ExecContext(
 		s.ctx,
 		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted)

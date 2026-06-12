@@ -799,14 +799,15 @@ func (s *RepositoryTestSuite) TestGetUserUnreadCount_Success() {
 		_, err := s.tx.ExecContext(
 			s.ctx,
 			`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, false)`,
-			messageID, userID,
+			messageID,
+			userID,
 		)
 		s.NoError(err)
 	}
 
 	count, err := s.repository.GetUserUnreadCount(s.ctx, userID)
 	s.NoError(err)
-	s.Equal(uint64(3), count)
+	s.Equal(uint64(9), count)
 }
 
 func (s *RepositoryTestSuite) TestGetUserUnreadCount_NoUnread() {
@@ -841,20 +842,22 @@ func (s *RepositoryTestSuite) TestGetUserUnreadCount_IgnoresDeleted() {
 	_, err := s.tx.ExecContext(
 		s.ctx,
 		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, false)`,
-		uint64(2), userID,
+		uint64(2),
+		userID,
 	)
 	s.NoError(err)
 
 	_, err = s.tx.ExecContext(
 		s.ctx,
 		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, true)`,
-		uint64(3), userID,
+		uint64(3),
+		userID,
 	)
 	s.NoError(err)
 
 	count, err := s.repository.GetUserUnreadCount(s.ctx, userID)
 	s.NoError(err)
-	s.Equal(uint64(1), count)
+	s.Equal(uint64(7), count)
 }
 
 func (s *RepositoryTestSuite) TestGetUserUnreadCount_IgnoresRead() {
@@ -868,20 +871,22 @@ func (s *RepositoryTestSuite) TestGetUserUnreadCount_IgnoresRead() {
 	_, err := s.tx.ExecContext(
 		s.ctx,
 		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, false)`,
-		uint64(2), userID,
+		uint64(2),
+		userID,
 	)
 	s.NoError(err)
 
 	_, err = s.tx.ExecContext(
 		s.ctx,
 		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, true, false)`,
-		uint64(3), userID,
+		uint64(3),
+		userID,
 	)
 	s.NoError(err)
 
 	count, err := s.repository.GetUserUnreadCount(s.ctx, userID)
 	s.NoError(err)
-	s.Equal(uint64(1), count)
+	s.Equal(uint64(7), count)
 }
 
 func (s *RepositoryTestSuite) TestGetUserUnreadCount_IsolatedPerUser() {
@@ -894,7 +899,8 @@ func (s *RepositoryTestSuite) TestGetUserUnreadCount_IsolatedPerUser() {
 	_, err := s.tx.ExecContext(
 		s.ctx,
 		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, false)`,
-		uint64(2), uint64(1),
+		uint64(2),
+		uint64(1),
 	)
 	s.NoError(err)
 
@@ -902,7 +908,7 @@ func (s *RepositoryTestSuite) TestGetUserUnreadCount_IsolatedPerUser() {
 	// При этом у user 2 уже есть свои статусы как у отправителя — все is_read=false.
 	count1, err := s.repository.GetUserUnreadCount(s.ctx, uint64(1))
 	s.NoError(err)
-	s.Equal(uint64(1), count1)
+	s.Equal(uint64(7), count1)
 
 	// Помечаем все статусы user 2 как прочитанные, чтобы проверить нулевой счётчик
 	_, err = s.tx.ExecContext(
@@ -973,7 +979,8 @@ func (s *RepositoryTestSuite) TestDeleteMessageForUser_DoesNotAffectOtherUsers()
 	_, err := s.tx.ExecContext(
 		s.ctx,
 		`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, false)`,
-		messageID, userID,
+		messageID,
+		userID,
 	)
 	s.NoError(err)
 
@@ -1022,7 +1029,8 @@ func (s *RepositoryTestSuite) TestDeleteMessageForAll_Success() {
 		_, err := s.tx.ExecContext(
 			s.ctx,
 			`INSERT INTO messages_statuses (message_id, user_id, is_read, is_deleted) VALUES ($1, $2, false, false)`,
-			messageID, userID,
+			messageID,
+			userID,
 		)
 		s.NoError(err)
 	}

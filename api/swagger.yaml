@@ -21,11 +21,6 @@ definitions:
                 minimum: 1
                 type: integer
                 x-go-name: ID
-            isRead:
-                description: Whether chat was read or not.
-                example: true
-                type: boolean
-                x-go-name: IsRead
             members:
                 description: Members of the chat.
                 items:
@@ -55,6 +50,13 @@ definitions:
                 minLength: 1
                 type: string
                 x-go-name: Type
+            unreadCount:
+                description: Number of unread non-deleted messages in the chat for the current user.
+                example: 3
+                format: uint64
+                minimum: 0
+                type: integer
+                x-go-name: UnreadCount
             updatedAt:
                 description: Represents datetime when chat was updated.
                 format: date-time
@@ -65,7 +67,7 @@ definitions:
             - type
             - createdAt
             - updatedAt
-            - isRead
+            - unreadCount
         title: Chat represents a chat record, where users can send a message.
         type: object
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas

@@ -471,7 +471,9 @@ func TestUseCases_GetChatMessages_WithPaginationVariations(t *testing.T) {
 					us.EXPECT().GetUserByID(gomock.Any(), uint64(1)).Return(testUser, nil)
 				},
 				mockChatsService: func(cs *mockservices.MockChatsService) {
-					cs.EXPECT().GetChatMembers(gomock.Any(), uint64(100), uint64(1)).Return(chatMembers, nil)
+					cs.EXPECT().
+						GetChatMembers(gomock.Any(), uint64(100), uint64(1)).
+						Return(chatMembers, nil)
 				},
 				mockMessagesService: func(ms *mockservices.MockMessagesService) {
 					limit := uint64(10)
@@ -502,7 +504,9 @@ func TestUseCases_GetChatMessages_WithPaginationVariations(t *testing.T) {
 					us.EXPECT().GetUserByID(gomock.Any(), uint64(1)).Return(testUser, nil)
 				},
 				mockChatsService: func(cs *mockservices.MockChatsService) {
-					cs.EXPECT().GetChatMembers(gomock.Any(), uint64(100), uint64(1)).Return(chatMembers, nil)
+					cs.EXPECT().
+						GetChatMembers(gomock.Any(), uint64(100), uint64(1)).
+						Return(chatMembers, nil)
 				},
 				mockMessagesService: func(ms *mockservices.MockMessagesService) {
 					offset := uint64(20)
@@ -533,7 +537,9 @@ func TestUseCases_GetChatMessages_WithPaginationVariations(t *testing.T) {
 					us.EXPECT().GetUserByID(gomock.Any(), uint64(1)).Return(testUser, nil)
 				},
 				mockChatsService: func(cs *mockservices.MockChatsService) {
-					cs.EXPECT().GetChatMembers(gomock.Any(), uint64(100), uint64(1)).Return(chatMembers, nil)
+					cs.EXPECT().
+						GetChatMembers(gomock.Any(), uint64(100), uint64(1)).
+						Return(chatMembers, nil)
 				},
 				mockMessagesService: func(ms *mockservices.MockMessagesService) {
 					zero := uint64(0)
