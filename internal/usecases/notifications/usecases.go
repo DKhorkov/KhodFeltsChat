@@ -79,7 +79,7 @@ func (u *UseCases) SendNewMessageByEmail(
 		return err
 	}
 
-	chat, err := u.chatsService.GetChatByID(ctx, message.ChatID)
+	chat, err := u.chatsService.GetChatByID(ctx, message.ChatID, userID)
 	if err != nil {
 		return err
 	}
@@ -105,8 +105,18 @@ func (u *UseCases) SendNewMessageByWebPush(
 		return err
 	}
 
+	unreadCount, err := u.messagesService.GetUserUnreadCount(ctx, userID)
+	if err != nil {
+		return err
+	}
+
 	for _, sub := range subscriptions {
-		if err = u.notificationsService.SendNewMessageByWebPush(ctx, sub, *message); err != nil {
+		if err = u.notificationsService.SendNewMessageByWebPush(
+			ctx,
+			sub,
+			*message,
+			unreadCount,
+		); err != nil {
 			if errors.Is(err, customerrors.ErrWebPushSubscriptionExpired) {
 				u.logger.Info(
 					fmt.Sprintf(

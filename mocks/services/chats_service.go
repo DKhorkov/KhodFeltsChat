@@ -57,33 +57,33 @@ func (mr *MockChatsServiceMockRecorder) CreateChat(ctx, chat any) *gomock.Call {
 }
 
 // GetChatByID mocks base method.
-func (m *MockChatsService) GetChatByID(ctx context.Context, chatID uint64) (*domains.Chat, error) {
+func (m *MockChatsService) GetChatByID(ctx context.Context, chatID, userID uint64) (*domains.Chat, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetChatByID", ctx, chatID)
+	ret := m.ctrl.Call(m, "GetChatByID", ctx, chatID, userID)
 	ret0, _ := ret[0].(*domains.Chat)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetChatByID indicates an expected call of GetChatByID.
-func (mr *MockChatsServiceMockRecorder) GetChatByID(ctx, chatID any) *gomock.Call {
+func (mr *MockChatsServiceMockRecorder) GetChatByID(ctx, chatID, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChatByID", reflect.TypeOf((*MockChatsService)(nil).GetChatByID), ctx, chatID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChatByID", reflect.TypeOf((*MockChatsService)(nil).GetChatByID), ctx, chatID, userID)
 }
 
 // GetChatMembers mocks base method.
-func (m *MockChatsService) GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error) {
+func (m *MockChatsService) GetChatMembers(ctx context.Context, chatID, userID uint64) ([]domains.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetChatMembers", ctx, chatID)
+	ret := m.ctrl.Call(m, "GetChatMembers", ctx, chatID, userID)
 	ret0, _ := ret[0].([]domains.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetChatMembers indicates an expected call of GetChatMembers.
-func (mr *MockChatsServiceMockRecorder) GetChatMembers(ctx, chatID any) *gomock.Call {
+func (mr *MockChatsServiceMockRecorder) GetChatMembers(ctx, chatID, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChatMembers", reflect.TypeOf((*MockChatsService)(nil).GetChatMembers), ctx, chatID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChatMembers", reflect.TypeOf((*MockChatsService)(nil).GetChatMembers), ctx, chatID, userID)
 }
 
 // GetUserChats mocks base method.

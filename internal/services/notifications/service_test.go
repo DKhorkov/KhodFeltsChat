@@ -350,7 +350,7 @@ func TestService_SendNewMessageByWebPush(t *testing.T) {
 			},
 			setupMocks: func(mockWebPushRepo *mockrepositories.MockWebPushRepository) {
 				mockWebPushRepo.EXPECT().
-					SendNotification(gomock.Any(), gomock.Any(), gomock.Any()).
+					SendNotification(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil)
 			},
 			expectedError: nil,
@@ -371,7 +371,7 @@ func TestService_SendNewMessageByWebPush(t *testing.T) {
 			},
 			setupMocks: func(mockWebPushRepo *mockrepositories.MockWebPushRepository) {
 				mockWebPushRepo.EXPECT().
-					SendNotification(gomock.Any(), gomock.Any(), gomock.Any()).
+					SendNotification(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("web push error"))
 			},
 			expectedError: errors.New("web push error"),
@@ -397,7 +397,7 @@ func TestService_SendNewMessageByWebPush(t *testing.T) {
 			)
 
 			ctx := context.Background()
-			err := service.SendNewMessageByWebPush(ctx, tt.subscription, tt.message)
+			err := service.SendNewMessageByWebPush(ctx, tt.subscription, tt.message, 0)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

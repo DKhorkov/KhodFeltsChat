@@ -42,15 +42,15 @@ func (m *MockWebPushRepository) EXPECT() *MockWebPushRepositoryMockRecorder {
 }
 
 // SendNotification mocks base method.
-func (m *MockWebPushRepository) SendNotification(ctx context.Context, subscription domains.WebPushSubscription, message domains.Message) error {
+func (m *MockWebPushRepository) SendNotification(ctx context.Context, subscription domains.WebPushSubscription, message domains.Message, unreadCount uint64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendNotification", ctx, subscription, message)
+	ret := m.ctrl.Call(m, "SendNotification", ctx, subscription, message, unreadCount)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SendNotification indicates an expected call of SendNotification.
-func (mr *MockWebPushRepositoryMockRecorder) SendNotification(ctx, subscription, message any) *gomock.Call {
+func (mr *MockWebPushRepositoryMockRecorder) SendNotification(ctx, subscription, message, unreadCount any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendNotification", reflect.TypeOf((*MockWebPushRepository)(nil).SendNotification), ctx, subscription, message)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendNotification", reflect.TypeOf((*MockWebPushRepository)(nil).SendNotification), ctx, subscription, message, unreadCount)
 }

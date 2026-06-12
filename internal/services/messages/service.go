@@ -85,7 +85,7 @@ func (s *Service) GetChatMessages(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
 			chatsRepository := s.newChatsRepositoryFunc(tx)
-			if _, err = chatsRepository.GetChatByID(ctx, chatID); err != nil {
+			if _, err = chatsRepository.GetChatByID(ctx, chatID, userID); err != nil {
 				return fmt.Errorf("%w: %w", customerrors.ErrChatNotFound, err)
 			}
 
@@ -142,6 +142,32 @@ func (s *Service) GetMessageByID(
 	}
 
 	return message, nil
+}
+
+func (s *Service) GetUserUnreadCount(
+	ctx context.Context,
+	userID uint64,
+) (uint64, error) {
+	var (
+		count uint64
+		err   error
+	)
+
+	err = s.uow.Do(
+		ctx,
+		func(ctx context.Context, tx pg.Transaction) error {
+			messagesRepository := s.newMessagesRepositoryFunc(tx)
+
+			count, err = messagesRepository.GetUserUnreadCount(ctx, userID)
+
+			return err
+		},
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 func (s *Service) DeleteMessage(

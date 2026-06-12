@@ -9,10 +9,10 @@
 
 | Метод | Описание |
 |-------|----------|
-| `SendNotification(ctx, subscription, message)` | Формирует JSON payload и отправляет push-уведомление по подписке |
+| `SendNotification(ctx, subscription, message, unreadCount)` | Формирует JSON payload и отправляет push-уведомление по подписке |
 
 Метод:
-1. Формирует JSON payload с полями `title`, `body`, `chatId`, `timestamp`.
+1. Формирует JSON payload с полями `title`, `body`, `chatId`, `timestamp`, `unreadCount`. Поле `unreadCount` — абсолютное число непрочитанных сообщений пользователя на момент отправки, используется service worker'ом для `navigator.setAppBadge` (PWA-бейдж на iOS/Android/десктопе).
 2. Отправляет через `webpush.SendNotification` с VAPID-ключами.
 3. Устанавливает `TTL` из конфигурации (по умолчанию 86400 сек / 24 часа) —
    необходимо для iOS, где APNs отбрасывает push без TTL или с TTL=0.

@@ -130,7 +130,7 @@ func TestTraceDecorator_SendNotification(t *testing.T) {
 							Username: "alice",
 						},
 						CreatedAt: now,
-					}).
+					}, uint64(0)).
 					Return(nil)
 			},
 			expectedError: nil,
@@ -159,7 +159,7 @@ func TestTraceDecorator_SendNotification(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					SendNotification(gomock.Any(), gomock.Any(), gomock.Any()).
+					SendNotification(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("web-push subscription expired"))
 			},
 			expectedError: errors.New("web-push subscription expired"),
@@ -188,7 +188,7 @@ func TestTraceDecorator_SendNotification(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					SendNotification(gomock.Any(), gomock.Any(), gomock.Any()).
+					SendNotification(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("connection refused"))
 			},
 			expectedError: errors.New("connection refused"),
@@ -217,7 +217,7 @@ func TestTraceDecorator_SendNotification(t *testing.T) {
 				mockBase,
 			)
 
-			err := decorator.SendNotification(context.Background(), tt.subscription, tt.message)
+			err := decorator.SendNotification(context.Background(), tt.subscription, tt.message, 0)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

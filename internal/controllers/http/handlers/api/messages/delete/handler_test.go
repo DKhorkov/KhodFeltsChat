@@ -122,7 +122,7 @@ func TestHandler(t *testing.T) {
 					Return(nil)
 
 				b.EXPECT().
-					BroadcastMessageDeleted(gomock.Any(), uint64(100), messageID)
+					BroadcastMessageDeleted(gomock.Any(), uint64(100), messageID, userID)
 			},
 			expectedStatus: http.StatusNoContent,
 		},

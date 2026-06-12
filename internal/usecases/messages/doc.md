@@ -20,6 +20,11 @@
 - Прямая передача запроса в `MessagesService`.
 - Используется NATS-воркером push-уведомлений для получения текста сообщения.
 
+### GetUserUnreadCount
+- Прямая передача запроса в `MessagesService.GetUserUnreadCount`.
+- Возвращает общее число непрочитанных и неудалённых сообщений пользователя по всем чатам.
+- Используется для проставления `unreadCount` в payload push-уведомлений (PWA-бейдж).
+
 ### DeleteMessage
 - Если `ForAll`: проверяет через `GetMessageByID`, что сообщение существует и запрашивающий — автор. Иначе `ErrMessageNotFound` / `ErrNotMessageAuthor`.
 - Делегирует удаление в `MessagesService.DeleteMessage`.

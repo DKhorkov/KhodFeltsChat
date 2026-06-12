@@ -58,7 +58,7 @@ type ChatsRepository interface {
 		pagination *domains.Pagination,
 	) ([]domains.Chat, error)
 	CreateChat(ctx context.Context, chat domains.Chat) (uint64, error)
-	GetChatByID(ctx context.Context, id uint64) (*domains.Chat, error)
+	GetChatByID(ctx context.Context, id, userID uint64) (*domains.Chat, error)
 	PrivateChatExists(ctx context.Context, members []domains.User) (bool, error)
 }
 
@@ -79,6 +79,7 @@ type MessagesRepository interface {
 		isRead bool,
 	) error
 	ReadAllChatMessages(ctx context.Context, userID uint64, chatID uint64) error
+	GetUserUnreadCount(ctx context.Context, userID uint64) (uint64, error)
 	DeleteMessageForUser(ctx context.Context, userID uint64, messageID uint64) error
 	DeleteMessageForAll(ctx context.Context, messageID uint64) error
 	UpdateMessage(ctx context.Context, dto domains.UpdateMessageDTO) error
@@ -110,6 +111,7 @@ type WebPushRepository interface {
 		ctx context.Context,
 		subscription domains.WebPushSubscription,
 		message domains.Message,
+		unreadCount uint64,
 	) error
 }
 

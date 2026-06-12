@@ -36,7 +36,7 @@ type AuthUseCases interface {
 
 //go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/chats_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases
 type ChatsUseCases interface {
-	GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error)
+	GetChatMembers(ctx context.Context, chatID, userID uint64) ([]domains.User, error)
 	GetUserChats(
 		ctx context.Context,
 		userID uint64,

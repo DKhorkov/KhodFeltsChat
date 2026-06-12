@@ -375,7 +375,7 @@ func TestUseCases_SendNewMessageByEmail(t *testing.T) {
 					CreatedAt: now,
 				}
 				mockChatsService.EXPECT().
-					GetChatByID(gomock.Any(), uint64(5)).
+					GetChatByID(gomock.Any(), uint64(5), uint64(1)).
 					Return(chat, nil)
 
 				mockNotificationsService.EXPECT().
@@ -445,7 +445,7 @@ func TestUseCases_SendNewMessageByEmail(t *testing.T) {
 					Return(&domains.Message{ID: 10, ChatID: 999}, nil)
 
 				mockChatsService.EXPECT().
-					GetChatByID(gomock.Any(), uint64(999)).
+					GetChatByID(gomock.Any(), uint64(999), uint64(1)).
 					Return(nil, errors.New("chat not found"))
 			},
 			expectedError: errors.New("chat not found"),
@@ -539,12 +539,16 @@ func TestUseCases_SendNewMessageByWebPush(t *testing.T) {
 					GetWebPushSubscriptionsByUserID(gomock.Any(), uint64(1)).
 					Return(subs, nil)
 
+				mockMessagesService.EXPECT().
+					GetUserUnreadCount(gomock.Any(), uint64(1)).
+					Return(uint64(3), nil)
+
 				mockNotificationsService.EXPECT().
-					SendNewMessageByWebPush(gomock.Any(), subs[0], *msg).
+					SendNewMessageByWebPush(gomock.Any(), subs[0], *msg, uint64(3)).
 					Return(nil)
 
 				mockNotificationsService.EXPECT().
-					SendNewMessageByWebPush(gomock.Any(), subs[1], *msg).
+					SendNewMessageByWebPush(gomock.Any(), subs[1], *msg, uint64(3)).
 					Return(nil)
 			},
 			expectedError: nil,
@@ -586,6 +590,10 @@ func TestUseCases_SendNewMessageByWebPush(t *testing.T) {
 				mockWebPushService.EXPECT().
 					GetWebPushSubscriptionsByUserID(gomock.Any(), uint64(1)).
 					Return([]domains.WebPushSubscription{}, nil)
+
+				mockMessagesService.EXPECT().
+					GetUserUnreadCount(gomock.Any(), uint64(1)).
+					Return(uint64(0), nil)
 			},
 			expectedError: nil,
 		},
@@ -614,12 +622,16 @@ func TestUseCases_SendNewMessageByWebPush(t *testing.T) {
 					GetWebPushSubscriptionsByUserID(gomock.Any(), uint64(1)).
 					Return(subs, nil)
 
+				mockMessagesService.EXPECT().
+					GetUserUnreadCount(gomock.Any(), uint64(1)).
+					Return(uint64(1), nil)
+
 				mockNotificationsService.EXPECT().
-					SendNewMessageByWebPush(gomock.Any(), subs[0], *msg).
+					SendNewMessageByWebPush(gomock.Any(), subs[0], *msg, uint64(1)).
 					Return(errors.New("push failed"))
 
 				mockNotificationsService.EXPECT().
-					SendNewMessageByWebPush(gomock.Any(), subs[1], *msg).
+					SendNewMessageByWebPush(gomock.Any(), subs[1], *msg, uint64(1)).
 					Return(nil)
 
 				mockLogger.EXPECT().
@@ -652,8 +664,12 @@ func TestUseCases_SendNewMessageByWebPush(t *testing.T) {
 					GetWebPushSubscriptionsByUserID(gomock.Any(), uint64(1)).
 					Return(subs, nil)
 
+				mockMessagesService.EXPECT().
+					GetUserUnreadCount(gomock.Any(), uint64(1)).
+					Return(uint64(5), nil)
+
 				mockNotificationsService.EXPECT().
-					SendNewMessageByWebPush(gomock.Any(), subs[0], *msg).
+					SendNewMessageByWebPush(gomock.Any(), subs[0], *msg, uint64(5)).
 					Return(customerrors.ErrWebPushSubscriptionExpired)
 
 				mockWebPushService.EXPECT().

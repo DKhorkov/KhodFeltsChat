@@ -284,7 +284,7 @@ func TestService_GetChatMessages(t *testing.T) {
 
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(1)).
 						Return(chat, nil)
 				},
 
@@ -322,7 +322,7 @@ func TestService_GetChatMessages(t *testing.T) {
 
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(1)).
 						Return(chat, nil)
 				},
 
@@ -359,7 +359,7 @@ func TestService_GetChatMessages(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(999)).
+						GetChatByID(gomock.Any(), uint64(999), uint64(1)).
 						Return(nil, sql.ErrNoRows)
 				},
 			},
@@ -387,7 +387,7 @@ func TestService_GetChatMessages(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(1)).
 						Return(nil, errors.New("database error"))
 				},
 			},
@@ -415,7 +415,7 @@ func TestService_GetChatMessages(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(1)).
 						Return(chat, nil)
 				},
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
@@ -449,7 +449,7 @@ func TestService_GetChatMessages(t *testing.T) {
 
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(101)).
+						GetChatByID(gomock.Any(), uint64(101), uint64(1)).
 						Return(&domains.Chat{ID: 101}, nil)
 				},
 
@@ -487,7 +487,7 @@ func TestService_GetChatMessages(t *testing.T) {
 
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(1)).
 						Return(chat, nil)
 				},
 
@@ -533,7 +533,7 @@ func TestService_GetChatMessages(t *testing.T) {
 
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(2)).
 						Return(chat, nil)
 				},
 
@@ -571,7 +571,7 @@ func TestService_GetChatMessages(t *testing.T) {
 
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(2)).
 						Return(chat, nil)
 				},
 
@@ -813,6 +813,146 @@ func TestService_GetMessageByID(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, got)
 			}
+		})
+	}
+}
+
+func TestService_GetUserUnreadCount(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		mockUOW                func(*mockuow.MockUnitOfWork)
+		mockMessagesRepository func(*mockrepositories.MockMessagesRepository)
+	}
+
+	type args struct {
+		ctx    context.Context
+		userID uint64
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    uint64
+		wantErr bool
+		err     error
+	}{
+		{
+			name: "successfully get unread count",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
+					mr.EXPECT().
+						GetUserUnreadCount(gomock.Any(), uint64(1)).
+						Return(uint64(7), nil)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: 1,
+			},
+			want:    7,
+			wantErr: false,
+		},
+		{
+			name: "repository error",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						DoAndReturn(func(ctx context.Context, fn func(context.Context, pg.Transaction) error) error {
+							tx := &struct{ pg.Transaction }{}
+
+							return fn(ctx, tx)
+						})
+				},
+				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
+					mr.EXPECT().
+						GetUserUnreadCount(gomock.Any(), uint64(99)).
+						Return(uint64(0), errors.New("db error"))
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: 99,
+			},
+			want:    0,
+			wantErr: true,
+			err:     errors.New("db error"),
+		},
+		{
+			name: "UoW error",
+			fields: fields{
+				mockUOW: func(uow *mockuow.MockUnitOfWork) {
+					uow.EXPECT().
+						Do(gomock.Any(), gomock.Any()).
+						Return(errors.New("uow error"))
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: 1,
+			},
+			want:    0,
+			wantErr: true,
+			err:     errors.New("uow error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+
+			mockUOW := mockuow.NewMockUnitOfWork(ctrl)
+			mockChatsRepo := mockrepositories.NewMockChatsRepository(ctrl)
+			mockMessagesRepo := mockrepositories.NewMockMessagesRepository(ctrl)
+
+			if tt.fields.mockUOW != nil {
+				tt.fields.mockUOW(mockUOW)
+			}
+
+			if tt.fields.mockMessagesRepository != nil {
+				tt.fields.mockMessagesRepository(mockMessagesRepo)
+			}
+
+			newChatsRepoFunc := func(_ pg.Transaction) interfaces.ChatsRepository {
+				return mockChatsRepo
+			}
+
+			newMessagesRepoFunc := func(_ pg.Transaction) interfaces.MessagesRepository {
+				return mockMessagesRepo
+			}
+
+			s := service.New(
+				mockUOW,
+				newChatsRepoFunc,
+				newMessagesRepoFunc,
+			)
+
+			got, err := s.GetUserUnreadCount(tt.args.ctx, tt.args.userID)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				if tt.err != nil {
+					assert.Contains(t, err.Error(), tt.err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

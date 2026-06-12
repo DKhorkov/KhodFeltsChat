@@ -136,13 +136,21 @@ img.chat-item__avatar {
     margin-top: 2px;
 }
 
-.chat-item__unread-dot {
-    width: 8px;
-    height: 8px;
+.chat-item__unread-badge {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
     background: var(--accent);
+    color: #fff;
     border-radius: var(--radius-full);
+    font-size: var(--font-xs);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
     margin-left: var(--space-sm);
+    line-height: 1;
 }
 
 /* ═══════════════════════════════════════

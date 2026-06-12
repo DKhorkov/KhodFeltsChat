@@ -33,12 +33,14 @@ func (repo *Repository) SendNotification(
 	_ context.Context,
 	subscription domains.WebPushSubscription,
 	message domains.Message,
+	unreadCount uint64,
 ) error {
 	payload, err := json.Marshal(map[string]any{
-		"title":     message.Sender.Username,
-		"body":      message.Text,
-		"chatId":    message.ChatID,
-		"timestamp": message.CreatedAt.UnixMilli(),
+		"title":       message.Sender.Username,
+		"body":        message.Text,
+		"chatId":      message.ChatID,
+		"timestamp":   message.CreatedAt.UnixMilli(),
+		"unreadCount": unreadCount,
 	})
 	if err != nil {
 		return fmt.Errorf("marshal web push notification payload: %w", err)

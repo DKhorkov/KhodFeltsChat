@@ -42,8 +42,8 @@ type AuthService interface {
 
 //go:generate mockgen -source=services.go -destination=../../mocks/services/chats_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService,FileStorageService
 type ChatsService interface {
-	GetChatByID(ctx context.Context, chatID uint64) (*domains.Chat, error)
-	GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error)
+	GetChatByID(ctx context.Context, chatID, userID uint64) (*domains.Chat, error)
+	GetChatMembers(ctx context.Context, chatID, userID uint64) ([]domains.User, error)
 	GetUserChats(
 		ctx context.Context,
 		userID uint64,
@@ -63,6 +63,7 @@ type MessagesService interface {
 		pagination *domains.Pagination,
 	) ([]domains.Message, error)
 	GetMessageByID(ctx context.Context, userID uint64, messageID uint64) (*domains.Message, error)
+	GetUserUnreadCount(ctx context.Context, userID uint64) (uint64, error)
 	DeleteMessage(ctx context.Context, dto domains.DeleteMessageDTO) error
 	UpdateMessage(ctx context.Context, dto domains.UpdateMessageDTO) (*domains.Message, error)
 }
@@ -81,6 +82,7 @@ type NotificationsService interface {
 		ctx context.Context,
 		subscription domains.WebPushSubscription,
 		message domains.Message,
+		unreadCount uint64,
 	) error
 }
 

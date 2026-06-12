@@ -185,7 +185,7 @@ func TestUseCases_GetChatMessages(t *testing.T) {
 				},
 				mockChatsService: func(cs *mockservices.MockChatsService) {
 					cs.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(100)).
+						GetChatMembers(gomock.Any(), uint64(100), uint64(1)).
 						Return(chatMembers, nil)
 				},
 				mockMessagesService: func(ms *mockservices.MockMessagesService) {
@@ -213,7 +213,7 @@ func TestUseCases_GetChatMessages(t *testing.T) {
 				},
 				mockChatsService: func(cs *mockservices.MockChatsService) {
 					cs.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(100)).
+						GetChatMembers(gomock.Any(), uint64(100), uint64(1)).
 						Return(chatMembers, nil)
 				},
 				mockMessagesService: func(ms *mockservices.MockMessagesService) {
@@ -260,7 +260,7 @@ func TestUseCases_GetChatMessages(t *testing.T) {
 				},
 				mockChatsService: func(cs *mockservices.MockChatsService) {
 					cs.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(100)).
+						GetChatMembers(gomock.Any(), uint64(100), uint64(1)).
 						Return(nil, errors.New("chat not found"))
 				},
 			},
@@ -284,7 +284,7 @@ func TestUseCases_GetChatMessages(t *testing.T) {
 				},
 				mockChatsService: func(cs *mockservices.MockChatsService) {
 					cs.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(100)).
+						GetChatMembers(gomock.Any(), uint64(100), uint64(3)).
 						Return(chatMembers, nil)
 				},
 			},
@@ -308,7 +308,7 @@ func TestUseCases_GetChatMessages(t *testing.T) {
 				},
 				mockChatsService: func(cs *mockservices.MockChatsService) {
 					cs.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(100)).
+						GetChatMembers(gomock.Any(), uint64(100), uint64(1)).
 						Return(chatMembers, nil)
 				},
 				mockMessagesService: func(ms *mockservices.MockMessagesService) {
@@ -337,7 +337,7 @@ func TestUseCases_GetChatMessages(t *testing.T) {
 				},
 				mockChatsService: func(cs *mockservices.MockChatsService) {
 					cs.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(100)).
+						GetChatMembers(gomock.Any(), uint64(100), uint64(1)).
 						Return([]domains.User{}, nil)
 				},
 			},
@@ -361,7 +361,7 @@ func TestUseCases_GetChatMessages(t *testing.T) {
 				},
 				mockChatsService: func(cs *mockservices.MockChatsService) {
 					cs.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(101)).
+						GetChatMembers(gomock.Any(), uint64(101), uint64(1)).
 						Return([]domains.User{{ID: 1, Username: "testuser"}}, nil)
 				},
 				mockMessagesService: func(ms *mockservices.MockMessagesService) {
@@ -471,7 +471,9 @@ func TestUseCases_GetChatMessages_WithPaginationVariations(t *testing.T) {
 					us.EXPECT().GetUserByID(gomock.Any(), uint64(1)).Return(testUser, nil)
 				},
 				mockChatsService: func(cs *mockservices.MockChatsService) {
-					cs.EXPECT().GetChatMembers(gomock.Any(), uint64(100)).Return(chatMembers, nil)
+					cs.EXPECT().
+						GetChatMembers(gomock.Any(), uint64(100), uint64(1)).
+						Return(chatMembers, nil)
 				},
 				mockMessagesService: func(ms *mockservices.MockMessagesService) {
 					limit := uint64(10)
@@ -502,7 +504,9 @@ func TestUseCases_GetChatMessages_WithPaginationVariations(t *testing.T) {
 					us.EXPECT().GetUserByID(gomock.Any(), uint64(1)).Return(testUser, nil)
 				},
 				mockChatsService: func(cs *mockservices.MockChatsService) {
-					cs.EXPECT().GetChatMembers(gomock.Any(), uint64(100)).Return(chatMembers, nil)
+					cs.EXPECT().
+						GetChatMembers(gomock.Any(), uint64(100), uint64(1)).
+						Return(chatMembers, nil)
 				},
 				mockMessagesService: func(ms *mockservices.MockMessagesService) {
 					offset := uint64(20)
@@ -533,7 +537,9 @@ func TestUseCases_GetChatMessages_WithPaginationVariations(t *testing.T) {
 					us.EXPECT().GetUserByID(gomock.Any(), uint64(1)).Return(testUser, nil)
 				},
 				mockChatsService: func(cs *mockservices.MockChatsService) {
-					cs.EXPECT().GetChatMembers(gomock.Any(), uint64(100)).Return(chatMembers, nil)
+					cs.EXPECT().
+						GetChatMembers(gomock.Any(), uint64(100), uint64(1)).
+						Return(chatMembers, nil)
 				},
 				mockMessagesService: func(ms *mockservices.MockMessagesService) {
 					zero := uint64(0)
@@ -713,6 +719,126 @@ func TestUseCases_GetMessageByID(t *testing.T) {
 
 			// Act
 			got, err := uc.GetMessageByID(tt.args.ctx, tt.args.userID, tt.args.messageID)
+
+			// Assert
+			if tt.wantErr {
+				assert.Error(t, err)
+
+				if tt.err != nil {
+					assert.Contains(t, err.Error(), tt.err.Error())
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestUseCases_GetUserUnreadCount(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		mockMessagesService func(*mockservices.MockMessagesService)
+		mockUsersService    func(*mockservices.MockUsersService)
+		mockChatsService    func(*mockservices.MockChatsService)
+	}
+
+	type args struct {
+		ctx    context.Context
+		userID uint64
+	}
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    uint64
+		wantErr bool
+		err     error
+	}{
+		{
+			name: "successfully get user unread count",
+			fields: fields{
+				mockMessagesService: func(ms *mockservices.MockMessagesService) {
+					ms.EXPECT().
+						GetUserUnreadCount(gomock.Any(), uint64(1)).
+						Return(uint64(42), nil)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: 1,
+			},
+			want:    42,
+			wantErr: false,
+		},
+		{
+			name: "zero unread messages",
+			fields: fields{
+				mockMessagesService: func(ms *mockservices.MockMessagesService) {
+					ms.EXPECT().
+						GetUserUnreadCount(gomock.Any(), uint64(2)).
+						Return(uint64(0), nil)
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: 2,
+			},
+			want:    0,
+			wantErr: false,
+		},
+		{
+			name: "service returns error",
+			fields: fields{
+				mockMessagesService: func(ms *mockservices.MockMessagesService) {
+					ms.EXPECT().
+						GetUserUnreadCount(gomock.Any(), uint64(999)).
+						Return(uint64(0), errors.New("database error"))
+				},
+			},
+			args: args{
+				ctx:    context.Background(),
+				userID: 999,
+			},
+			want:    0,
+			wantErr: true,
+			err:     errors.New("database error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange
+			ctrl := gomock.NewController(t)
+
+			mockMessagesService := mockservices.NewMockMessagesService(ctrl)
+			mockUsersService := mockservices.NewMockUsersService(ctrl)
+			mockChatsService := mockservices.NewMockChatsService(ctrl)
+
+			if tt.fields.mockMessagesService != nil {
+				tt.fields.mockMessagesService(mockMessagesService)
+			}
+
+			if tt.fields.mockUsersService != nil {
+				tt.fields.mockUsersService(mockUsersService)
+			}
+
+			if tt.fields.mockChatsService != nil {
+				tt.fields.mockChatsService(mockChatsService)
+			}
+
+			uc := messages.New(
+				mockMessagesService,
+				mockChatsService,
+				mockUsersService,
+			)
+
+			// Act
+			got, err := uc.GetUserUnreadCount(tt.args.ctx, tt.args.userID)
 
 			// Assert
 			if tt.wantErr {

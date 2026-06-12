@@ -129,10 +129,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request) {
 // BroadcastMessageDeleted sends a message_deleted event to all chat members.
 func (h *Handler) BroadcastMessageDeleted(
 	ctx context.Context,
-	chatID uint64,
-	messageID uint64,
+	chatID, messageID, userID uint64,
 ) {
-	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, chatID)
+	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, chatID, userID)
 	if err != nil {
 		logging.LogErrorContext(
 			ctx,
@@ -162,10 +161,9 @@ func (h *Handler) BroadcastMessageDeleted(
 // BroadcastMessageEdited sends a message_edited event to all chat members.
 func (h *Handler) BroadcastMessageEdited(
 	ctx context.Context,
-	chatID uint64,
-	messageID uint64,
+	chatID, messageID, userID uint64,
 ) {
-	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, chatID)
+	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, chatID, userID)
 	if err != nil {
 		logging.LogErrorContext(
 			ctx,
@@ -341,7 +339,7 @@ func (h *Handler) listen(conn *websocket.Conn, user *domains.User) {
 			return
 		}
 
-		chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, message.ChatID)
+		chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, message.ChatID, user.ID)
 		if err != nil {
 			logging.LogErrorContext(
 				ctx,

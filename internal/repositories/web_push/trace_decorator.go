@@ -30,6 +30,7 @@ func (d *TraceDecorator) SendNotification(
 	ctx context.Context,
 	subscription domains.WebPushSubscription,
 	message domains.Message,
+	unreadCount uint64,
 ) error {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
@@ -37,5 +38,5 @@ func (d *TraceDecorator) SendNotification(
 	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
 	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
 
-	return d.base.SendNotification(ctx, subscription, message)
+	return d.base.SendNotification(ctx, subscription, message, unreadCount)
 }

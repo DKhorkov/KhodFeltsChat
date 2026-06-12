@@ -45,7 +45,7 @@ func (u *UseCases) GetChatMessages(
 		return nil, err
 	}
 
-	chatMembers, err := u.chatsService.GetChatMembers(ctx, chatID)
+	chatMembers, err := u.chatsService.GetChatMembers(ctx, chatID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +68,13 @@ func (u *UseCases) GetMessageByID(
 	messageID uint64,
 ) (*domains.Message, error) {
 	return u.messagesService.GetMessageByID(ctx, userID, messageID)
+}
+
+func (u *UseCases) GetUserUnreadCount(
+	ctx context.Context,
+	userID uint64,
+) (uint64, error) {
+	return u.messagesService.GetUserUnreadCount(ctx, userID)
 }
 
 func (u *UseCases) DeleteMessage(

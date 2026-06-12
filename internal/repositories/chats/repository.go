@@ -24,6 +24,7 @@ const (
 	typeColumnName           = "type"
 	chatIDColumnName         = "chat_id"
 	isReadColumnName         = "is_read"
+	unreadCountColumnName    = "unread_count"
 	isDeletedColumnName      = "is_deleted"
 	messageIDColumnName      = "message_id"
 	idColumnName             = "id"
@@ -37,6 +38,7 @@ const (
 	avatarPathColumnName     = "avatar_path"
 
 	existsSubquery = "EXISTS (?)"
+	countSubquery  = "COUNT(*)"
 
 	selectAllColumns = "*"
 	selectExists     = "1"
@@ -146,8 +148,8 @@ func (repo *Repository) GetUserChats(
 	userID uint64,
 	pagination *domains.Pagination,
 ) ([]domains.Chat, error) {
-	unreadSubquery := sq.
-		Select(selectExists).
+	unreadCountSubquery := sq.
+		Select(countSubquery).
 		From(messagesStatusesTableName).
 		Join(
 			fmt.Sprintf(
@@ -186,12 +188,12 @@ func (repo *Repository) GetUserChats(
 			},
 		)
 
-	unreadSQL, unreadArgs, err := unreadSubquery.ToSql()
+	unreadCountSQL, unreadCountArgs, err := unreadCountSubquery.ToSql()
 	if err != nil {
 		return nil, err
 	}
 
-	isReadColumn := fmt.Sprintf("NOT EXISTS (%s) AS %s", unreadSQL, isReadColumnName)
+	unreadCountColumn := fmt.Sprintf("(%s) AS %s", unreadCountSQL, unreadCountColumnName)
 
 	columnsForSelect := []string{
 		fmt.Sprintf("%s.%s", chatsTableName, idColumnName),
@@ -204,7 +206,7 @@ func (repo *Repository) GetUserChats(
 
 	builder := sq.
 		Select(columnsForSelect...).
-		Column(isReadColumn, unreadArgs...).
+		Column(unreadCountColumn, unreadCountArgs...).
 		From(chatsTableName).
 		Join(
 			fmt.Sprintf(
@@ -338,12 +340,69 @@ func (repo *Repository) CreateChat(
 
 func (repo *Repository) GetChatByID(
 	ctx context.Context,
-	id uint64,
+	id, userID uint64,
 ) (*domains.Chat, error) {
+	unreadCountSubquery := sq.
+		Select(countSubquery).
+		From(messagesStatusesTableName).
+		Join(
+			fmt.Sprintf(
+				"%s ON %s.%s = %s.%s",
+				messagesTableName,
+				messagesStatusesTableName,
+				messageIDColumnName,
+				messagesTableName,
+				idColumnName,
+			),
+		).
+		Where(
+			sq.Expr(
+				fmt.Sprintf(
+					"%s.%s = %s.%s",
+					messagesTableName,
+					chatIDColumnName,
+					chatsTableName,
+					idColumnName,
+				),
+			),
+		).
+		Where(
+			sq.Eq{
+				fmt.Sprintf("%s.%s", messagesStatusesTableName, userIDColumnName): userID,
+			},
+		).
+		Where(
+			sq.Eq{
+				fmt.Sprintf("%s.%s", messagesStatusesTableName, isReadColumnName): false,
+			},
+		).
+		Where(
+			sq.Eq{
+				fmt.Sprintf("%s.%s", messagesStatusesTableName, isDeletedColumnName): false,
+			},
+		)
+
+	unreadCountSQL, unreadCountArgs, err := unreadCountSubquery.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	unreadCountColumn := fmt.Sprintf("(%s) AS %s", unreadCountSQL, unreadCountColumnName)
+
+	columnsForSelect := []string{
+		fmt.Sprintf("%s.%s", chatsTableName, idColumnName),
+		fmt.Sprintf("%s.%s", chatsTableName, titleColumnName),
+		fmt.Sprintf("%s.%s", chatsTableName, descriptionColumnName),
+		fmt.Sprintf("%s.%s", chatsTableName, typeColumnName),
+		fmt.Sprintf("%s.%s", chatsTableName, createdAtColumnName),
+		fmt.Sprintf("%s.%s", chatsTableName, updatedAtColumnName),
+	}
+
 	stmt, params, err := sq.
-		Select(selectAllColumns).
+		Select(columnsForSelect...).
+		Column(unreadCountColumn, unreadCountArgs...).
 		From(chatsTableName).
-		Where(sq.Eq{idColumnName: id}).
+		Where(sq.Eq{fmt.Sprintf("%s.%s", chatsTableName, idColumnName): id}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
@@ -354,7 +413,7 @@ func (repo *Repository) GetChatByID(
 
 	columns := pg.GetEntityColumns(chat) // Only pointer to use rows.Scan() successfully
 
-	columns = columns[:len(columns)-3] // Not to paste Members, Messages and IsRead fields to Scan function.
+	columns = columns[:len(columns)-2] // Not to paste Members, Messages fields to Scan function.
 
 	if err = repo.tx.QueryRowContext(ctx, stmt, params...).Scan(columns...); err != nil {
 		return nil, err

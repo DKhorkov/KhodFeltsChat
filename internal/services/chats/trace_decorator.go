@@ -28,7 +28,7 @@ func NewTraceDecorator(
 
 func (d *TraceDecorator) GetChatByID(
 	ctx context.Context,
-	chatID uint64,
+	chatID, userID uint64,
 ) (*domains.Chat, error) {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
@@ -36,12 +36,12 @@ func (d *TraceDecorator) GetChatByID(
 	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
 	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
 
-	return d.base.GetChatByID(ctx, chatID)
+	return d.base.GetChatByID(ctx, chatID, userID)
 }
 
 func (d *TraceDecorator) GetChatMembers(
 	ctx context.Context,
-	chatID uint64,
+	chatID, userID uint64,
 ) ([]domains.User, error) {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
@@ -49,7 +49,7 @@ func (d *TraceDecorator) GetChatMembers(
 	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
 	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
 
-	return d.base.GetChatMembers(ctx, chatID)
+	return d.base.GetChatMembers(ctx, chatID, userID)
 }
 
 func (d *TraceDecorator) GetUserChats(

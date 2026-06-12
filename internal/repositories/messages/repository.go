@@ -467,6 +467,30 @@ func (repo *Repository) ReadAllChatMessages(
 	return err
 }
 
+func (repo *Repository) GetUserUnreadCount(
+	ctx context.Context,
+	userID uint64,
+) (uint64, error) {
+	stmt, params, err := sq.
+		Select("COUNT(*)").
+		From(messagesStatusesTableName).
+		Where(sq.Eq{userIDColumnName: userID}).
+		Where(sq.Eq{isReadColumnName: false}).
+		Where(sq.Eq{isDeletedColumnName: false}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return 0, err
+	}
+
+	var count uint64
+	if err = repo.tx.QueryRowContext(ctx, stmt, params...).Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (repo *Repository) DeleteMessageForUser(
 	ctx context.Context,
 	userID uint64,

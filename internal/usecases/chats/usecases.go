@@ -24,8 +24,11 @@ func New(
 	}
 }
 
-func (u *UseCases) GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error) {
-	return u.chatsService.GetChatMembers(ctx, chatID)
+func (u *UseCases) GetChatMembers(
+	ctx context.Context,
+	chatID, userID uint64,
+) ([]domains.User, error) {
+	return u.chatsService.GetChatMembers(ctx, chatID, userID)
 }
 
 func (u *UseCases) GetUserChats(

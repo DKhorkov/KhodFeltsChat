@@ -413,7 +413,7 @@ func TestTraceDecorator_SendNewMessageByWebPush(t *testing.T) {
 					})
 
 				mockBase.EXPECT().
-					SendNewMessageByWebPush(gomock.Any(), gomock.Any(), gomock.Any()).
+					SendNewMessageByWebPush(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil)
 			},
 			expectedError: nil,
@@ -443,7 +443,7 @@ func TestTraceDecorator_SendNewMessageByWebPush(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					SendNewMessageByWebPush(gomock.Any(), gomock.Any(), gomock.Any()).
+					SendNewMessageByWebPush(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("web push error"))
 			},
 			expectedError: errors.New("web push error"),
@@ -476,7 +476,7 @@ func TestTraceDecorator_SendNewMessageByWebPush(t *testing.T) {
 			decorator := notifications.NewTraceDecorator(mockProvider, spanConfig, mockBase)
 
 			ctx := context.Background()
-			err := decorator.SendNewMessageByWebPush(ctx, tt.subscription, tt.message)
+			err := decorator.SendNewMessageByWebPush(ctx, tt.subscription, tt.message, 0)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

@@ -43,7 +43,8 @@ static/
 
 ### sw.js — Service Worker
 
-- Обрабатывает `push` event: показывает системное уведомление.
+- Обрабатывает `push` event: показывает системное уведомление и обновляет PWA-бейдж.
+- **Бейдж PWA**: вызывает `navigator.setAppBadge(data.unreadCount)` или `clearAppBadge()` из payload. Делает это **до** `showNotification` внутри `event.waitUntil`, иначе iOS может прибить SW до резолва промиса. Работает только в PWA, добавленной на homescreen (iOS 16.4+).
 - На iOS `showNotification` вызывается **всегда** — iOS отбрасывает push
   без этого вызова и может отозвать разрешение.
 - На десктопе подавляет уведомление, если чат в фокусе.
