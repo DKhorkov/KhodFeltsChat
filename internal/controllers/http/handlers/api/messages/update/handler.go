@@ -87,7 +87,7 @@ func Handler(u interfaces.MessagesUseCases, broadcaster interfaces.WSBroadcaster
 			return
 		}
 
-		broadcaster.BroadcastMessageEdited(r.Context(), updatedMessage.ChatID, messageID)
+		broadcaster.BroadcastMessageEdited(r.Context(), updatedMessage.ChatID, messageID, userID)
 
 		w.WriteHeader(http.StatusNoContent)
 	}

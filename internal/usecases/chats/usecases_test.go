@@ -45,7 +45,7 @@ func TestUseCases_GetChatMembers(t *testing.T) {
 			fields: fields{
 				mockChatsService: func(cs *mockservices.MockChatsService) {
 					cs.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(100)).
+						GetChatMembers(gomock.Any(), uint64(100), uint64(0)).
 						Return(expectedMembers, nil)
 				},
 			},
@@ -61,7 +61,7 @@ func TestUseCases_GetChatMembers(t *testing.T) {
 			fields: fields{
 				mockChatsService: func(cs *mockservices.MockChatsService) {
 					cs.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(100)).
+						GetChatMembers(gomock.Any(), uint64(100), uint64(0)).
 						Return(nil, errors.New("chat not found"))
 				},
 			},
@@ -78,7 +78,7 @@ func TestUseCases_GetChatMembers(t *testing.T) {
 			fields: fields{
 				mockChatsService: func(cs *mockservices.MockChatsService) {
 					cs.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(101)).
+						GetChatMembers(gomock.Any(), uint64(101), uint64(0)).
 						Return([]domains.User{}, nil)
 				},
 			},
@@ -94,7 +94,7 @@ func TestUseCases_GetChatMembers(t *testing.T) {
 			fields: fields{
 				mockChatsService: func(cs *mockservices.MockChatsService) {
 					cs.EXPECT().
-						GetChatMembers(gomock.Any(), uint64(102)).
+						GetChatMembers(gomock.Any(), uint64(102), uint64(0)).
 						Return([]domains.User{{ID: 1, Username: "singleuser"}}, nil)
 				},
 			},
@@ -128,7 +128,7 @@ func TestUseCases_GetChatMembers(t *testing.T) {
 			uc := chats.New(mockChatsService, mockUsersService)
 
 			// Act
-			got, err := uc.GetChatMembers(tt.args.ctx, tt.args.chatID)
+			got, err := uc.GetChatMembers(tt.args.ctx, tt.args.chatID, 0)
 
 			// Assert
 			if tt.wantErr {

@@ -85,7 +85,7 @@ func (s *Service) GetChatMessages(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
 			chatsRepository := s.newChatsRepositoryFunc(tx)
-			if _, err = chatsRepository.GetChatByID(ctx, chatID); err != nil {
+			if _, err = chatsRepository.GetChatByID(ctx, chatID, userID); err != nil {
 				return fmt.Errorf("%w: %w", customerrors.ErrChatNotFound, err)
 			}
 

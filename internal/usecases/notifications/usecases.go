@@ -79,7 +79,7 @@ func (u *UseCases) SendNewMessageByEmail(
 		return err
 	}
 
-	chat, err := u.chatsService.GetChatByID(ctx, message.ChatID)
+	chat, err := u.chatsService.GetChatByID(ctx, message.ChatID, userID)
 	if err != nil {
 		return err
 	}

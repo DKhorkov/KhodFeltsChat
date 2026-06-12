@@ -45,7 +45,7 @@ func (u *UseCases) GetChatMessages(
 		return nil, err
 	}
 
-	chatMembers, err := u.chatsService.GetChatMembers(ctx, chatID)
+	chatMembers, err := u.chatsService.GetChatMembers(ctx, chatID, userID)
 	if err != nil {
 		return nil, err
 	}

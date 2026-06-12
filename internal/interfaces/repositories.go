@@ -58,7 +58,7 @@ type ChatsRepository interface {
 		pagination *domains.Pagination,
 	) ([]domains.Chat, error)
 	CreateChat(ctx context.Context, chat domains.Chat) (uint64, error)
-	GetChatByID(ctx context.Context, id uint64) (*domains.Chat, error)
+	GetChatByID(ctx context.Context, id, userID uint64) (*domains.Chat, error)
 	PrivateChatExists(ctx context.Context, members []domains.User) (bool, error)
 }
 

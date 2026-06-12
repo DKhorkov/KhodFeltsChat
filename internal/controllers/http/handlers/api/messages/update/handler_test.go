@@ -85,7 +85,7 @@ func TestHandler(t *testing.T) {
 					}, nil)
 
 				b.EXPECT().
-					BroadcastMessageEdited(gomock.Any(), chatID, messageID)
+					BroadcastMessageEdited(gomock.Any(), chatID, messageID, userID)
 			},
 			expectedStatus: http.StatusNoContent,
 		},

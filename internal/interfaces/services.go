@@ -42,8 +42,8 @@ type AuthService interface {
 
 //go:generate mockgen -source=services.go -destination=../../mocks/services/chats_service.go -package=mockservices -exclude_interfaces=UsersService,AuthService,MessagesService,NotificationsService,SettingsService,WebPushSubscriptionsService,FileStorageService
 type ChatsService interface {
-	GetChatByID(ctx context.Context, chatID uint64) (*domains.Chat, error)
-	GetChatMembers(ctx context.Context, chatID uint64) ([]domains.User, error)
+	GetChatByID(ctx context.Context, chatID, userID uint64) (*domains.Chat, error)
+	GetChatMembers(ctx context.Context, chatID, userID uint64) ([]domains.User, error)
 	GetUserChats(
 		ctx context.Context,
 		userID uint64,

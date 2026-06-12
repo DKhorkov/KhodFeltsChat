@@ -90,7 +90,7 @@ func Handler(u interfaces.MessagesUseCases, broadcaster interfaces.WSBroadcaster
 		}
 
 		if dto.ForAll {
-			broadcaster.BroadcastMessageDeleted(r.Context(), message.ChatID, messageID)
+			broadcaster.BroadcastMessageDeleted(r.Context(), message.ChatID, messageID, userID)
 		} else {
 			broadcaster.SendMessageDeletedToUser(r.Context(), message.ChatID, messageID, userID)
 		}

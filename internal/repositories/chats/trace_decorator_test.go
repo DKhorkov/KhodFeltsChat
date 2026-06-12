@@ -731,6 +731,7 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 	tests := []struct {
 		name          string
 		chatID        uint64
+		userID        uint64
 		setupMocks    func(*mocktracing.MockProvider, *mockrepositories.MockChatsRepository, *mocktracing.MockSpan)
 		expectedChat  *domains.Chat
 		expectedError error
@@ -738,6 +739,7 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 		{
 			name:   "successful get chat by id with tracing",
 			chatID: 1,
+			userID: 1,
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockrepositories.MockChatsRepository,
@@ -750,7 +752,7 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 					})
 
 				mockBase.EXPECT().
-					GetChatByID(gomock.Any(), uint64(1)).
+					GetChatByID(gomock.Any(), uint64(1), uint64(1)).
 					Return(&domains.Chat{
 						ID:    1,
 						Type:  domains.ChatTypePrivate,
@@ -759,8 +761,9 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 							{ID: 1, Username: "user1"},
 							{ID: 2, Username: "user2"},
 						},
-						CreatedAt: now,
-						UpdatedAt: now,
+						CreatedAt:   now,
+						UpdatedAt:   now,
+						UnreadCount: 3,
 					}, nil)
 			},
 			expectedChat: &domains.Chat{
@@ -771,14 +774,16 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 					{ID: 1, Username: "user1"},
 					{ID: 2, Username: "user2"},
 				},
-				CreatedAt: now,
-				UpdatedAt: now,
+				CreatedAt:   now,
+				UpdatedAt:   now,
+				UnreadCount: 3,
 			},
 			expectedError: nil,
 		},
 		{
 			name:   "chat not found",
 			chatID: 999,
+			userID: 1,
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockrepositories.MockChatsRepository,
@@ -789,7 +794,7 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					GetChatByID(gomock.Any(), uint64(999)).
+					GetChatByID(gomock.Any(), uint64(999), uint64(1)).
 					Return(nil, errors.New("chat not found"))
 			},
 			expectedChat:  nil,
@@ -798,6 +803,7 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 		{
 			name:   "user not authorized to view chat",
 			chatID: 1,
+			userID: 1,
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockrepositories.MockChatsRepository,
@@ -808,7 +814,7 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					GetChatByID(gomock.Any(), uint64(1)).
+					GetChatByID(gomock.Any(), uint64(1), uint64(1)).
 					Return(nil, errors.New("user not authorized to view this chat"))
 			},
 			expectedChat:  nil,
@@ -817,6 +823,7 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 		{
 			name:   "database error",
 			chatID: 1,
+			userID: 1,
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockrepositories.MockChatsRepository,
@@ -827,11 +834,45 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					GetChatByID(gomock.Any(), uint64(1)).
+					GetChatByID(gomock.Any(), uint64(1), uint64(1)).
 					Return(nil, errors.New("database connection failed"))
 			},
 			expectedChat:  nil,
 			expectedError: errors.New("database connection failed"),
+		},
+		{
+			name:   "existence check with userID=0",
+			chatID: 1,
+			userID: 0,
+			setupMocks: func(
+				mockProvider *mocktracing.MockProvider,
+				mockBase *mockrepositories.MockChatsRepository,
+				mockSpan *mocktracing.MockSpan,
+			) {
+				mockProvider.EXPECT().
+					Span(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(context.Background(), mockSpan)
+
+				mockBase.EXPECT().
+					GetChatByID(gomock.Any(), uint64(1), uint64(0)).
+					Return(&domains.Chat{
+						ID:          1,
+						Type:        domains.ChatTypeGroup,
+						Title:       pointers.New[string]("General"),
+						CreatedAt:   now,
+						UpdatedAt:   now,
+						UnreadCount: 0,
+					}, nil)
+			},
+			expectedChat: &domains.Chat{
+				ID:          1,
+				Type:        domains.ChatTypeGroup,
+				Title:       pointers.New[string]("General"),
+				CreatedAt:   now,
+				UpdatedAt:   now,
+				UnreadCount: 0,
+			},
+			expectedError: nil,
 		},
 	}
 
@@ -860,7 +901,7 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 			decorator := chats.NewTraceDecorator(mockProvider, spanConfig, mockBase)
 
 			ctx := context.Background()
-			chat, err := decorator.GetChatByID(ctx, tt.chatID)
+			chat, err := decorator.GetChatByID(ctx, tt.chatID, tt.userID)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

@@ -68,7 +68,7 @@ func (d *TraceDecorator) CreateChat(
 
 func (d *TraceDecorator) GetChatByID(
 	ctx context.Context,
-	id uint64,
+	id, userID uint64,
 ) (*domains.Chat, error) {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
@@ -76,7 +76,7 @@ func (d *TraceDecorator) GetChatByID(
 	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
 	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
 
-	return d.base.GetChatByID(ctx, id)
+	return d.base.GetChatByID(ctx, id, userID)
 }
 
 func (d *TraceDecorator) PrivateChatExists(

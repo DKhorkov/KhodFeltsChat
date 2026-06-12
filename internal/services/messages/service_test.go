@@ -284,7 +284,7 @@ func TestService_GetChatMessages(t *testing.T) {
 
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(1)).
 						Return(chat, nil)
 				},
 
@@ -322,7 +322,7 @@ func TestService_GetChatMessages(t *testing.T) {
 
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(1)).
 						Return(chat, nil)
 				},
 
@@ -359,7 +359,7 @@ func TestService_GetChatMessages(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(999)).
+						GetChatByID(gomock.Any(), uint64(999), uint64(1)).
 						Return(nil, sql.ErrNoRows)
 				},
 			},
@@ -387,7 +387,7 @@ func TestService_GetChatMessages(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(1)).
 						Return(nil, errors.New("database error"))
 				},
 			},
@@ -415,7 +415,7 @@ func TestService_GetChatMessages(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(1)).
 						Return(chat, nil)
 				},
 				mockMessagesRepository: func(mr *mockrepositories.MockMessagesRepository) {
@@ -449,7 +449,7 @@ func TestService_GetChatMessages(t *testing.T) {
 
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(101)).
+						GetChatByID(gomock.Any(), uint64(101), uint64(1)).
 						Return(&domains.Chat{ID: 101}, nil)
 				},
 
@@ -487,7 +487,7 @@ func TestService_GetChatMessages(t *testing.T) {
 
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(1)).
 						Return(chat, nil)
 				},
 
@@ -533,7 +533,7 @@ func TestService_GetChatMessages(t *testing.T) {
 
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(2)).
 						Return(chat, nil)
 				},
 
@@ -571,7 +571,7 @@ func TestService_GetChatMessages(t *testing.T) {
 
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(2)).
 						Return(chat, nil)
 				},
 

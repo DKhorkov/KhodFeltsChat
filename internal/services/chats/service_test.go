@@ -60,7 +60,7 @@ func TestService_GetChatMembers(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(0)).
 						Return(chat, nil)
 
 					cr.EXPECT().
@@ -89,7 +89,7 @@ func TestService_GetChatMembers(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(999)).
+						GetChatByID(gomock.Any(), uint64(999), uint64(0)).
 						Return(nil, sql.ErrNoRows)
 				},
 			},
@@ -115,7 +115,7 @@ func TestService_GetChatMembers(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(0)).
 						Return(nil, errors.New("database error"))
 				},
 			},
@@ -141,7 +141,7 @@ func TestService_GetChatMembers(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(0)).
 						Return(chat, nil)
 
 					cr.EXPECT().
@@ -171,7 +171,7 @@ func TestService_GetChatMembers(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(101)).
+						GetChatByID(gomock.Any(), uint64(101), uint64(0)).
 						Return(&domains.Chat{ID: 101}, nil)
 
 					cr.EXPECT().
@@ -226,7 +226,7 @@ func TestService_GetChatMembers(t *testing.T) {
 			)
 
 			// Act
-			got, err := s.GetChatMembers(tt.args.ctx, tt.args.chatID)
+			got, err := s.GetChatMembers(tt.args.ctx, tt.args.chatID, 0)
 
 			// Assert
 			if tt.wantErr {
@@ -258,9 +258,10 @@ func TestService_GetChatByID(t *testing.T) {
 	type args struct {
 		ctx    context.Context
 		chatID uint64
+		userID uint64
 	}
 
-	chat := &domains.Chat{ID: 100, Title: pointers.New("Test Chat")}
+	chat := &domains.Chat{ID: 100, Title: pointers.New("Test Chat"), UnreadCount: 5}
 
 	tests := []struct {
 		name    string
@@ -284,13 +285,14 @@ func TestService_GetChatByID(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(1)).
 						Return(chat, nil)
 				},
 			},
 			args: args{
 				ctx:    context.Background(),
 				chatID: 100,
+				userID: 1,
 			},
 			want:    chat,
 			wantErr: false,
@@ -309,13 +311,14 @@ func TestService_GetChatByID(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(999)).
+						GetChatByID(gomock.Any(), uint64(999), uint64(1)).
 						Return(nil, sql.ErrNoRows)
 				},
 			},
 			args: args{
 				ctx:    context.Background(),
 				chatID: 999,
+				userID: 1,
 			},
 			want:    nil,
 			wantErr: true,
@@ -335,13 +338,14 @@ func TestService_GetChatByID(t *testing.T) {
 				},
 				mockChatsRepository: func(cr *mockrepositories.MockChatsRepository) {
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(100)).
+						GetChatByID(gomock.Any(), uint64(100), uint64(1)).
 						Return(nil, errors.New("database error"))
 				},
 			},
 			args: args{
 				ctx:    context.Background(),
 				chatID: 100,
+				userID: 1,
 			},
 			want:    nil,
 			wantErr: true,
@@ -383,7 +387,7 @@ func TestService_GetChatByID(t *testing.T) {
 			)
 
 			// Act
-			got, err := s.GetChatByID(tt.args.ctx, tt.args.chatID)
+			got, err := s.GetChatByID(tt.args.ctx, tt.args.chatID, tt.args.userID)
 
 			// Assert
 			if tt.wantErr {
@@ -824,7 +828,7 @@ func TestService_CreateChat(t *testing.T) {
 						Return(createdChatID, nil)
 
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), createdChatID).
+						GetChatByID(gomock.Any(), createdChatID, uint64(0)).
 						Return(createdChat, nil)
 
 					cr.EXPECT().
@@ -888,7 +892,7 @@ func TestService_CreateChat(t *testing.T) {
 						Return(createdChatID, nil)
 
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), createdChatID).
+						GetChatByID(gomock.Any(), createdChatID, uint64(0)).
 						Return(nil, errors.New("chat not found"))
 				},
 			},
@@ -918,7 +922,7 @@ func TestService_CreateChat(t *testing.T) {
 						Return(createdChatID, nil)
 
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), createdChatID).
+						GetChatByID(gomock.Any(), createdChatID, uint64(0)).
 						Return(createdChat, nil)
 
 					cr.EXPECT().
@@ -960,7 +964,7 @@ func TestService_CreateChat(t *testing.T) {
 						Return(uint64(101), nil)
 
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(101)).
+						GetChatByID(gomock.Any(), uint64(101), uint64(0)).
 						Return(&domains.Chat{
 							ID:   101,
 							Type: domains.ChatTypePrivate,
@@ -1014,7 +1018,7 @@ func TestService_CreateChat(t *testing.T) {
 						Return(uint64(102), nil)
 
 					cr.EXPECT().
-						GetChatByID(gomock.Any(), uint64(102)).
+						GetChatByID(gomock.Any(), uint64(102), uint64(0)).
 						Return(&domains.Chat{
 							ID:    102,
 							Title: pointers.New("Self Chat"),

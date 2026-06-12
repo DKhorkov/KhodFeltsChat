@@ -98,7 +98,7 @@ func TestTraceDecorator_GetChatMembers(t *testing.T) {
 					})
 
 				mockBase.EXPECT().
-					GetChatMembers(gomock.Any(), uint64(1)).
+					GetChatMembers(gomock.Any(), uint64(1), uint64(0)).
 					Return([]domains.User{
 						{
 							ID:        1,
@@ -161,7 +161,7 @@ func TestTraceDecorator_GetChatMembers(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					GetChatMembers(gomock.Any(), uint64(2)).
+					GetChatMembers(gomock.Any(), uint64(2), uint64(0)).
 					Return([]domains.User{
 						{ID: 1, Username: "user1"},
 						{ID: 2, Username: "user2"},
@@ -186,7 +186,7 @@ func TestTraceDecorator_GetChatMembers(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					GetChatMembers(gomock.Any(), uint64(3)).
+					GetChatMembers(gomock.Any(), uint64(3), uint64(0)).
 					Return([]domains.User{}, nil)
 			},
 			expectedMembers: []domains.User{},
@@ -205,7 +205,7 @@ func TestTraceDecorator_GetChatMembers(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					GetChatMembers(gomock.Any(), uint64(999)).
+					GetChatMembers(gomock.Any(), uint64(999), uint64(0)).
 					Return(nil, errors.New("chat not found"))
 			},
 			expectedMembers: nil,
@@ -224,7 +224,7 @@ func TestTraceDecorator_GetChatMembers(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					GetChatMembers(gomock.Any(), uint64(1)).
+					GetChatMembers(gomock.Any(), uint64(1), uint64(0)).
 					Return(nil, errors.New("user not authorized"))
 			},
 			expectedMembers: nil,
@@ -243,7 +243,7 @@ func TestTraceDecorator_GetChatMembers(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					GetChatMembers(gomock.Any(), uint64(1)).
+					GetChatMembers(gomock.Any(), uint64(1), uint64(0)).
 					Return(nil, errors.New("database connection failed"))
 			},
 			expectedMembers: nil,
@@ -277,7 +277,7 @@ func TestTraceDecorator_GetChatMembers(t *testing.T) {
 			decorator := chats.NewTraceDecorator(mockProvider, spanConfig, mockBase)
 
 			ctx := context.Background()
-			members, err := decorator.GetChatMembers(ctx, tt.chatID)
+			members, err := decorator.GetChatMembers(ctx, tt.chatID, 0)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)
@@ -316,7 +316,7 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 					})
 
 				mockBase.EXPECT().
-					GetChatByID(gomock.Any(), uint64(1)).
+					GetChatByID(gomock.Any(), uint64(1), uint64(0)).
 					Return(&domains.Chat{
 						ID:    1,
 						Title: pointers.New("Test Chat"),
@@ -343,7 +343,7 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					GetChatByID(gomock.Any(), uint64(999)).
+					GetChatByID(gomock.Any(), uint64(999), uint64(0)).
 					Return(nil, errors.New("chat not found"))
 			},
 			expectedChat:  nil,
@@ -362,7 +362,7 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					GetChatByID(gomock.Any(), uint64(1)).
+					GetChatByID(gomock.Any(), uint64(1), uint64(0)).
 					Return(nil, errors.New("database connection failed"))
 			},
 			expectedChat:  nil,
@@ -396,7 +396,7 @@ func TestTraceDecorator_GetChatByID(t *testing.T) {
 			decorator := chats.NewTraceDecorator(mockProvider, spanConfig, mockBase)
 
 			ctx := context.Background()
-			chat, err := decorator.GetChatByID(ctx, tt.chatID)
+			chat, err := decorator.GetChatByID(ctx, tt.chatID, 0)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

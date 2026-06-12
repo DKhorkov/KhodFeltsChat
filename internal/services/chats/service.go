@@ -31,7 +31,7 @@ func New(
 
 func (s *Service) GetChatByID(
 	ctx context.Context,
-	chatID uint64,
+	chatID, userID uint64,
 ) (*domains.Chat, error) {
 	var (
 		chat *domains.Chat
@@ -42,7 +42,7 @@ func (s *Service) GetChatByID(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
 			chatsRepository := s.newChatsRepositoryFunc(tx)
-			if chat, err = chatsRepository.GetChatByID(ctx, chatID); err != nil {
+			if chat, err = chatsRepository.GetChatByID(ctx, chatID, userID); err != nil {
 				return err
 			}
 
@@ -58,7 +58,7 @@ func (s *Service) GetChatByID(
 
 func (s *Service) GetChatMembers(
 	ctx context.Context,
-	chatID uint64,
+	chatID, userID uint64,
 ) ([]domains.User, error) {
 	var (
 		members []domains.User
@@ -69,7 +69,7 @@ func (s *Service) GetChatMembers(
 		ctx,
 		func(ctx context.Context, tx pg.Transaction) error {
 			chatsRepository := s.newChatsRepositoryFunc(tx)
-			if _, err = chatsRepository.GetChatByID(ctx, chatID); err != nil {
+			if _, err = chatsRepository.GetChatByID(ctx, chatID, userID); err != nil {
 				return fmt.Errorf("%w: %w", customerrors.ErrChatNotFound, err)
 			}
 
@@ -160,7 +160,8 @@ func (s *Service) CreateChat(
 				return err
 			}
 
-			if createdChat, err = chatsRepository.GetChatByID(ctx, chatID); err != nil {
+			// userID=0 — у только что созданного чата непрочитанных всё равно ноль.
+			if createdChat, err = chatsRepository.GetChatByID(ctx, chatID, 0); err != nil {
 				return err
 			}
 

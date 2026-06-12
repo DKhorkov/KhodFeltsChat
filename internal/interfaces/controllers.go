@@ -10,7 +10,7 @@ type Controller interface {
 
 //go:generate mockgen -source=controllers.go -destination=../../mocks/controllers/ws_broadcaster.go -package=mockcontrollers -exclude_interfaces=Controller
 type WSBroadcaster interface {
-	BroadcastMessageDeleted(ctx context.Context, chatID uint64, messageID uint64)
-	SendMessageDeletedToUser(ctx context.Context, chatID uint64, messageID uint64, userID uint64)
-	BroadcastMessageEdited(ctx context.Context, chatID uint64, messageID uint64)
+	BroadcastMessageDeleted(ctx context.Context, chatID, messageID, userID uint64)
+	SendMessageDeletedToUser(ctx context.Context, chatID, messageID, userID uint64)
+	BroadcastMessageEdited(ctx context.Context, chatID, messageID, userID uint64)
 }

@@ -543,8 +543,9 @@ func (s *RepositoryTestSuite) TestGetChatByID_Success() {
 
 	// Тест: Получение чата по ID
 	chatID := uint64(1) // General Chat
+	userID := uint64(1)
 
-	chat, err := s.repository.GetChatByID(s.ctx, chatID)
+	chat, err := s.repository.GetChatByID(s.ctx, chatID, userID)
 	s.NoError(err)
 	s.NotNil(chat)
 
@@ -555,10 +556,10 @@ func (s *RepositoryTestSuite) TestGetChatByID_Success() {
 	s.NotZero(chat.CreatedAt)
 	s.NotZero(chat.UpdatedAt)
 
-	// Проверяем, что поля Members, Messages и UnreadCount не заполнены
+	// Проверяем, что поля Members и Messages не заполнены, UnreadCount = 0 (нет сообщений)
 	s.Nil(chat.Members)
 	s.Nil(chat.Messages)
-	s.Zero(chat.UnreadCount) // Значение по умолчанию
+	s.Zero(chat.UnreadCount)
 }
 
 func (s *RepositoryTestSuite) TestGetChatByID_PrivateChat() {
@@ -568,8 +569,9 @@ func (s *RepositoryTestSuite) TestGetChatByID_PrivateChat() {
 
 	// Тест: Получение приватного чата
 	chatID := uint64(2) // Private Chat 1-4
+	userID := uint64(1)
 
-	chat, err := s.repository.GetChatByID(s.ctx, chatID)
+	chat, err := s.repository.GetChatByID(s.ctx, chatID, userID)
 	s.NoError(err)
 	s.NotNil(chat)
 
@@ -581,7 +583,7 @@ func (s *RepositoryTestSuite) TestGetChatByID_PrivateChat() {
 
 func (s *RepositoryTestSuite) TestGetChatByID_NotFound() {
 	// Тест: Попытка получить несуществующий чат
-	chat, err := s.repository.GetChatByID(s.ctx, 999)
+	chat, err := s.repository.GetChatByID(s.ctx, 999, 0)
 	s.Error(err)
 	s.Nil(chat)
 	s.Contains(err.Error(), "no rows")
@@ -589,9 +591,68 @@ func (s *RepositoryTestSuite) TestGetChatByID_NotFound() {
 
 func (s *RepositoryTestSuite) TestGetChatByID_ZeroID() {
 	// Тест: Попытка получить чат с ID = 0
-	chat, err := s.repository.GetChatByID(s.ctx, 0)
+	chat, err := s.repository.GetChatByID(s.ctx, 0, 0)
 	s.Error(err)
 	s.Nil(chat)
+}
+
+func (s *RepositoryTestSuite) TestGetChatByID_UnreadCount_CountsUnreadOnly() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	userID := uint64(1)
+	chatID := uint64(1)
+
+	s.createMessage(chatID, 2)
+	s.createMessage(chatID, 2)
+	s.createMessage(chatID, 2)
+
+	s.createMessageStatus(1, userID, false, false) // unread
+	s.createMessageStatus(2, userID, false, false) // unread
+	s.createMessageStatus(3, userID, true, false)  // read
+
+	chat, err := s.repository.GetChatByID(s.ctx, chatID, userID)
+	s.NoError(err)
+	s.NotNil(chat)
+	s.Equal(uint64(2), chat.UnreadCount, "UnreadCount must count only unread non-deleted messages")
+}
+
+func (s *RepositoryTestSuite) TestGetChatByID_UnreadCount_ExcludesDeletedStatuses() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	userID := uint64(1)
+	chatID := uint64(1)
+
+	s.createMessage(chatID, 2)
+	s.createMessage(chatID, 2)
+
+	s.createMessageStatus(1, userID, false, false) // unread, not deleted
+	s.createMessageStatus(2, userID, false, true)  // unread, but deleted for user
+
+	chat, err := s.repository.GetChatByID(s.ctx, chatID, userID)
+	s.NoError(err)
+	s.NotNil(chat)
+	s.Equal(uint64(1), chat.UnreadCount, "UnreadCount must exclude deleted statuses")
+}
+
+func (s *RepositoryTestSuite) TestGetChatByID_UnreadCount_ZeroForUserIDZero() {
+	s.createTestUsers()
+	s.createTestChats()
+	s.createTestChatMembers()
+
+	chatID := uint64(1)
+
+	s.createMessage(chatID, 2)
+	s.createMessageStatus(1, 1, false, false) // unread для юзера 1
+
+	// userID=0 используется для existence-чеков; подзапрос вернёт 0 — нет статусов для user_id=0.
+	chat, err := s.repository.GetChatByID(s.ctx, chatID, 0)
+	s.NoError(err)
+	s.NotNil(chat)
+	s.Zero(chat.UnreadCount, "UnreadCount must be 0 when called with userID=0")
 }
 
 func (s *RepositoryTestSuite) TestPrivateChatExists_True() {

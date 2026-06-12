@@ -375,7 +375,7 @@ func TestUseCases_SendNewMessageByEmail(t *testing.T) {
 					CreatedAt: now,
 				}
 				mockChatsService.EXPECT().
-					GetChatByID(gomock.Any(), uint64(5)).
+					GetChatByID(gomock.Any(), uint64(5), uint64(1)).
 					Return(chat, nil)
 
 				mockNotificationsService.EXPECT().
@@ -445,7 +445,7 @@ func TestUseCases_SendNewMessageByEmail(t *testing.T) {
 					Return(&domains.Message{ID: 10, ChatID: 999}, nil)
 
 				mockChatsService.EXPECT().
-					GetChatByID(gomock.Any(), uint64(999)).
+					GetChatByID(gomock.Any(), uint64(999), uint64(1)).
 					Return(nil, errors.New("chat not found"))
 			},
 			expectedError: errors.New("chat not found"),
