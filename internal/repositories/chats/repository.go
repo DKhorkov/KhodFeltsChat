@@ -38,6 +38,7 @@ const (
 	avatarPathColumnName     = "avatar_path"
 
 	existsSubquery = "EXISTS (?)"
+	countSubquery  = "COUNT(*)"
 
 	selectAllColumns = "*"
 	selectExists     = "1"
@@ -148,7 +149,7 @@ func (repo *Repository) GetUserChats(
 	pagination *domains.Pagination,
 ) ([]domains.Chat, error) {
 	unreadCountSubquery := sq.
-		Select("COUNT(*)").
+		Select(countSubquery).
 		From(messagesStatusesTableName).
 		Join(
 			fmt.Sprintf(
