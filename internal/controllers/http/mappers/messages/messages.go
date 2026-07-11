@@ -1,6 +1,7 @@
 package messages
 
 import (
+	reactionsmapper "github.com/DKhorkov/kfc/internal/controllers/http/mappers/reactions"
 	"github.com/DKhorkov/kfc/internal/controllers/http/schemas"
 	"github.com/DKhorkov/kfc/internal/domains"
 )
@@ -30,6 +31,8 @@ func MapMessage(message domains.Message) schemas.Message {
 			CreatedAt: message.ReplyToMessage.CreatedAt,
 		}
 	}
+
+	mapped.Reactions = reactionsmapper.MapMessageReactions(message.Reactions)
 
 	return mapped
 }

@@ -22,6 +22,9 @@ import (
 	delete_message "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/delete"
 	get_message "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/get"
 	update_message "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/messages/update"
+	reactions_list "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/reactions/list"
+	reactions_set "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/reactions/set"
+	reactions_unset "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/reactions/unset"
 	get_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/get"
 	update_settings "github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/settings/update"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/users/delete_avatar"
@@ -67,6 +70,10 @@ const (
 	UpdateMessageURL  = MessagesURL + "/{%s}"
 	GetMessageByIDURL = MessagesURL + "/{%s}"
 
+	ReactionsURL            = "/reactions"
+	SetMessageReactionURL   = MessagesURL + "/{%s}/reactions"
+	UnsetMessageReactionURL = MessagesURL + "/{%s}/reactions/{%s}"
+
 	AvatarURL       = MeURL + "/avatar"
 	FilesURL        = "/files"
 	FileDownloadURL = FilesURL + "/download/{%s}"
@@ -85,6 +92,7 @@ func SetupHandlers(
 	authUseCases interfaces.AuthUseCases,
 	chatsUseCases interfaces.ChatsUseCases,
 	messagesUseCases interfaces.MessagesUseCases,
+	reactionsUseCases interfaces.ReactionsUseCases,
 	settingsUseCases interfaces.SettingsUseCases,
 	webPushSubscriptionsUseCases interfaces.WebPushSubscriptionsUseCases,
 	fileStorageUseCases interfaces.FileStorageUseCases,
@@ -112,6 +120,7 @@ func SetupHandlers(
 	)
 
 	getMux.Handle(WebsocketURL, http.HandlerFunc(websocketHandler.Handle))
+	getMux.Handle(ReactionsURL, reactions_list.Handler(reactionsUseCases))
 	getMux.Handle(SettingsURL, get_settings.Handler(settingsUseCases))
 	getMux.Handle(ChatsURL, user_chats.Handler(chatsUseCases))
 	getMux.Handle(
@@ -150,6 +159,10 @@ func SetupHandlers(
 	)
 	postMux.Handle(ChatsURL, create.Handler(chatsUseCases))
 	postMux.Handle(WebPushSubscribeURL, subscribe.Handler(webPushSubscriptionsUseCases))
+	postMux.Handle(
+		fmt.Sprintf(SetMessageReactionURL, common.IDRouteKey),
+		reactions_set.Handler(reactionsUseCases, websocketHandler),
+	)
 
 	putMux := apiMux.Methods(http.MethodPut).Subrouter()
 	putMux.Handle(MeURL, update.Handler(usersUseCases))
@@ -172,5 +185,9 @@ func SetupHandlers(
 	deleteMux.Handle(
 		fmt.Sprintf(DeleteMessageURL, common.IDRouteKey),
 		delete_message.Handler(messagesUseCases, websocketHandler),
+	)
+	deleteMux.Handle(
+		fmt.Sprintf(UnsetMessageReactionURL, common.IDRouteKey, common.ReactionIDRouteKey),
+		reactions_unset.Handler(reactionsUseCases, websocketHandler),
 	)
 }

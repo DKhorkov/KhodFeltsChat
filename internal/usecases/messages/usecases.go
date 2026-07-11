@@ -11,20 +11,23 @@ import (
 )
 
 type UseCases struct {
-	messagesService interfaces.MessagesService
-	usersService    interfaces.UsersService
-	chatsService    interfaces.ChatsService
+	messagesService   interfaces.MessagesService
+	usersService      interfaces.UsersService
+	chatsService      interfaces.ChatsService
+	reactionsUseCases interfaces.ReactionsUseCases
 }
 
 func New(
 	messagesService interfaces.MessagesService,
 	chatsService interfaces.ChatsService,
 	usersService interfaces.UsersService,
+	reactionsUseCases interfaces.ReactionsUseCases,
 ) *UseCases {
 	return &UseCases{
-		messagesService: messagesService,
-		chatsService:    chatsService,
-		usersService:    usersService,
+		messagesService:   messagesService,
+		chatsService:      chatsService,
+		usersService:      usersService,
+		reactionsUseCases: reactionsUseCases,
 	}
 }
 
@@ -59,7 +62,12 @@ func (u *UseCases) GetChatMessages(
 		return nil, customerrors.ErrUserIsNotChatMember
 	}
 
-	return u.messagesService.GetChatMessages(ctx, userID, chatID, pagination)
+	msgs, err := u.messagesService.GetChatMessages(ctx, userID, chatID, pagination)
+	if err != nil {
+		return nil, err
+	}
+
+	return u.reactionsUseCases.AttachReactions(ctx, msgs)
 }
 
 func (u *UseCases) GetMessageByID(
@@ -67,7 +75,12 @@ func (u *UseCases) GetMessageByID(
 	userID uint64,
 	messageID uint64,
 ) (*domains.Message, error) {
-	return u.messagesService.GetMessageByID(ctx, userID, messageID)
+	msg, err := u.messagesService.GetMessageByID(ctx, userID, messageID)
+	if err != nil {
+		return nil, err
+	}
+
+	return u.reactionsUseCases.AttachReaction(ctx, msg)
 }
 
 func (u *UseCases) GetUserUnreadCount(

@@ -190,6 +190,78 @@ func (h *Handler) BroadcastMessageEdited(
 	}
 }
 
+// BroadcastReactionAdded sends a reaction_added event to all chat members.
+func (h *Handler) BroadcastReactionAdded(
+	ctx context.Context,
+	chatID, messageID, userID, reactionID uint64,
+	emoji string,
+) {
+	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, chatID, userID)
+	if err != nil {
+		logging.LogErrorContext(
+			ctx,
+			h.logger,
+			"Failed to get chat members for reaction added broadcast",
+			err,
+			"ChatID", chatID,
+			"MessageID", messageID,
+			"ReactionID", reactionID,
+		)
+
+		return
+	}
+
+	event := domains.WSEvent{
+		Type: domains.WSEventReactionAdded,
+		Payload: domains.ReactionAddedPayload{
+			MessageID:  messageID,
+			ChatID:     chatID,
+			UserID:     userID,
+			ReactionID: reactionID,
+			Emoji:      emoji,
+		},
+	}
+
+	for _, member := range chatMembers {
+		h.sendToUser(ctx, member.ID, event)
+	}
+}
+
+// BroadcastReactionRemoved sends a reaction_removed event to all chat members.
+func (h *Handler) BroadcastReactionRemoved(
+	ctx context.Context,
+	chatID, messageID, userID, reactionID uint64,
+) {
+	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, chatID, userID)
+	if err != nil {
+		logging.LogErrorContext(
+			ctx,
+			h.logger,
+			"Failed to get chat members for reaction removed broadcast",
+			err,
+			"ChatID", chatID,
+			"MessageID", messageID,
+			"ReactionID", reactionID,
+		)
+
+		return
+	}
+
+	event := domains.WSEvent{
+		Type: domains.WSEventReactionRemoved,
+		Payload: domains.ReactionRemovedPayload{
+			MessageID:  messageID,
+			ChatID:     chatID,
+			UserID:     userID,
+			ReactionID: reactionID,
+		},
+	}
+
+	for _, member := range chatMembers {
+		h.sendToUser(ctx, member.ID, event)
+	}
+}
+
 // SendMessageDeletedToUser sends a message_deleted event only to a specific user's connections.
 func (h *Handler) SendMessageDeletedToUser(
 	ctx context.Context,

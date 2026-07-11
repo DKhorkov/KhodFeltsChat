@@ -463,6 +463,17 @@ func New() Config {
 							},
 						},
 					},
+					Reactions: tracing.SpanConfig{
+						Name: "Reactions repository",
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{
+								Name: "Calling Reactions Repository",
+							},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Reactions Repository",
+							},
+						},
+					},
 					Settings: tracing.SpanConfig{
 						Name: "Settings repository",
 						Opts: []trace.SpanStartOption{
@@ -742,6 +753,15 @@ func New() Config {
 										),
 									),
 								},
+							},
+						},
+					},
+					Reactions: tracing.SpanConfig{
+						Name: "Reactions service",
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{Name: "Calling Reactions service"},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Reactions service",
 							},
 						},
 					},
@@ -1027,6 +1047,15 @@ func New() Config {
 							},
 						},
 					},
+					Reactions: tracing.SpanConfig{
+						Name: "Reactions useCases",
+						Events: tracing.SpanEventsConfig{
+							Start: tracing.SpanEventConfig{Name: "Calling Reactions useCases"},
+							End: tracing.SpanEventConfig{
+								Name: "Received response from Reactions useCases",
+							},
+						},
+					},
 					Notifications: tracing.SpanConfig{
 						Name: "Notifications useCases",
 						Opts: []trace.SpanStartOption{
@@ -1296,6 +1325,7 @@ type SpanRepositories struct {
 	Emails               tracing.SpanConfig
 	Chats                tracing.SpanConfig
 	Messages             tracing.SpanConfig
+	Reactions            tracing.SpanConfig
 	Settings             tracing.SpanConfig
 	WebPushSubscriptions tracing.SpanConfig
 	WebPush              tracing.SpanConfig
@@ -1307,6 +1337,7 @@ type SpanServices struct {
 	Users                tracing.SpanConfig
 	Chats                tracing.SpanConfig
 	Messages             tracing.SpanConfig
+	Reactions            tracing.SpanConfig
 	Notifications        tracing.SpanConfig
 	Settings             tracing.SpanConfig
 	WebPushSubscriptions tracing.SpanConfig
@@ -1318,6 +1349,7 @@ type SpanUseCases struct {
 	Users                tracing.SpanConfig
 	Chats                tracing.SpanConfig
 	Messages             tracing.SpanConfig
+	Reactions            tracing.SpanConfig
 	Notifications        tracing.SpanConfig
 	Settings             tracing.SpanConfig
 	WebPushSubscriptions tracing.SpanConfig

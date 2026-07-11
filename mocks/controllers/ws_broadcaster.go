@@ -64,6 +64,30 @@ func (mr *MockWSBroadcasterMockRecorder) BroadcastMessageEdited(ctx, chatID, mes
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastMessageEdited", reflect.TypeOf((*MockWSBroadcaster)(nil).BroadcastMessageEdited), ctx, chatID, messageID, userID)
 }
 
+// BroadcastReactionAdded mocks base method.
+func (m *MockWSBroadcaster) BroadcastReactionAdded(ctx context.Context, chatID, messageID, userID, reactionID uint64, emoji string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "BroadcastReactionAdded", ctx, chatID, messageID, userID, reactionID, emoji)
+}
+
+// BroadcastReactionAdded indicates an expected call of BroadcastReactionAdded.
+func (mr *MockWSBroadcasterMockRecorder) BroadcastReactionAdded(ctx, chatID, messageID, userID, reactionID, emoji any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastReactionAdded", reflect.TypeOf((*MockWSBroadcaster)(nil).BroadcastReactionAdded), ctx, chatID, messageID, userID, reactionID, emoji)
+}
+
+// BroadcastReactionRemoved mocks base method.
+func (m *MockWSBroadcaster) BroadcastReactionRemoved(ctx context.Context, chatID, messageID, userID, reactionID uint64) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "BroadcastReactionRemoved", ctx, chatID, messageID, userID, reactionID)
+}
+
+// BroadcastReactionRemoved indicates an expected call of BroadcastReactionRemoved.
+func (mr *MockWSBroadcasterMockRecorder) BroadcastReactionRemoved(ctx, chatID, messageID, userID, reactionID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastReactionRemoved", reflect.TypeOf((*MockWSBroadcaster)(nil).BroadcastReactionRemoved), ctx, chatID, messageID, userID, reactionID)
+}
+
 // SendMessageDeletedToUser mocks base method.
 func (m *MockWSBroadcaster) SendMessageDeletedToUser(ctx context.Context, chatID, messageID, userID uint64) {
 	m.ctrl.T.Helper()

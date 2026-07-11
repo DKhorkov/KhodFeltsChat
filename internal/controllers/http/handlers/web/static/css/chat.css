@@ -547,6 +547,104 @@ img.chat-item__avatar {
     padding-left: var(--space-md);
 }
 
+/* Полоса реакций в контекстном меню */
+.context-menu__reactions {
+    display: flex;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    margin-top: var(--space-xs);
+    border-top: 1px solid var(--border);
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 260px;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+}
+
+.context-menu__reactions::-webkit-scrollbar {
+    height: 4px;
+}
+
+.context-menu__reactions::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 2px;
+}
+
+.context-menu__reaction {
+    flex: 0 0 auto;
+    border: none;
+    background: none;
+    font-size: 1.4rem;
+    line-height: 1;
+    padding: var(--space-xs);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-base), transform var(--transition-base);
+}
+
+.context-menu__reaction:hover {
+    background: var(--bg-hover);
+    transform: scale(1.15);
+}
+
+.context-menu__reaction--active {
+    background: var(--bg-hover);
+    box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* Бэйджи реакций на самом пузыре сообщения */
+.message-bubble__reactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    margin-top: var(--space-xs);
+}
+
+.message-bubble__reaction {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px var(--space-xs);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.06);
+    border: 1px solid transparent;
+    font-size: var(--font-sm);
+    line-height: 1;
+    cursor: pointer;
+    transition: background var(--transition-base), border-color var(--transition-base);
+}
+
+.message-bubble__reaction:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.message-bubble__reaction--mine {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: var(--accent);
+}
+
+.message-bubble--own .message-bubble__reaction {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.message-bubble--own .message-bubble__reaction:hover {
+    background: rgba(255, 255, 255, 0.28);
+}
+
+.message-bubble--own .message-bubble__reaction--mine {
+    background: rgba(255, 255, 255, 0.32);
+    border-color: rgba(255, 255, 255, 0.85);
+}
+
+.message-bubble__reaction-emoji {
+    font-size: 1rem;
+}
+
+.message-bubble__reaction-count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
 /* ═══════════════════════════════════════
    Подсветка целевого сообщения (scroll-to-reply)
    ═══════════════════════════════════════ */

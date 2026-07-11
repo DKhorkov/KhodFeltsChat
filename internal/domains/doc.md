@@ -23,6 +23,13 @@
 - `Received() *Message` — проставляет `CreatedAt = time.Now()`.
 - `Updated() *Message` — проставляет `UpdatedAt = time.Now()`.
 - Поле `ReplyToMessage *Message` — ссылка на сообщение, на которое отвечают (nil, если не ответ).
+- Поле `Reactions []MessageReactionSummary` — реакции на сообщение (nil, если реакций нет).
+
+### Reaction (`reaction.go`)
+Emoji-реакция из справочника: `ID`, `Emoji`.
+
+### MessageReactionSummary
+Агрегированные реакции на сообщении: `Reaction Reaction`, `UserIDs []uint64` — список юзеров, поставивших эту реакцию. Клиент вычисляет count как `len(UserIDs)`.
 
 ### WSEvent (`ws_event.go`)
 WebSocket-событие (envelope для передачи типизированных данных через WS).
@@ -30,9 +37,13 @@ WebSocket-событие (envelope для передачи типизирова�
   - `WSEventNewMessage` = `"new_message"` — новое сообщение.
   - `WSEventMessageDeleted` = `"message_deleted"` — удалённое сообщение.
   - `WSEventMessageEdited` = `"message_edited"` — отредактированное сообщение.
+- `WSEventReactionAdded` = `"reaction_added"` — поставлена реакция.
+- `WSEventReactionRemoved` = `"reaction_removed"` — снята реакция.
 - `WSEvent` — `Type WSEventType`, `Payload any`.
 - `MessageDeletedPayload` — `MessageID uint64`, `ChatID uint64`.
 - `MessageEditedPayload` — `MessageID uint64`, `ChatID uint64`, `Text string`.
+- `ReactionAddedPayload` — `MessageID`, `ChatID`, `UserID`, `ReactionID`, `Emoji`.
+- `ReactionRemovedPayload` — `MessageID`, `ChatID`, `UserID`, `ReactionID`.
 
 ### RefreshToken
 Токен обновления сессии: `ID`, `UserID`, `Value`, `TTL`, `CreatedAt`, `UpdatedAt`.
@@ -64,6 +75,7 @@ Push-подписка пользователя на Web Push уведомлен�
 | `SendForgetPasswordMessageDTO` | Email для отправки письма восстановления пароля |
 | `DeleteMessageDTO` | Удаление сообщения: `MessageID`, `UserID`, `ForAll` |
 | `UpdateMessageDTO` | Редактирование сообщения: `MessageID`, `UserID`, `Text` |
+| `MessageReactionDTO` | Установка/снятие реакции: `MessageID` (из URL), `ReactionID` (из body), `UserID` (из JWT) |
 
 
 ## Типы уведомлений (notifications.go)

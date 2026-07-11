@@ -1,5 +1,6 @@
 package common
 
 const (
-	IDRouteKey = "id"
+	IDRouteKey         = "id"
+	ReactionIDRouteKey = "reactionId"
 )

@@ -23,6 +23,7 @@ let replyToMessage = null;  // сообщение, на которое отве�
 let editingMessage = null;  // сообщение, которое редактируем
 let contextMenuMessageId = null; // ID сообщения для контекстного меню
 let contextMenuInputWasFocused = false; // был ли input в фокусе при открытии меню
+let reactionsDictionary = []; // справочник реакций {id, emoji}, грузится один раз при инициализации
 
 // Состояние кнопки "к последнему сообщению":
 // unreadMessageIds — набор ID сообщений, прилетевших пока пользователь был отскроллен вверх.
@@ -42,6 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await loadChats();
+    await loadReactionsDictionary();
     connectWebSocket();
     await initWebPushNotifications();
 
@@ -83,6 +85,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Периодическое обновление списка чатов:
     const chatsPollingInterval = setInterval(loadChats, CHAT_LIST_POLL_INTERVAL_MS);
 });
+
+async function loadReactionsDictionary() {
+    try {
+        const resp = await fetchWithAuth('/api/reactions');
+        if (!resp.ok) return;
+        reactionsDictionary = await resp.json() || [];
+    } catch (err) {
+        console.error('loadReactionsDictionary error:', err);
+    }
+}
 
 async function loadCurrentUser() {
     try {
@@ -161,6 +173,10 @@ function connectWebSocket() {
             handleMessageDeleted(envelope.payload).catch(err => console.error('handleMessageDeleted error:', err));
         } else if (envelope.type === 'message_edited') {
             handleMessageEdited(envelope.payload).catch(err => console.error('handleMessageEdited error:', err));
+        } else if (envelope.type === 'reaction_added') {
+            handleReactionAdded(envelope.payload);
+        } else if (envelope.type === 'reaction_removed') {
+            handleReactionRemoved(envelope.payload);
         }
     };
 
@@ -251,6 +267,86 @@ async function handleMessageEdited(payload) {
     }
 
     debouncedLoadChats();
+}
+
+// ═══════════════════════════════════════
+// Реакции: WS-события и API
+// ═══════════════════════════════════════
+
+// handleReactionAdded — юзер X поставил реакцию R на сообщение M.
+// Синхронизируем локальный state с сервером и перерисовываем бэйдж.
+function handleReactionAdded(payload) {
+    if (selectedChatId !== payload.chatId) return;
+
+    const msg = messages.find(m => m.id === payload.messageId);
+    if (!msg) return;
+
+    if (!Array.isArray(msg.reactions)) {
+        msg.reactions = [];
+    }
+
+    let summary = msg.reactions.find(r => r.reaction.id === payload.reactionId);
+    if (!summary) {
+        summary = {
+            reaction: {id: payload.reactionId, emoji: payload.emoji},
+            userIds: [],
+        };
+        msg.reactions.push(summary);
+    }
+
+    if (!summary.userIds.includes(payload.userId)) {
+        summary.userIds.push(payload.userId);
+    }
+
+    rerenderMessageReactions(msg);
+}
+
+function handleReactionRemoved(payload) {
+    if (selectedChatId !== payload.chatId) return;
+
+    const msg = messages.find(m => m.id === payload.messageId);
+    if (!msg || !Array.isArray(msg.reactions)) return;
+
+    const idx = msg.reactions.findIndex(r => r.reaction.id === payload.reactionId);
+    if (idx < 0) return;
+
+    msg.reactions[idx].userIds = msg.reactions[idx].userIds.filter(uid => uid !== payload.userId);
+    if (msg.reactions[idx].userIds.length === 0) {
+        msg.reactions.splice(idx, 1);
+    }
+
+    rerenderMessageReactions(msg);
+}
+
+// Отправляем POST — сервер вернёт 409 если реакция уже стоит;
+// в этом случае снимаем через DELETE (toggle-семантика на клиенте).
+async function toggleReaction(messageId, reactionId) {
+    try {
+        const setResp = await fetchWithAuth(`/api/messages/${messageId}/reactions`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({reactionId}),
+        });
+
+        if (setResp.ok) return;
+
+        if (setResp.status === 409) {
+            const delResp = await fetchWithAuth(
+                `/api/messages/${messageId}/reactions/${reactionId}`,
+                {method: 'DELETE'}
+            );
+            if (!delResp.ok) {
+                const text = await delResp.text();
+                showError(mapError(text));
+            }
+            return;
+        }
+
+        const text = await setResp.text();
+        showError(mapError(text));
+    } catch (err) {
+        showError('Ошибка сети: ' + err.message);
+    }
 }
 
 // ═══════════════════════════════════════
@@ -624,7 +720,71 @@ function createMessageBubble(message) {
     bubble.appendChild(header);
     bubble.appendChild(text);
 
+    const reactionsEl = buildReactionsElement(message);
+    if (reactionsEl) bubble.appendChild(reactionsEl);
+
     return bubble;
+}
+
+// buildReactionsElement — контейнер бэйджей реакций для сообщения.
+// Возвращает null, если реакций нет.
+function buildReactionsElement(message) {
+    if (!Array.isArray(message.reactions) || message.reactions.length === 0) {
+        return null;
+    }
+
+    const container = document.createElement('div');
+    container.className = 'message-bubble__reactions';
+
+    for (const summary of message.reactions) {
+        container.appendChild(buildReactionBadge(message.id, summary));
+    }
+
+    return container;
+}
+
+function buildReactionBadge(messageId, summary) {
+    const mine = Array.isArray(summary.userIds) && summary.userIds.includes(currentUser.id);
+    const count = Array.isArray(summary.userIds) ? summary.userIds.length : 0;
+
+    const badge = document.createElement('button');
+    badge.type = 'button';
+    badge.className = 'message-bubble__reaction' + (mine ? ' message-bubble__reaction--mine' : '');
+    badge.dataset.reactionId = summary.reaction.id;
+
+    const emojiEl = document.createElement('span');
+    emojiEl.className = 'message-bubble__reaction-emoji';
+    emojiEl.textContent = summary.reaction.emoji;
+
+    const countEl = document.createElement('span');
+    countEl.className = 'message-bubble__reaction-count';
+    countEl.textContent = String(count);
+
+    badge.appendChild(emojiEl);
+    badge.appendChild(countEl);
+
+    // Клик по бэйджу — toggle своей реакции.
+    badge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleReaction(messageId, summary.reaction.id).catch(console.error);
+    });
+
+    return badge;
+}
+
+// rerenderMessageReactions — сносит и перерисовывает контейнер реакций
+// в существующем пузыре. Используется из WS-обработчиков и toggle.
+function rerenderMessageReactions(message) {
+    const bubble = document.querySelector(
+        `.message-bubble[data-message-id="${message.id}"]`
+    );
+    if (!bubble) return;
+
+    const existing = bubble.querySelector('.message-bubble__reactions');
+    if (existing) existing.remove();
+
+    const fresh = buildReactionsElement(message);
+    if (fresh) bubble.appendChild(fresh);
 }
 
 function isFirstUnread(message, index) {
@@ -1603,6 +1763,45 @@ function restoreInputFocus() {
     }
 }
 
+// renderContextMenuReactions — заполняет полосу эмодзи в контекстном меню
+// из справочника reactionsDictionary. Эмодзи, стоящие от currentUser на этом
+// сообщении, подсвечиваются классом --active. Клик по эмодзи закрывает меню
+// и вызывает toggle: сервер отправит WS, который дорисует бэйдж на пузыре.
+function renderContextMenuReactions(message) {
+    const bar = document.getElementById('ctx-reactions-bar');
+    bar.innerHTML = '';
+
+    if (!message || reactionsDictionary.length === 0) {
+        bar.style.display = 'none';
+        return;
+    }
+
+    bar.style.display = '';
+
+    const myReactionIds = new Set(
+        (message.reactions || [])
+            .filter(r => Array.isArray(r.userIds) && r.userIds.includes(currentUser.id))
+            .map(r => r.reaction.id)
+    );
+
+    for (const reaction of reactionsDictionary) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'context-menu__reaction'
+            + (myReactionIds.has(reaction.id) ? ' context-menu__reaction--active' : '');
+        btn.textContent = reaction.emoji;
+        btn.dataset.reactionId = reaction.id;
+
+        btn.addEventListener('click', () => {
+            document.getElementById('context-menu').style.display = 'none';
+            toggleReaction(message.id, reaction.id).catch(console.error);
+            restoreInputFocus();
+        });
+
+        bar.appendChild(btn);
+    }
+}
+
 function showContextMenu(bubble, x, y) {
     const menu = document.getElementById('context-menu');
     const messageId = Number(bubble.dataset.messageId);
@@ -1615,6 +1814,8 @@ function showContextMenu(bubble, x, y) {
     document.getElementById('ctx-delete-group').style.display = isOwn ? '' : 'none';
     document.getElementById('ctx-delete-toggle').style.display = isOwn ? '' : 'none';
     document.getElementById('ctx-delete-sub').style.display = 'none';
+
+    renderContextMenuReactions(msg);
 
     menu.style.display = '';
     menu.style.left = x + 'px';

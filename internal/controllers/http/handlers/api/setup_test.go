@@ -29,6 +29,7 @@ func setupAPIRouter(t *testing.T) *mux.Router {
 		mockusecases.NewMockAuthUseCases(ctrl),
 		mockusecases.NewMockChatsUseCases(ctrl),
 		mockusecases.NewMockMessagesUseCases(ctrl),
+		mockusecases.NewMockReactionsUseCases(ctrl),
 		mockusecases.NewMockSettingsUseCases(ctrl),
 		mockusecases.NewMockWebPushSubscriptionsUseCases(ctrl),
 		mockusecases.NewMockFileStorageUseCases(ctrl),
@@ -77,6 +78,9 @@ func TestSetupHandlers_RoutesRegistered(t *testing.T) {
 		{"GET /web-push/vapid-key", http.MethodGet, "/web-push/vapid-key"},
 		{"POST /web-push/subscribe", http.MethodPost, "/web-push/subscribe"},
 		{"DELETE /web-push/subscribe/1", http.MethodDelete, "/web-push/subscribe/1"},
+		{"GET /reactions", http.MethodGet, "/reactions"},
+		{"POST /messages/1/reactions", http.MethodPost, "/messages/1/reactions"},
+		{"DELETE /messages/1/reactions/2", http.MethodDelete, "/messages/1/reactions/2"},
 	}
 
 	for _, tt := range tests {

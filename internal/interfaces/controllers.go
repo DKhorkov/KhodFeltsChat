@@ -13,4 +13,13 @@ type WSBroadcaster interface {
 	BroadcastMessageDeleted(ctx context.Context, chatID, messageID, userID uint64)
 	SendMessageDeletedToUser(ctx context.Context, chatID, messageID, userID uint64)
 	BroadcastMessageEdited(ctx context.Context, chatID, messageID, userID uint64)
+	BroadcastReactionAdded(
+		ctx context.Context,
+		chatID, messageID, userID, reactionID uint64,
+		emoji string,
+	)
+	BroadcastReactionRemoved(
+		ctx context.Context,
+		chatID, messageID, userID, reactionID uint64,
+	)
 }

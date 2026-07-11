@@ -1147,3 +1147,33 @@ func TestMapMessagesEdgeCases(t *testing.T) {
 		assert.Equal(t, "Third", result[2].Text)
 	})
 }
+
+func TestMapMessage_WithReactions(t *testing.T) {
+	t.Parallel()
+
+	input := domains.Message{
+		ID:     1,
+		ChatID: 10,
+		Sender: domains.User{ID: 7, Username: "alice"},
+		Text:   "hi",
+		Reactions: []domains.MessageReactionSummary{
+			{Reaction: domains.Reaction{ID: 1, Emoji: "👍"}, UserIDs: []uint64{7, 8}},
+		},
+	}
+
+	got := messages.MapMessage(input)
+
+	require.Len(t, got.Reactions, 1)
+	assert.Equal(t, uint64(1), got.Reactions[0].Reaction.ID)
+	assert.Equal(t, "👍", got.Reactions[0].Reaction.Emoji)
+	assert.Equal(t, []uint64{7, 8}, got.Reactions[0].UserIDs)
+}
+
+func TestMapMessage_WithoutReactions_FieldIsNil(t *testing.T) {
+	t.Parallel()
+
+	input := domains.Message{ID: 1, ChatID: 10, Text: "hi"}
+
+	got := messages.MapMessage(input)
+	assert.Nil(t, got.Reactions)
+}
