@@ -11,16 +11,17 @@
 
 | Метод | SQL | Семантика |
 |---|---|---|
-| `ListReactions(ctx)` | `SELECT id, emoji FROM reactions ORDER BY sort_order ASC` | Полный справочник для UI-пикера |
-| `GetReactionByID(ctx, id)` | `SELECT id, emoji FROM reactions WHERE id = $1` | Валидация ID до записи. Возвращает `ErrReactionNotFound` при `sql.ErrNoRows` |
-| `AddMessageReaction(ctx, dto)` | `INSERT ... ON CONFLICT DO NOTHING RETURNING id` | Дубликат по UNIQUE → `ErrReactionAlreadyExists` (через `sql.ErrNoRows` на `RETURNING`) |
-| `RemoveMessageReaction(ctx, dto)` | `DELETE ... WHERE (message_id, user_id, reaction_id)` | Возвращает `(deleted bool, err error)` — `deleted` из `RowsAffected` |
-| `ListReactionsForMessages(ctx, ids)` | `SELECT ... JOIN reactions ORDER BY message_id, sort_order, created_at` | Один SQL, группировка в Go в `map[messageID][]MessageReactionSummary` |
+| `ListReactions(ctx)` | `SELECT id, emoji, sort_order FROM reactions ORDER BY sort_order ASC` | Полный справочник для UI-пикера. Скан через `pg.GetEntityColumns(&domains.Reaction{})` |
+| `GetReactionByID(ctx, id)` | `SELECT id, emoji, sort_order FROM reactions WHERE id = $1` | Возвращает сырой `sql.ErrNoRows`, если реакции нет. Маппинг в доменный `ErrReactionNotFound` — на уровне сервиса |
+| `AddMessageReaction(ctx, dto)` | `INSERT ... ON CONFLICT DO NOTHING` + `ExecContext` | При конфликте `RowsAffected == 0` → `ErrReactionAlreadyExists` |
+| `RemoveMessageReaction(ctx, dto)` | `DELETE ... WHERE (message_id, user_id, reaction_id)` | `RowsAffected == 0` → `ErrReactionNotSet` (идемпотентная семантика) |
+| `ListReactionsForMessages(ctx, ids)` | `SELECT ... JOIN reactions ORDER BY sort_order ASC` | Один SQL, группировка в Go в `map[messageID][]MessageReactionSummary` за один проход через `positions[msgID][reactionID] → index`. Скан через `pg.GetEntityColumns(&MessageReactionRowPg{})`. Порядок сообщений и `userIDs` внутри сводки не гарантирован — фронт всё равно сортирует реакции по `sortOrder`, а userIDs использует только для `.length` и lookup |
 
 ## Семантика ошибок
 
-- `customerrors.ErrReactionNotFound` — реакция с таким `id` отсутствует в справочнике.
-- `customerrors.ErrReactionAlreadyExists` — попытка поставить уже стоящую реакцию.
+- `customerrors.ErrReactionAlreadyExists` — попытка поставить уже стоящую реакцию (репо).
+- `customerrors.ErrReactionNotSet` — при удалении: реакции у юзера не было (репо).
+- `sql.ErrNoRows` из `GetReactionByID` — репо не оборачивает; сервис маппит в `ErrReactionNotFound`.
 
 ## Trace decorator
 

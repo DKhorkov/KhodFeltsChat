@@ -2,6 +2,7 @@ package reactions_test
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 
@@ -93,9 +94,10 @@ func TestService_GetReactionByID_NotFound(t *testing.T) {
 	svc, uow, repo := newService(t)
 
 	expectUOWDoOnce(uow)
+	// Репо отдаёт sql.ErrNoRows — сервис маппит в доменный ErrReactionNotFound.
 	repo.EXPECT().
 		GetReactionByID(gomock.Any(), uint64(999)).
-		Return(nil, customerrors.ErrReactionNotFound)
+		Return(nil, sql.ErrNoRows)
 
 	got, err := svc.GetReactionByID(context.Background(), 999)
 	assert.ErrorIs(t, err, customerrors.ErrReactionNotFound)

@@ -25,8 +25,8 @@
 | `internal/usecases/auth/` | Юзкейсы авторизации + CacheDecorator (rate limit, token validation) |
 | `internal/usecases/users/` | Юзкейсы пользователей с валидацией username |
 | `internal/usecases/chats/` | Юзкейсы чатов: валидация, проверка участников, дедупликация |
-| `internal/usecases/messages/` | Юзкейсы сообщений: проверка membership перед доступом + подгрузка реакций через reactionsUseCases |
-| `internal/usecases/reactions/` | Юзкейсы реакций: валидация member/reaction, WS-фан-аут, AttachReactions/AttachReaction |
+| `internal/usecases/messages/` | Юзкейсы сообщений: проверка membership перед доступом + приватный attachReactions через reactionsService |
+| `internal/usecases/reactions/` | Юзкейсы реакций: валидация member/reaction, AddReaction возвращает `*domains.Reaction` (WS-фан-аут делает HTTP handler через WSBroadcaster) |
 | `internal/usecases/notifications/` | Юзкейсы уведомлений: проверка emailConfirmed |
 | `internal/controllers/http/` | HTTP контроллер: gorilla/mux роутер, 5 middleware, graceful shutdown |
 | `internal/controllers/http/handlers/` | Все HTTP обработчики (auth, users, chats, messages, ws, docs) |

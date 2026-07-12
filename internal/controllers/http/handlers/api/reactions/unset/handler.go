@@ -14,6 +14,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const ReactionIDRouteKey = "reactionId"
+
 // swagger:route DELETE /api/messages/{id}/reactions/{reactionId} reactions UnsetMessageReaction
 //
 // UnsetMessageReaction
@@ -47,16 +49,14 @@ func Handler(
 			return
 		}
 
-		vars := mux.Vars(r)
-
-		messageID, err := strconv.ParseUint(vars[common.IDRouteKey], 10, 64)
+		messageID, err := strconv.ParseUint(mux.Vars(r)[common.IDRouteKey], 10, 64)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 
 			return
 		}
 
-		reactionID, err := strconv.ParseUint(vars[common.ReactionIDRouteKey], 10, 64)
+		reactionID, err := strconv.ParseUint(mux.Vars(r)[ReactionIDRouteKey], 10, 64)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 

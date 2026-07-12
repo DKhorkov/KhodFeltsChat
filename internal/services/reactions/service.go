@@ -2,8 +2,11 @@ package reactions
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"github.com/DKhorkov/kfc/internal/domains"
+	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	pg "github.com/DKhorkov/libs/db/postgresql"
 )
@@ -58,6 +61,10 @@ func (s *Service) GetReactionByID(
 		return err
 	})
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, customerrors.ErrReactionNotFound
+		}
+
 		return nil, err
 	}
 

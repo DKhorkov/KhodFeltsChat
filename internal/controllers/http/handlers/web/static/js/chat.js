@@ -732,7 +732,8 @@ function createMessageBubble(message) {
 }
 
 // buildReactionsElement — контейнер бэйджей реакций для сообщения.
-// Возвращает null, если реакций нет.
+// Возвращает null, если реакций нет. Сортируем по sortOrder из справочника,
+// чтобы порядок не рушился после асинхронных WS reaction_added.
 function buildReactionsElement(message) {
     if (!Array.isArray(message.reactions) || message.reactions.length === 0) {
         return null;
@@ -741,7 +742,11 @@ function buildReactionsElement(message) {
     const container = document.createElement('div');
     container.className = 'message-bubble__reactions';
 
-    for (const summary of message.reactions) {
+    const sorted = [...message.reactions].sort(
+        (a, b) => (a.reaction.sortOrder ?? 0) - (b.reaction.sortOrder ?? 0)
+    );
+
+    for (const summary of sorted) {
         container.appendChild(buildReactionBadge(message.id, summary));
     }
 

@@ -6,7 +6,7 @@ import (
 )
 
 func MapReaction(r domains.Reaction) schemas.Reaction {
-	return schemas.Reaction{ID: r.ID, Emoji: r.Emoji}
+	return schemas.Reaction{ID: r.ID, Emoji: r.Emoji, SortOrder: r.SortOrder}
 }
 
 func MapReactions(rs []domains.Reaction) []schemas.Reaction {

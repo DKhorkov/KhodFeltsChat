@@ -32,8 +32,8 @@ func buildReq(
 		http.NoBody,
 	)
 	req = mux.SetURLVars(req, map[string]string{
-		common.IDRouteKey:         messageID,
-		common.ReactionIDRouteKey: reactionID,
+		common.IDRouteKey:        messageID,
+		unset.ReactionIDRouteKey: reactionID,
 	})
 
 	if withUser {

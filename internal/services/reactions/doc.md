@@ -10,8 +10,10 @@
 
 - Никакой бизнес-логики: сервис — граница транзакции. Валидация (member чата,
   реакция из справочника, soft-deleted и т.п.) живёт в usecase.
-- Сохраняет исходную семантику ошибок репо (`ErrReactionAlreadyExists`,
-  `ErrReactionNotFound`) через `errors.Is`.
+- `GetReactionByID`: репо отдаёт сырой `sql.ErrNoRows`, сервис маппит его в
+  доменный `customerrors.ErrReactionNotFound` через `errors.Is`. Остальные
+  sentinel-ошибки (`ErrReactionAlreadyExists`, `ErrReactionNotSet`) приходят
+  из репо как есть.
 
 ## Trace decorator
 

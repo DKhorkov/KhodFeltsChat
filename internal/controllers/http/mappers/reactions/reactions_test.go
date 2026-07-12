@@ -12,8 +12,8 @@ import (
 func TestMapReaction(t *testing.T) {
 	t.Parallel()
 
-	got := reactions.MapReaction(domains.Reaction{ID: 1, Emoji: "👍"})
-	assert.Equal(t, schemas.Reaction{ID: 1, Emoji: "👍"}, got)
+	got := reactions.MapReaction(domains.Reaction{ID: 1, Emoji: "👍", SortOrder: 10})
+	assert.Equal(t, schemas.Reaction{ID: 1, Emoji: "👍", SortOrder: 10}, got)
 }
 
 func TestMapReactions_PreservesOrder(t *testing.T) {

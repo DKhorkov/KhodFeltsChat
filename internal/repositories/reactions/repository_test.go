@@ -151,9 +151,10 @@ func (s *RepositoryTestSuite) TestGetReactionByID_Found() {
 }
 
 func (s *RepositoryTestSuite) TestGetReactionByID_NotFound() {
+	// Репо отдаёт сырой sql.ErrNoRows; в customerrors.ErrReactionNotFound маппит сервис.
 	got, err := s.repository.GetReactionByID(s.ctx, 9999)
 	s.Nil(got)
-	s.ErrorIs(err, customerrors.ErrReactionNotFound)
+	s.ErrorIs(err, sql.ErrNoRows)
 }
 
 // --- Тесты M2M ---

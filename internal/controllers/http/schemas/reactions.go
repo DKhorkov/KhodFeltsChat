@@ -14,6 +14,13 @@ type Reaction struct {
 	// nullable: false
 	// example: 👍
 	Emoji string `json:"emoji"`
+
+	// SortOrder — глобальный порядок отображения в UI (пикер + бэйджи).
+	// Клиент сортирует по нему, чтобы порядок не рушился при асинхронных WS-событиях.
+	// required: true
+	// nullable: false
+	// example: 10
+	SortOrder uint64 `json:"sortOrder"`
 }
 
 // MessageReaction represents an aggregated reaction on a message: the reaction

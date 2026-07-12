@@ -142,6 +142,11 @@ func New(
 					Methods: []string{http.MethodGet},
 				},
 				{
+					// Справочник реакций — публичный, не требует auth.
+					Path:    regexp.MustCompile(`^` + handlers.APIPrefix + api.ReactionsURL + `$`),
+					Methods: []string{http.MethodGet},
+				},
+				{
 					Path: regexp.MustCompile(
 						`^` + handlers.APIPrefix + strings.ReplaceAll(
 							api.FileDownloadURL,

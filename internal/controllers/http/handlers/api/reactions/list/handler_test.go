@@ -20,7 +20,7 @@ func TestListHandler_Success(t *testing.T) {
 	u := mockusecases.NewMockReactionsUseCases(ctrl)
 	u.EXPECT().
 		ListReactions(gomock.Any()).
-		Return([]domains.Reaction{{ID: 1, Emoji: "👍"}}, nil)
+		Return([]domains.Reaction{{ID: 1, Emoji: "👍", SortOrder: 10}}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/reactions", http.NoBody)
 	rec := httptest.NewRecorder()
@@ -28,7 +28,7 @@ func TestListHandler_Success(t *testing.T) {
 	list.Handler(u).ServeHTTP(rec, req)
 
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.JSONEq(t, `[{"id":1,"emoji":"👍"}]`, rec.Body.String())
+	assert.JSONEq(t, `[{"id":1,"emoji":"👍","sortOrder":10}]`, rec.Body.String())
 }
 
 func TestListHandler_ServiceError(t *testing.T) {

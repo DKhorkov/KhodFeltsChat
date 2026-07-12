@@ -8,6 +8,8 @@
 
 `DELETE /api/messages/{id}/reactions/{reactionId}` → `Handler(u, broadcaster)`
 
+Плейсхолдер `{reactionId}` собирается через экспортированную константу `ReactionIDRouteKey` (`"reactionId"`) — по паттерну `verify_email.TokenRouteKey`.
+
 ## Логика
 
 1. Достаёт `userID` из JWT-контекста и `messageID`, `reactionId` из URL.

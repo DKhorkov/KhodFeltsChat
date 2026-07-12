@@ -15,9 +15,6 @@ import (
 //
 // Provides the dictionary of available emoji reactions for the reactions picker.
 //
-// Security:
-// - cookieAuth: []
-//
 // Responses:
 //	200: []Reaction
 //	401: Unauthorized

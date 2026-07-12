@@ -187,7 +187,7 @@ func SetupHandlers(
 		delete_message.Handler(messagesUseCases, websocketHandler),
 	)
 	deleteMux.Handle(
-		fmt.Sprintf(UnsetMessageReactionURL, common.IDRouteKey, common.ReactionIDRouteKey),
+		fmt.Sprintf(UnsetMessageReactionURL, common.IDRouteKey, reactions_unset.ReactionIDRouteKey),
 		reactions_unset.Handler(reactionsUseCases, websocketHandler),
 	)
 }
