@@ -91,16 +91,6 @@ type FileStorageUseCases interface {
 //go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/reactions_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases
 type ReactionsUseCases interface {
 	ListReactions(ctx context.Context) ([]domains.Reaction, error)
-	// AddReaction возвращает chatID и emoji — они нужны HTTP-handler'у,
-	// чтобы после успешного вызова опубликовать WS-событие reaction_added.
-	AddReaction(
-		ctx context.Context,
-		dto domains.MessageReactionDTO,
-	) (chatID uint64, emoji string, err error)
-	// RemoveReaction возвращает chatID для последующего WS-broadcast'а.
-	// На пустое удаление отдаёт customerrors.ErrReactionNotSet — handler
-	// трактует это как идемпотентный успех (200) без публикации события.
-	RemoveReaction(ctx context.Context, dto domains.MessageReactionDTO) (chatID uint64, err error)
-	AttachReactions(ctx context.Context, msgs []domains.Message) ([]domains.Message, error)
-	AttachReaction(ctx context.Context, msg *domains.Message) (*domains.Message, error)
+	AddReaction(ctx context.Context, dto domains.MessageReactionDTO) (*domains.Reaction, error)
+	RemoveReaction(ctx context.Context, dto domains.MessageReactionDTO) error
 }

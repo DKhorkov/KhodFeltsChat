@@ -16,8 +16,8 @@
 
 1. Достаёт `userID` из JWT-контекста и `messageID` из URL.
 2. Валидирует, что `reactionId != 0`.
-3. Вызывает `u.AddReaction(ctx, dto)` — usecase проверяет member чата и наличие реакции в справочнике; возвращает `(chatID, emoji, err)`.
-4. При успехе — `broadcaster.BroadcastReactionAdded(chatID, messageID, userID, reactionID, emoji)` фан-аутит WS всем участникам чата.
+3. Вызывает `u.AddReaction(ctx, dto)` — usecase проверяет member чата и наличие реакции в справочнике; возвращает `(*domains.Reaction, err)` (id + emoji).
+4. При успехе — `broadcaster.BroadcastReactionAdded(messageID, userID, reactionID, reaction.Emoji)` фан-аутит WS всем участникам чата (chatID broadcaster резолвит сам через `messagesUseCases.GetMessageByID`).
 
 ## Ответы
 

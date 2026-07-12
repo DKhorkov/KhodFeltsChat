@@ -9,6 +9,7 @@ import (
 
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/api/reactions/set"
 	"github.com/DKhorkov/kfc/internal/controllers/http/handlers/common"
+	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	mockcontrollers "github.com/DKhorkov/kfc/mocks/controllers"
 	mockusecases "github.com/DKhorkov/kfc/mocks/usecases"
@@ -63,9 +64,9 @@ func TestSetHandler_NoContent_Success_Broadcasts(t *testing.T) {
 
 	u.EXPECT().
 		AddReaction(gomock.Any(), gomock.Any()).
-		Return(uint64(42), "👍", nil)
+		Return(&domains.Reaction{ID: 1, Emoji: "👍"}, nil)
 	b.EXPECT().
-		BroadcastReactionAdded(gomock.Any(), uint64(42), uint64(10), uint64(7), uint64(1), "👍").
+		BroadcastReactionAdded(gomock.Any(), uint64(10), uint64(7), uint64(1), "👍").
 		Times(1)
 
 	req := buildReq(t, "10", `{"reactionId":1}`, 7, true)
@@ -130,7 +131,7 @@ func TestSetHandler_Conflict_Duplicate_NoBroadcast(t *testing.T) {
 
 	u.EXPECT().
 		AddReaction(gomock.Any(), gomock.Any()).
-		Return(uint64(0), "", customerrors.ErrReactionAlreadyExists)
+		Return(nil, customerrors.ErrReactionAlreadyExists)
 
 	// b без EXPECT — Broadcast НЕ должен быть вызван.
 	req := buildReq(t, "10", `{"reactionId":1}`, 7, true)
@@ -147,7 +148,7 @@ func TestSetHandler_NotFound_UnknownReaction(t *testing.T) {
 
 	u.EXPECT().
 		AddReaction(gomock.Any(), gomock.Any()).
-		Return(uint64(0), "", customerrors.ErrReactionNotFound)
+		Return(nil, customerrors.ErrReactionNotFound)
 
 	req := buildReq(t, "10", `{"reactionId":999}`, 7, true)
 	rec := httptest.NewRecorder()
@@ -163,7 +164,7 @@ func TestSetHandler_NotFound_MessageNotFound(t *testing.T) {
 
 	u.EXPECT().
 		AddReaction(gomock.Any(), gomock.Any()).
-		Return(uint64(0), "", customerrors.ErrMessageNotFound)
+		Return(nil, customerrors.ErrMessageNotFound)
 
 	req := buildReq(t, "10", `{"reactionId":1}`, 7, true)
 	rec := httptest.NewRecorder()
@@ -179,7 +180,7 @@ func TestSetHandler_Forbidden_NotChatMember(t *testing.T) {
 
 	u.EXPECT().
 		AddReaction(gomock.Any(), gomock.Any()).
-		Return(uint64(0), "", customerrors.ErrUserIsNotChatMember)
+		Return(nil, customerrors.ErrUserIsNotChatMember)
 
 	req := buildReq(t, "10", `{"reactionId":1}`, 7, true)
 	rec := httptest.NewRecorder()
@@ -195,7 +196,7 @@ func TestSetHandler_InternalError(t *testing.T) {
 
 	u.EXPECT().
 		AddReaction(gomock.Any(), gomock.Any()).
-		Return(uint64(0), "", errors.New("boom"))
+		Return(nil, errors.New("boom"))
 
 	req := buildReq(t, "10", `{"reactionId":1}`, 7, true)
 	rec := httptest.NewRecorder()

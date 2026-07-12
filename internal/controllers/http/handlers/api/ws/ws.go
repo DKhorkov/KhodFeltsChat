@@ -193,17 +193,31 @@ func (h *Handler) BroadcastMessageEdited(
 // BroadcastReactionAdded sends a reaction_added event to all chat members.
 func (h *Handler) BroadcastReactionAdded(
 	ctx context.Context,
-	chatID, messageID, userID, reactionID uint64,
+	messageID, userID, reactionID uint64,
 	emoji string,
 ) {
-	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, chatID, userID)
+	msg, err := h.messagesUseCases.GetMessageByID(ctx, userID, messageID)
+	if err != nil {
+		logging.LogErrorContext(
+			ctx,
+			h.logger,
+			"Failed to resolve chatID for reaction added broadcast",
+			err,
+			"MessageID", messageID,
+			"ReactionID", reactionID,
+		)
+
+		return
+	}
+
+	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, msg.ChatID, userID)
 	if err != nil {
 		logging.LogErrorContext(
 			ctx,
 			h.logger,
 			"Failed to get chat members for reaction added broadcast",
 			err,
-			"ChatID", chatID,
+			"ChatID", msg.ChatID,
 			"MessageID", messageID,
 			"ReactionID", reactionID,
 		)
@@ -215,7 +229,7 @@ func (h *Handler) BroadcastReactionAdded(
 		Type: domains.WSEventReactionAdded,
 		Payload: domains.ReactionAddedPayload{
 			MessageID:  messageID,
-			ChatID:     chatID,
+			ChatID:     msg.ChatID,
 			UserID:     userID,
 			ReactionID: reactionID,
 			Emoji:      emoji,
@@ -230,16 +244,30 @@ func (h *Handler) BroadcastReactionAdded(
 // BroadcastReactionRemoved sends a reaction_removed event to all chat members.
 func (h *Handler) BroadcastReactionRemoved(
 	ctx context.Context,
-	chatID, messageID, userID, reactionID uint64,
+	messageID, userID, reactionID uint64,
 ) {
-	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, chatID, userID)
+	msg, err := h.messagesUseCases.GetMessageByID(ctx, userID, messageID)
+	if err != nil {
+		logging.LogErrorContext(
+			ctx,
+			h.logger,
+			"Failed to resolve chatID for reaction removed broadcast",
+			err,
+			"MessageID", messageID,
+			"ReactionID", reactionID,
+		)
+
+		return
+	}
+
+	chatMembers, err := h.chatsUseCases.GetChatMembers(ctx, msg.ChatID, userID)
 	if err != nil {
 		logging.LogErrorContext(
 			ctx,
 			h.logger,
 			"Failed to get chat members for reaction removed broadcast",
 			err,
-			"ChatID", chatID,
+			"ChatID", msg.ChatID,
 			"MessageID", messageID,
 			"ReactionID", reactionID,
 		)
@@ -251,7 +279,7 @@ func (h *Handler) BroadcastReactionRemoved(
 		Type: domains.WSEventReactionRemoved,
 		Payload: domains.ReactionRemovedPayload{
 			MessageID:  messageID,
-			ChatID:     chatID,
+			ChatID:     msg.ChatID,
 			UserID:     userID,
 			ReactionID: reactionID,
 		},

@@ -69,7 +69,7 @@ func Handler(
 			UserID:     userID,
 		}
 
-		chatID, err := u.RemoveReaction(r.Context(), dto)
+		err = u.RemoveReaction(r.Context(), dto)
 
 		switch {
 		case errors.Is(err, customerrors.ErrReactionNotSet):
@@ -94,7 +94,7 @@ func Handler(
 
 		broadcaster.BroadcastReactionRemoved(
 			r.Context(),
-			chatID, dto.MessageID, dto.UserID, dto.ReactionID,
+			dto.MessageID, dto.UserID, dto.ReactionID,
 		)
 
 		w.WriteHeader(http.StatusNoContent)

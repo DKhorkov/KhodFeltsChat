@@ -39,7 +39,7 @@ func (d *TraceDecorator) ListReactions(ctx context.Context) ([]domains.Reaction,
 func (d *TraceDecorator) AddReaction(
 	ctx context.Context,
 	dto domains.MessageReactionDTO,
-) (uint64, string, error) {
+) (*domains.Reaction, error) {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
 
@@ -52,7 +52,7 @@ func (d *TraceDecorator) AddReaction(
 func (d *TraceDecorator) RemoveReaction(
 	ctx context.Context,
 	dto domains.MessageReactionDTO,
-) (uint64, error) {
+) error {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
 
@@ -60,30 +60,4 @@ func (d *TraceDecorator) RemoveReaction(
 	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
 
 	return d.base.RemoveReaction(ctx, dto)
-}
-
-func (d *TraceDecorator) AttachReactions(
-	ctx context.Context,
-	msgs []domains.Message,
-) ([]domains.Message, error) {
-	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
-	defer span.End()
-
-	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
-	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
-
-	return d.base.AttachReactions(ctx, msgs)
-}
-
-func (d *TraceDecorator) AttachReaction(
-	ctx context.Context,
-	msg *domains.Message,
-) (*domains.Message, error) {
-	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
-	defer span.End()
-
-	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
-	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
-
-	return d.base.AttachReaction(ctx, msg)
 }

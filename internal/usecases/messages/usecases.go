@@ -11,23 +11,23 @@ import (
 )
 
 type UseCases struct {
-	messagesService   interfaces.MessagesService
-	usersService      interfaces.UsersService
-	chatsService      interfaces.ChatsService
-	reactionsUseCases interfaces.ReactionsUseCases
+	messagesService  interfaces.MessagesService
+	usersService     interfaces.UsersService
+	chatsService     interfaces.ChatsService
+	reactionsService interfaces.ReactionsService
 }
 
 func New(
 	messagesService interfaces.MessagesService,
 	chatsService interfaces.ChatsService,
 	usersService interfaces.UsersService,
-	reactionsUseCases interfaces.ReactionsUseCases,
+	reactionsService interfaces.ReactionsService,
 ) *UseCases {
 	return &UseCases{
-		messagesService:   messagesService,
-		chatsService:      chatsService,
-		usersService:      usersService,
-		reactionsUseCases: reactionsUseCases,
+		messagesService:  messagesService,
+		chatsService:     chatsService,
+		usersService:     usersService,
+		reactionsService: reactionsService,
 	}
 }
 
@@ -67,7 +67,7 @@ func (u *UseCases) GetChatMessages(
 		return nil, err
 	}
 
-	return u.reactionsUseCases.AttachReactions(ctx, msgs)
+	return u.attachReactions(ctx, msgs)
 }
 
 func (u *UseCases) GetMessageByID(
@@ -80,7 +80,12 @@ func (u *UseCases) GetMessageByID(
 		return nil, err
 	}
 
-	return u.reactionsUseCases.AttachReaction(ctx, msg)
+	enriched, err := u.attachReactions(ctx, []domains.Message{*msg})
+	if err != nil {
+		return nil, err
+	}
+
+	return &enriched[0], nil
 }
 
 func (u *UseCases) GetUserUnreadCount(
@@ -122,4 +127,30 @@ func (u *UseCases) UpdateMessage(
 	}
 
 	return u.messagesService.UpdateMessage(ctx, dto)
+}
+
+// attachReactions обогащает сообщения реакциями пачкой
+func (u *UseCases) attachReactions(
+	ctx context.Context,
+	msgs []domains.Message,
+) ([]domains.Message, error) {
+	if len(msgs) == 0 {
+		return msgs, nil
+	}
+
+	ids := make([]uint64, 0, len(msgs))
+	for i := range msgs {
+		ids = append(ids, msgs[i].ID)
+	}
+
+	byMsg, err := u.reactionsService.ListReactionsForMessages(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range msgs {
+		msgs[i].Reactions = byMsg[msgs[i].ID]
+	}
+
+	return msgs, nil
 }

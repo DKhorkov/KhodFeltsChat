@@ -42,49 +42,18 @@ func (m *MockReactionsUseCases) EXPECT() *MockReactionsUseCasesMockRecorder {
 }
 
 // AddReaction mocks base method.
-func (m *MockReactionsUseCases) AddReaction(ctx context.Context, dto domains.MessageReactionDTO) (uint64, string, error) {
+func (m *MockReactionsUseCases) AddReaction(ctx context.Context, dto domains.MessageReactionDTO) (*domains.Reaction, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddReaction", ctx, dto)
-	ret0, _ := ret[0].(uint64)
-	ret1, _ := ret[1].(string)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret0, _ := ret[0].(*domains.Reaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // AddReaction indicates an expected call of AddReaction.
 func (mr *MockReactionsUseCasesMockRecorder) AddReaction(ctx, dto any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddReaction", reflect.TypeOf((*MockReactionsUseCases)(nil).AddReaction), ctx, dto)
-}
-
-// AttachReaction mocks base method.
-func (m *MockReactionsUseCases) AttachReaction(ctx context.Context, msg *domains.Message) (*domains.Message, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AttachReaction", ctx, msg)
-	ret0, _ := ret[0].(*domains.Message)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// AttachReaction indicates an expected call of AttachReaction.
-func (mr *MockReactionsUseCasesMockRecorder) AttachReaction(ctx, msg any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AttachReaction", reflect.TypeOf((*MockReactionsUseCases)(nil).AttachReaction), ctx, msg)
-}
-
-// AttachReactions mocks base method.
-func (m *MockReactionsUseCases) AttachReactions(ctx context.Context, msgs []domains.Message) ([]domains.Message, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AttachReactions", ctx, msgs)
-	ret0, _ := ret[0].([]domains.Message)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// AttachReactions indicates an expected call of AttachReactions.
-func (mr *MockReactionsUseCasesMockRecorder) AttachReactions(ctx, msgs any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AttachReactions", reflect.TypeOf((*MockReactionsUseCases)(nil).AttachReactions), ctx, msgs)
 }
 
 // ListReactions mocks base method.
@@ -103,12 +72,11 @@ func (mr *MockReactionsUseCasesMockRecorder) ListReactions(ctx any) *gomock.Call
 }
 
 // RemoveReaction mocks base method.
-func (m *MockReactionsUseCases) RemoveReaction(ctx context.Context, dto domains.MessageReactionDTO) (uint64, error) {
+func (m *MockReactionsUseCases) RemoveReaction(ctx context.Context, dto domains.MessageReactionDTO) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RemoveReaction", ctx, dto)
-	ret0, _ := ret[0].(uint64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // RemoveReaction indicates an expected call of RemoveReaction.

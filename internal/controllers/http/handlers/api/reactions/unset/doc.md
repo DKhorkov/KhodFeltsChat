@@ -11,9 +11,9 @@
 ## Логика
 
 1. Достаёт `userID` из JWT-контекста и `messageID`, `reactionId` из URL.
-2. Вызывает `u.RemoveReaction(ctx, dto)` — usecase проверяет member чата и вызывает репо; возвращает `(chatID, err)`.
+2. Вызывает `u.RemoveReaction(ctx, dto)` — usecase проверяет member чата и вызывает репо; возвращает `error`.
 3. Если `ErrReactionNotSet` — отдаём 204 без broadcast (юзер повторно снимает — не спамим WS).
-4. При успехе — `broadcaster.BroadcastReactionRemoved(chatID, messageID, userID, reactionID)` фан-аутит WS всем участникам чата.
+4. При успехе — `broadcaster.BroadcastReactionRemoved(messageID, userID, reactionID)` фан-аутит WS всем участникам чата (chatID broadcaster резолвит сам через `messagesUseCases.GetMessageByID`).
 
 ## Ответы
 

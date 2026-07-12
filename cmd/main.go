@@ -339,7 +339,7 @@ func main() {
 	messagesUseCases := messagesusecases.NewTraceDecorator(
 		traceProvider,
 		cfg.Tracing.Spans.UseCases.Messages,
-		messagesusecases.New(messagesService, chatsService, usersService, reactionsUseCases),
+		messagesusecases.New(messagesService, chatsService, usersService, reactionsService),
 	)
 
 	chatsUseCases := chatsusecases.NewTraceDecorator(

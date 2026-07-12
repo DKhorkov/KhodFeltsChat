@@ -64,9 +64,9 @@ func TestUnsetHandler_NoContent_Success_Broadcasts(t *testing.T) {
 
 	u.EXPECT().
 		RemoveReaction(gomock.Any(), gomock.Any()).
-		Return(uint64(42), nil)
+		Return(nil)
 	b.EXPECT().
-		BroadcastReactionRemoved(gomock.Any(), uint64(42), uint64(10), uint64(7), uint64(1)).
+		BroadcastReactionRemoved(gomock.Any(), uint64(10), uint64(7), uint64(1)).
 		Times(1)
 
 	req := buildReq(t, "10", "1", 7, true)
@@ -83,7 +83,7 @@ func TestUnsetHandler_NoContent_Idempotent_WhenNothingDeleted_NoBroadcast(t *tes
 
 	u.EXPECT().
 		RemoveReaction(gomock.Any(), gomock.Any()).
-		Return(uint64(42), customerrors.ErrReactionNotSet)
+		Return(customerrors.ErrReactionNotSet)
 	// b без EXPECT — Broadcast НЕ должен вызваться.
 
 	req := buildReq(t, "10", "1", 7, true)
@@ -136,7 +136,7 @@ func TestUnsetHandler_NotFound_MessageNotFound(t *testing.T) {
 
 	u.EXPECT().
 		RemoveReaction(gomock.Any(), gomock.Any()).
-		Return(uint64(0), customerrors.ErrMessageNotFound)
+		Return(customerrors.ErrMessageNotFound)
 
 	req := buildReq(t, "10", "1", 7, true)
 	rec := httptest.NewRecorder()
@@ -152,7 +152,7 @@ func TestUnsetHandler_Forbidden_NotChatMember(t *testing.T) {
 
 	u.EXPECT().
 		RemoveReaction(gomock.Any(), gomock.Any()).
-		Return(uint64(0), customerrors.ErrUserIsNotChatMember)
+		Return(customerrors.ErrUserIsNotChatMember)
 
 	req := buildReq(t, "10", "1", 7, true)
 	rec := httptest.NewRecorder()
@@ -168,7 +168,7 @@ func TestUnsetHandler_InternalError(t *testing.T) {
 
 	u.EXPECT().
 		RemoveReaction(gomock.Any(), gomock.Any()).
-		Return(uint64(0), errors.New("boom"))
+		Return(errors.New("boom"))
 
 	req := buildReq(t, "10", "1", 7, true)
 	rec := httptest.NewRecorder()

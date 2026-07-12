@@ -54,12 +54,12 @@ func TestUseCaseTraceDecorator_AddReaction(t *testing.T) {
 
 	dec, base := setupUseCaseDecorator(t)
 	dto := domains.MessageReactionDTO{MessageID: 1, ReactionID: 2, UserID: 3}
-	base.EXPECT().AddReaction(gomock.Any(), dto).Return(uint64(42), "👍", nil)
+	expected := &domains.Reaction{ID: 2, Emoji: "👍"}
+	base.EXPECT().AddReaction(gomock.Any(), dto).Return(expected, nil)
 
-	chatID, emoji, err := dec.AddReaction(context.Background(), dto)
+	got, err := dec.AddReaction(context.Background(), dto)
 	assert.NoError(t, err)
-	assert.Equal(t, uint64(42), chatID)
-	assert.Equal(t, "👍", emoji)
+	assert.Equal(t, expected, got)
 }
 
 func TestUseCaseTraceDecorator_RemoveReaction(t *testing.T) {
@@ -67,33 +67,7 @@ func TestUseCaseTraceDecorator_RemoveReaction(t *testing.T) {
 
 	dec, base := setupUseCaseDecorator(t)
 	dto := domains.MessageReactionDTO{MessageID: 1, ReactionID: 2, UserID: 3}
-	base.EXPECT().RemoveReaction(gomock.Any(), dto).Return(uint64(42), nil)
+	base.EXPECT().RemoveReaction(gomock.Any(), dto).Return(nil)
 
-	chatID, err := dec.RemoveReaction(context.Background(), dto)
-	assert.NoError(t, err)
-	assert.Equal(t, uint64(42), chatID)
-}
-
-func TestUseCaseTraceDecorator_AttachReactions(t *testing.T) {
-	t.Parallel()
-
-	dec, base := setupUseCaseDecorator(t)
-	msgs := []domains.Message{{ID: 1}}
-	base.EXPECT().AttachReactions(gomock.Any(), msgs).Return(msgs, nil)
-
-	got, err := dec.AttachReactions(context.Background(), msgs)
-	assert.NoError(t, err)
-	assert.Equal(t, msgs, got)
-}
-
-func TestUseCaseTraceDecorator_AttachReaction(t *testing.T) {
-	t.Parallel()
-
-	dec, base := setupUseCaseDecorator(t)
-	msg := &domains.Message{ID: 1}
-	base.EXPECT().AttachReaction(gomock.Any(), msg).Return(msg, nil)
-
-	got, err := dec.AttachReaction(context.Background(), msg)
-	assert.NoError(t, err)
-	assert.Equal(t, msg, got)
+	assert.NoError(t, dec.RemoveReaction(context.Background(), dto))
 }
