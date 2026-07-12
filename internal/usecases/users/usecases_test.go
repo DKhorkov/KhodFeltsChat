@@ -1,8 +1,12 @@
 package users_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"image"
+	"image/color"
+	"image/jpeg"
 	"testing"
 
 	"github.com/DKhorkov/kfc/internal/config"
@@ -15,6 +19,278 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
+
+// buildJPEG — маленький валидный JPEG для UpdateAvatar тестов.
+func buildJPEG(t *testing.T) []byte {
+	t.Helper()
+
+	img := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	img.Set(0, 0, color.RGBA{R: 255, A: 255})
+
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 50}); err != nil {
+		t.Fatalf("build test jpeg: %v", err)
+	}
+
+	return buf.Bytes()
+}
+
+func newAvatarUseCase(t *testing.T) (
+	*users.UseCases,
+	*mockservices.MockUsersService,
+	*mockservices.MockFileStorageService,
+) {
+	t.Helper()
+
+	ctrl := gomock.NewController(t)
+	usersSvc := mockservices.NewMockUsersService(ctrl)
+	fileSvc := mockservices.NewMockFileStorageService(ctrl)
+
+	uc := users.New(
+		usersSvc,
+		fileSvc,
+		security.Config{HashCost: 10},
+		config.ValidationConfig{},
+		config.FileStorageConfig{
+			MaxSize:         1 * 1024 * 1024, // 1 MB достаточно для тестового JPEG
+			BaseDownloadURL: "https://example.com/files",
+		},
+	)
+
+	return uc, usersSvc, fileSvc
+}
+
+func TestUseCases_UpdateAvatar_HappyPath_NoExistingAvatar(t *testing.T) {
+	t.Parallel()
+
+	uc, usersSvc, fileSvc := newAvatarUseCase(t)
+	data := buildJPEG(t)
+
+	usersSvc.EXPECT().
+		GetUserByID(gomock.Any(), uint64(1)).
+		Return(&domains.User{ID: 1, AvatarPath: nil}, nil)
+	fileSvc.EXPECT().
+		Upload(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil)
+	usersSvc.EXPECT().
+		UpdateUser(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, u domains.User) (*domains.User, error) {
+			assert.NotNil(t, u.AvatarPath)
+			assert.Contains(t, *u.AvatarPath, "https://example.com/files/")
+			return &u, nil
+		})
+
+	url, err := uc.UpdateAvatar(context.Background(), 1, bytes.NewReader(data))
+	assert.NoError(t, err)
+	assert.Contains(t, url, "https://example.com/files/")
+	assert.Contains(t, url, ".jpg")
+}
+
+func TestUseCases_UpdateAvatar_HappyPath_DeletesOldAvatar(t *testing.T) {
+	t.Parallel()
+
+	uc, usersSvc, fileSvc := newAvatarUseCase(t)
+	data := buildJPEG(t)
+	oldPath := "https://example.com/files/old-uuid-1234.jpg"
+
+	usersSvc.EXPECT().
+		GetUserByID(gomock.Any(), uint64(1)).
+		Return(&domains.User{ID: 1, AvatarPath: &oldPath}, nil)
+	fileSvc.EXPECT().
+		Delete(gomock.Any(), "old-uuid-1234.jpg").
+		Return(nil)
+	fileSvc.EXPECT().
+		Upload(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil)
+	usersSvc.EXPECT().
+		UpdateUser(gomock.Any(), gomock.Any()).
+		Return(&domains.User{ID: 1}, nil)
+
+	_, err := uc.UpdateAvatar(context.Background(), 1, bytes.NewReader(data))
+	assert.NoError(t, err)
+}
+
+func TestUseCases_UpdateAvatar_FileTooLarge(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	usersSvc := mockservices.NewMockUsersService(ctrl)
+	fileSvc := mockservices.NewMockFileStorageService(ctrl)
+
+	uc := users.New(
+		usersSvc, fileSvc,
+		security.Config{},
+		config.ValidationConfig{},
+		config.FileStorageConfig{MaxSize: 10}, // 10 байт лимит
+	)
+
+	// io.LimitReader читает MaxSize+1 = 11 байт, > 10 → ErrFileTooLarge.
+	data := bytes.Repeat([]byte("A"), 100)
+
+	_, err := uc.UpdateAvatar(context.Background(), 1, bytes.NewReader(data))
+	assert.ErrorIs(t, err, customerrors.ErrFileTooLarge)
+}
+
+func TestUseCases_UpdateAvatar_InvalidImageFormat(t *testing.T) {
+	t.Parallel()
+
+	uc, _, _ := newAvatarUseCase(t)
+
+	// Не-JPEG байты → DecodeImage не распознаёт → ErrInvalidImageFormat.
+	_, err := uc.UpdateAvatar(context.Background(), 1, bytes.NewReader([]byte("not an image")))
+	assert.ErrorIs(t, err, customerrors.ErrInvalidImageFormat)
+}
+
+func TestUseCases_UpdateAvatar_GetUserByIDError(t *testing.T) {
+	t.Parallel()
+
+	uc, usersSvc, _ := newAvatarUseCase(t)
+	data := buildJPEG(t)
+
+	usersSvc.EXPECT().
+		GetUserByID(gomock.Any(), uint64(1)).
+		Return(nil, errors.New("user not found"))
+
+	_, err := uc.UpdateAvatar(context.Background(), 1, bytes.NewReader(data))
+	assert.Error(t, err)
+}
+
+func TestUseCases_UpdateAvatar_DeleteOldAvatarError(t *testing.T) {
+	t.Parallel()
+
+	uc, usersSvc, fileSvc := newAvatarUseCase(t)
+	data := buildJPEG(t)
+	oldPath := "https://example.com/files/old.jpg"
+
+	usersSvc.EXPECT().
+		GetUserByID(gomock.Any(), uint64(1)).
+		Return(&domains.User{ID: 1, AvatarPath: &oldPath}, nil)
+	fileSvc.EXPECT().
+		Delete(gomock.Any(), "old.jpg").
+		Return(errors.New("delete failed"))
+
+	_, err := uc.UpdateAvatar(context.Background(), 1, bytes.NewReader(data))
+	assert.Error(t, err)
+}
+
+func TestUseCases_UpdateAvatar_UploadError(t *testing.T) {
+	t.Parallel()
+
+	uc, usersSvc, fileSvc := newAvatarUseCase(t)
+	data := buildJPEG(t)
+
+	usersSvc.EXPECT().
+		GetUserByID(gomock.Any(), uint64(1)).
+		Return(&domains.User{ID: 1, AvatarPath: nil}, nil)
+	fileSvc.EXPECT().
+		Upload(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(errors.New("upload failed"))
+
+	_, err := uc.UpdateAvatar(context.Background(), 1, bytes.NewReader(data))
+	assert.Error(t, err)
+}
+
+func TestUseCases_UpdateAvatar_UpdateUserError(t *testing.T) {
+	t.Parallel()
+
+	uc, usersSvc, fileSvc := newAvatarUseCase(t)
+	data := buildJPEG(t)
+
+	usersSvc.EXPECT().
+		GetUserByID(gomock.Any(), uint64(1)).
+		Return(&domains.User{ID: 1, AvatarPath: nil}, nil)
+	fileSvc.EXPECT().
+		Upload(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil)
+	usersSvc.EXPECT().
+		UpdateUser(gomock.Any(), gomock.Any()).
+		Return(nil, errors.New("update failed"))
+
+	_, err := uc.UpdateAvatar(context.Background(), 1, bytes.NewReader(data))
+	assert.Error(t, err)
+}
+
+func TestUseCases_DeleteAvatar_HappyPath(t *testing.T) {
+	t.Parallel()
+
+	uc, usersSvc, fileSvc := newAvatarUseCase(t)
+	avatarPath := "https://example.com/files/some-uuid.jpg"
+
+	usersSvc.EXPECT().
+		GetUserByID(gomock.Any(), uint64(1)).
+		Return(&domains.User{ID: 1, AvatarPath: &avatarPath}, nil)
+	fileSvc.EXPECT().
+		Delete(gomock.Any(), "some-uuid.jpg").
+		Return(nil)
+	usersSvc.EXPECT().
+		UpdateUser(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, u domains.User) (*domains.User, error) {
+			assert.Nil(t, u.AvatarPath)
+			return &u, nil
+		})
+
+	assert.NoError(t, uc.DeleteAvatar(context.Background(), 1))
+}
+
+func TestUseCases_DeleteAvatar_NoAvatar_EarlyReturn(t *testing.T) {
+	t.Parallel()
+
+	uc, usersSvc, _ := newAvatarUseCase(t)
+
+	usersSvc.EXPECT().
+		GetUserByID(gomock.Any(), uint64(1)).
+		Return(&domains.User{ID: 1, AvatarPath: nil}, nil)
+	// Delete и UpdateUser НЕ вызываются.
+
+	assert.NoError(t, uc.DeleteAvatar(context.Background(), 1))
+}
+
+func TestUseCases_DeleteAvatar_GetUserByIDError(t *testing.T) {
+	t.Parallel()
+
+	uc, usersSvc, _ := newAvatarUseCase(t)
+
+	usersSvc.EXPECT().
+		GetUserByID(gomock.Any(), uint64(1)).
+		Return(nil, errors.New("not found"))
+
+	assert.Error(t, uc.DeleteAvatar(context.Background(), 1))
+}
+
+func TestUseCases_DeleteAvatar_DeleteError(t *testing.T) {
+	t.Parallel()
+
+	uc, usersSvc, fileSvc := newAvatarUseCase(t)
+	avatarPath := "https://example.com/files/some-uuid.jpg"
+
+	usersSvc.EXPECT().
+		GetUserByID(gomock.Any(), uint64(1)).
+		Return(&domains.User{ID: 1, AvatarPath: &avatarPath}, nil)
+	fileSvc.EXPECT().
+		Delete(gomock.Any(), "some-uuid.jpg").
+		Return(errors.New("delete failed"))
+
+	assert.Error(t, uc.DeleteAvatar(context.Background(), 1))
+}
+
+func TestUseCases_DeleteAvatar_UpdateUserError(t *testing.T) {
+	t.Parallel()
+
+	uc, usersSvc, fileSvc := newAvatarUseCase(t)
+	avatarPath := "https://example.com/files/some-uuid.jpg"
+
+	usersSvc.EXPECT().
+		GetUserByID(gomock.Any(), uint64(1)).
+		Return(&domains.User{ID: 1, AvatarPath: &avatarPath}, nil)
+	fileSvc.EXPECT().
+		Delete(gomock.Any(), "some-uuid.jpg").
+		Return(nil)
+	usersSvc.EXPECT().
+		UpdateUser(gomock.Any(), gomock.Any()).
+		Return(nil, errors.New("update failed"))
+
+	assert.Error(t, uc.DeleteAvatar(context.Background(), 1))
+}
 
 func TestUseCases_GetUsers(t *testing.T) {
 	t.Parallel()

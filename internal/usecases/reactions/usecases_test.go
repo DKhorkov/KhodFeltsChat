@@ -2,6 +2,7 @@ package reactions_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/DKhorkov/kfc/internal/domains"
@@ -202,4 +203,55 @@ func TestUseCases_RemoveReaction_UserNotChatMember(t *testing.T) {
 
 	err := uc.RemoveReaction(context.Background(), dto)
 	assert.ErrorIs(t, err, customerrors.ErrUserIsNotChatMember)
+}
+
+func TestUseCases_RemoveReaction_MessageNotFound(t *testing.T) {
+	t.Parallel()
+
+	uc, d := newUseCase(t)
+	dto := domains.MessageReactionDTO{MessageID: 10, ReactionID: 1, UserID: 7}
+
+	d.messages.EXPECT().
+		GetMessageByID(gomock.Any(), uint64(7), uint64(10)).
+		Return(nil, customerrors.ErrMessageNotFound)
+
+	err := uc.RemoveReaction(context.Background(), dto)
+	assert.ErrorIs(t, err, customerrors.ErrMessageNotFound)
+}
+
+func TestUseCases_AddReaction_GetChatMembersError(t *testing.T) {
+	t.Parallel()
+
+	uc, d := newUseCase(t)
+	dto := domains.MessageReactionDTO{MessageID: 10, ReactionID: 1, UserID: 7}
+	boom := errors.New("db down")
+
+	d.messages.EXPECT().
+		GetMessageByID(gomock.Any(), uint64(7), uint64(10)).
+		Return(&domains.Message{ID: 10, ChatID: 42}, nil)
+	d.chats.EXPECT().
+		GetChatMembers(gomock.Any(), uint64(42), uint64(7)).
+		Return(nil, boom)
+
+	got, err := uc.AddReaction(context.Background(), dto)
+	assert.ErrorIs(t, err, boom)
+	assert.Nil(t, got)
+}
+
+func TestUseCases_RemoveReaction_GetChatMembersError(t *testing.T) {
+	t.Parallel()
+
+	uc, d := newUseCase(t)
+	dto := domains.MessageReactionDTO{MessageID: 10, ReactionID: 1, UserID: 7}
+	boom := errors.New("db down")
+
+	d.messages.EXPECT().
+		GetMessageByID(gomock.Any(), uint64(7), uint64(10)).
+		Return(&domains.Message{ID: 10, ChatID: 42}, nil)
+	d.chats.EXPECT().
+		GetChatMembers(gomock.Any(), uint64(42), uint64(7)).
+		Return(nil, boom)
+
+	err := uc.RemoveReaction(context.Background(), dto)
+	assert.ErrorIs(t, err, boom)
 }

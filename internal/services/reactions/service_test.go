@@ -172,3 +172,18 @@ func TestService_ListReactionsForMessages(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expected, got)
 }
+
+func TestService_ListReactionsForMessages_RepoError(t *testing.T) {
+	t.Parallel()
+
+	svc, uow, repo := newService(t)
+	ids := []uint64{10}
+	boom := errors.New("boom")
+
+	expectUOWDoOnce(uow)
+	repo.EXPECT().ListReactionsForMessages(gomock.Any(), ids).Return(nil, boom)
+
+	got, err := svc.ListReactionsForMessages(context.Background(), ids)
+	assert.ErrorIs(t, err, boom)
+	assert.Nil(t, got)
+}
