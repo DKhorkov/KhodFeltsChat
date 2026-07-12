@@ -320,33 +320,38 @@ function handleReactionRemoved(payload) {
 
 // Отправляем POST — сервер вернёт 409 если реакция уже стоит;
 // в этом случае снимаем через DELETE (toggle-семантика на клиенте).
+// toggleReaction — по локальному стейту решаем, ставить или снимать реакцию.
+// Один HTTP-запрос. UI обновляется по WS-событию reaction_added/removed.
 async function toggleReaction(messageId, reactionId) {
-    try {
-        const setResp = await fetchWithAuth(`/api/messages/${messageId}/reactions`, {
+    const message = messages.find(m => m.id === messageId);
+    const currentUserReactionExists = isReactionSetForCurrentUser(message, reactionId);
+
+    const url = currentUserReactionExists
+        ? `/api/messages/${messageId}/reactions/${reactionId}`
+        : `/api/messages/${messageId}/reactions`;
+    const options = currentUserReactionExists
+        ? {method: 'DELETE'}
+        : {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({reactionId}),
-        });
+        };
 
-        if (setResp.ok) return;
-
-        if (setResp.status === 409) {
-            const delResp = await fetchWithAuth(
-                `/api/messages/${messageId}/reactions/${reactionId}`,
-                {method: 'DELETE'}
-            );
-            if (!delResp.ok) {
-                const text = await delResp.text();
-                showError(mapError(text));
-            }
-            return;
+    try {
+        const resp = await fetchWithAuth(url, options);
+        if (!resp.ok) {
+            const text = await resp.text();
+            showError(mapError(text));
         }
-
-        const text = await setResp.text();
-        showError(mapError(text));
     } catch (err) {
         showError('Ошибка сети: ' + err.message);
     }
+}
+
+function isReactionSetForCurrentUser(message, reactionId) {
+    if (!message || !Array.isArray(message.reactions) || !currentUser) return false;
+    const s = message.reactions.find(r => r.reaction.id === reactionId);
+    return !!s && Array.isArray(s.userIds) && s.userIds.includes(currentUser.id);
 }
 
 // ═══════════════════════════════════════
@@ -1637,6 +1642,17 @@ function setupMobileViewportResize() {
 function setupContextMenu() {
     const menu = document.getElementById('context-menu');
     const msgList = document.getElementById('messages-list');
+
+    // Полоса реакций: колесо мыши → горизонтальный скролл (без Shift).
+    // По умолчанию deltaY скроллит вертикально; конвертируем в scrollLeft.
+    const reactionsBar = document.getElementById('ctx-reactions-bar');
+    if (reactionsBar) {
+        reactionsBar.addEventListener('wheel', (e) => {
+            if (e.deltaY === 0) return;
+            e.preventDefault();
+            reactionsBar.scrollLeft += e.deltaY;
+        }, {passive: false});
+    }
 
     // Desktop: правый клик
     msgList.addEventListener('contextmenu', (e) => {
