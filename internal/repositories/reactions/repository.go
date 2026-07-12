@@ -26,7 +26,8 @@ const (
 	createdAtColumnName  = "created_at"
 
 	returningIDSuffix = "RETURNING id"
-	asc               = "ASC"
+
+	asc = "ASC"
 )
 
 type Repository struct {

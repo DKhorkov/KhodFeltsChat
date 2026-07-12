@@ -129,7 +129,7 @@ func (u *UseCases) UpdateMessage(
 	return u.messagesService.UpdateMessage(ctx, dto)
 }
 
-// attachReactions обогащает сообщения реакциями пачкой
+// attachReactions обогащает сообщения реакциями пачкой.
 func (u *UseCases) attachReactions(
 	ctx context.Context,
 	msgs []domains.Message,

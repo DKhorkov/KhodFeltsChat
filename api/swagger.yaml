@@ -129,6 +129,12 @@ definitions:
                 example: true
                 type: boolean
                 x-go-name: IsRead
+            reactions:
+                description: Reactions set on the message, aggregated by reaction id.
+                items:
+                    $ref: '#/definitions/MessageReaction'
+                type: array
+                x-go-name: Reactions
             replyToMessage:
                 $ref: '#/definitions/ReplyMessage'
             sender:
@@ -155,6 +161,26 @@ definitions:
         title: Message represents a message record, which was sent to the chat.
         type: object
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
+    MessageReaction:
+        description: |-
+            MessageReaction represents an aggregated reaction on a message: the reaction
+            itself and the list of user IDs who set it. Count is computed by the client
+            as len(userIds).
+        properties:
+            reaction:
+                $ref: '#/definitions/Reaction'
+            userIds:
+                description: IDs of users who set this reaction.
+                items:
+                    format: uint64
+                    type: integer
+                type: array
+                x-go-name: UserIDs
+        required:
+            - reaction
+            - userIds
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
     NewPasswordInput:
         properties:
             newPassword:
@@ -164,6 +190,25 @@ definitions:
                 x-go-name: NewPassword
         required:
             - newPassword
+        type: object
+        x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
+    Reaction:
+        properties:
+            emoji:
+                description: Emoji character to display.
+                example: "\U0001F44D"
+                type: string
+                x-go-name: Emoji
+            id:
+                description: Unique identifier of the reaction.
+                format: uint64
+                minimum: 1
+                type: integer
+                x-go-name: ID
+        required:
+            - id
+            - emoji
+        title: Reaction represents an emoji reaction available in the dictionary.
         type: object
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
     ReplyMessage:
@@ -521,6 +566,87 @@ paths:
             summary: UpdateMessage
             tags:
                 - messages
+    /api/messages/{id}/reactions:
+        post:
+            description: Sets a reaction on a message for the current user. Duplicate → 409.
+            operationId: SetMessageReaction
+            parameters:
+                - description: Reaction ID from the dictionary.
+                  in: body
+                  name: Body
+                  required: true
+                  schema:
+                    properties:
+                        reactionId:
+                            format: uint64
+                            type: integer
+                            x-go-name: ReactionID
+                    type: object
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "403":
+                    $ref: '#/responses/Forbidden'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "409":
+                    $ref: '#/responses/Conflict'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: SetMessageReaction
+            tags:
+                - reactions
+    /api/messages/{id}/reactions/{reactionId}:
+        delete:
+            description: Removes a reaction from a message for the current user. Idempotent — 204 even if no such reaction.
+            operationId: UnsetMessageReaction
+            responses:
+                "204":
+                    $ref: '#/responses/NoContent'
+                "400":
+                    $ref: '#/responses/BadRequest'
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "403":
+                    $ref: '#/responses/Forbidden'
+                "404":
+                    $ref: '#/responses/NotFound'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: UnsetMessageReaction
+            tags:
+                - reactions
+    /api/reactions:
+        get:
+            description: Provides the dictionary of available emoji reactions for the reactions picker.
+            operationId: ListReactions
+            responses:
+                "200":
+                    description: Reaction
+                    schema:
+                        items:
+                            $ref: '#/definitions/Reaction'
+                        type: array
+                "401":
+                    $ref: '#/responses/Unauthorized'
+                "500":
+                    $ref: '#/responses/InternalServerError'
+            security:
+                - cookieAuth:
+                    - '[]'
+            summary: ListReactions
+            tags:
+                - reactions
     /api/sessions:
         delete:
             description: Logout User from the current session and deletes access and refresh tokens.
@@ -1297,6 +1423,8 @@ tags:
   description: "WEB пуши для уведомления пользователей"
 - name: files
   description: "Работа с файлами"
+- name: reactions
+  description: "Управление реакциями на сообщения"
 
 securityDefinitions:
   cookieAuth:

@@ -1299,7 +1299,12 @@ func TestUseCases_GetChatMessages_AttachesReactions(t *testing.T) {
 		ListReactionsForMessages(gomock.Any(), []uint64{10, 20}).
 		Return(map[uint64][]domains.MessageReactionSummary{10: summary10}, nil)
 
-	uc := messages.New(mockMessagesService, mockChatsService, mockUsersService, mockReactionsService)
+	uc := messages.New(
+		mockMessagesService,
+		mockChatsService,
+		mockUsersService,
+		mockReactionsService,
+	)
 
 	got, err := uc.GetChatMessages(ctx, userID, chatID, nil)
 	assert.NoError(t, err)
@@ -1330,7 +1335,12 @@ func TestUseCases_GetMessageByID_AttachesReaction(t *testing.T) {
 		ListReactionsForMessages(gomock.Any(), []uint64{10}).
 		Return(map[uint64][]domains.MessageReactionSummary{10: summary}, nil)
 
-	uc := messages.New(mockMessagesService, mockChatsService, mockUsersService, mockReactionsService)
+	uc := messages.New(
+		mockMessagesService,
+		mockChatsService,
+		mockUsersService,
+		mockReactionsService,
+	)
 
 	got, err := uc.GetMessageByID(ctx, 1, 10)
 	assert.NoError(t, err)

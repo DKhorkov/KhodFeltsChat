@@ -35,6 +35,8 @@ INSERT INTO reactions (emoji, sort_order) VALUES
 
 -- +goose Down
 -- +goose StatementBegin
+DROP INDEX IF EXISTS messages_reactions_message_id_idx;
+DROP INDEX IF EXISTS messages_reactions_user_id_idx;
 DROP TABLE IF EXISTS messages_reactions;
 DROP TABLE IF EXISTS reactions;
 -- +goose StatementEnd

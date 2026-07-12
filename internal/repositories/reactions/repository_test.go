@@ -1,4 +1,4 @@
-//go:build integration
+////go:build integration
 
 package reactions_test
 
@@ -174,7 +174,9 @@ func (s *RepositoryTestSuite) TestAddMessageReaction_Success() {
 	err := s.tx.QueryRowContext(
 		s.ctx,
 		`SELECT COUNT(*) FROM messages_reactions WHERE message_id = $1 AND user_id = $2 AND reaction_id = $3`,
-		dto.MessageID, dto.UserID, dto.ReactionID,
+		dto.MessageID,
+		dto.UserID,
+		dto.ReactionID,
 	).Scan(&count)
 	s.NoError(err)
 	s.Equal(1, count)
@@ -233,7 +235,9 @@ func (s *RepositoryTestSuite) TestRemoveMessageReaction_ExistingRow_ReturnsNil()
 	err := s.tx.QueryRowContext(
 		s.ctx,
 		`SELECT COUNT(*) FROM messages_reactions WHERE message_id = $1 AND user_id = $2 AND reaction_id = $3`,
-		dto.MessageID, dto.UserID, dto.ReactionID,
+		dto.MessageID,
+		dto.UserID,
+		dto.ReactionID,
 	).Scan(&count)
 	s.NoError(err)
 	s.Equal(0, count)
@@ -382,7 +386,12 @@ func (s *RepositoryTestSuite) createTestUsers() {
 			s.ctx,
 			`INSERT INTO users (id, username, email, email_confirmed, password, created_at, updated_at)
 			 VALUES ($1, $2, $3, $4, $5, $6, $6)`,
-			u.id, u.username, u.email, u.emailConfirmed, u.password, time.Now().UTC(),
+			u.id,
+			u.username,
+			u.email,
+			u.emailConfirmed,
+			u.password,
+			time.Now().UTC(),
 		)
 		s.NoError(err)
 	}

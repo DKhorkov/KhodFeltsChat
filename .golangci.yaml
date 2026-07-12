@@ -262,6 +262,7 @@ linters:
           - nosprintfhostport
           - maintidx
           - dupl
+          - exhaustruct
 
       - path: .trace_decorator\.go
         linters:
@@ -283,6 +284,10 @@ linters:
       - path: internal/repositories/emails/repository_test.go
         linters:
           - testpackage
+
+      - path: internal/repositories/reactions/trace_decorator_test.go
+        linters:
+          - unparam
 
       - path: internal/interfaces/content_builders.go
         linters:
