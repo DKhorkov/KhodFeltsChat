@@ -14,11 +14,11 @@
    - **NATS** — publisher для отправки сообщений в очереди.
 3. Строится граф зависимостей (DI вручную):
    - `UnitOfWork` → `UnitOfWork.TraceDecorator`
-   - Репозитории (users, auth, chats, messages, emails, settings, web_push_subscriptions) — каждый оборачивается в `TraceDecorator`.
-   - Сервисы (users, auth, chats, messages, settings, web_push_subscriptions, notifications) — каждый оборачивается в `TraceDecorator`.
+   - Репозитории (users, auth, chats, messages, reactions, emails, settings, web_push_subscriptions) — каждый оборачивается в `TraceDecorator`.
+   - Сервисы (users, auth, chats, messages, reactions, settings, web_push_subscriptions, notifications) — каждый оборачивается в `TraceDecorator`.
      **Важно**: `webPushSubscriptionsService` инициализируется до `notificationsService`, так как является его зависимостью.
-   - UseCases (users, auth, chats, messages, settings, notifications, web_push_subscriptions) — каждый оборачивается в `TraceDecorator`;
-     `AuthUseCases` дополнительно оборачивается в `CacheDecorator`.
+   - UseCases (users, auth, chats, messages, reactions, settings, notifications, web_push_subscriptions) — каждый оборачивается в `TraceDecorator`;
+     `AuthUseCases` дополнительно оборачивается в `CacheDecorator`. `reactionsUseCases` не зависит от `WSBroadcaster` — broadcast делают HTTP-handler'ы после успешного usecase-вызова, поэтому цепочка линейна без циклов.
 4. Запускаются два NATS-воркера:
    - **email-notification** — обрабатывает `EmailNotificationDTO` (verify-email, forget-password, new-message).
    - **web-push-notification** — обрабатывает `WebPushNotificationDTO` (new-message с проверкой consent).
