@@ -15,7 +15,7 @@ Goose SQL миграции для PostgreSQL.
 | `20260513000000_settings.sql` | Таблица `settings` (пользовательские настройки) |
 | `20260515000000_web_push_subscriptions.sql` | Таблица `push_subscriptions` (endpoint, encryption_key, auth, user_id) |
 | `20260520000000_remove_chats_members_is_read.sql` | Удаление колонки `is_read` из `chats_members` (статус прочитанности вычисляется из `messages_statuses`) |
-| `20260711000000_message_reactions.sql` | Таблицы `reactions` (справочник emoji) и `message_reactions` (M2M юзер↔сообщение↔реакция) + seed 8 базовых emoji |
+| `20260711000000_messages_reactions.sql` | Таблицы `reactions` (справочник emoji) и `messages_reactions` (M2M юзер↔сообщение↔реакция) + seed 8 базовых emoji |
 
 ## Команды
 

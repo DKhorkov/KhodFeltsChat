@@ -14,7 +14,7 @@
 
 ## 3. Модель данных
 
-Новая миграция (например `20260711000000_message_reactions.sql`):
+Новая миграция (например `20260711000000_messages_reactions.sql`):
 
 ```sql
 -- +goose Up
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS reactions (
     updated_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS message_reactions (
+CREATE TABLE IF NOT EXISTS messages_reactions (
     id          SERIAL PRIMARY KEY,
     message_id  INTEGER   NOT NULL REFERENCES messages(id)  ON DELETE CASCADE,
     user_id     INTEGER   NOT NULL REFERENCES users(id)     ON DELETE CASCADE,
@@ -35,8 +35,8 @@ CREATE TABLE IF NOT EXISTS message_reactions (
     UNIQUE (message_id, user_id, reaction_id)
 );
 
-CREATE INDEX message_reactions_message_id_idx ON message_reactions (message_id);
-CREATE INDEX message_reactions_user_id_idx    ON message_reactions (user_id);
+CREATE INDEX messages_reactions_message_id_idx ON messages_reactions (message_id);
+CREATE INDEX messages_reactions_user_id_idx    ON messages_reactions (user_id);
 
 INSERT INTO reactions (emoji, sort_order) VALUES
   ('👍', 10),
@@ -49,15 +49,15 @@ INSERT INTO reactions (emoji, sort_order) VALUES
   ('😡', 80);
 
 -- +goose Down
-DROP TABLE IF EXISTS message_reactions;
+DROP TABLE IF EXISTS messages_reactions;
 DROP TABLE IF EXISTS reactions;
 ```
 
 ### Обоснование FK-политик
 
-- `message_reactions.message_id ON DELETE CASCADE` — hard-delete сообщения уносит реакции. Soft-delete (`messages_statuses.is_deleted`) реакции не трогает — сообщение технически остаётся.
-- `message_reactions.user_id ON DELETE CASCADE` — при удалении пользователя его реакции исчезают.
-- `message_reactions.reaction_id ON DELETE CASCADE` — если реакция удаляется из справочника (миграцией), она удаляется и из всех сообщений. Единый жизненный цикл сущности, полу-состояния не допускаются.
+- `messages_reactions.message_id ON DELETE CASCADE` — hard-delete сообщения уносит реакции. Soft-delete (`messages_statuses.is_deleted`) реакции не трогает — сообщение технически остаётся.
+- `messages_reactions.user_id ON DELETE CASCADE` — при удалении пользователя его реакции исчезают.
+- `messages_reactions.reaction_id ON DELETE CASCADE` — если реакция удаляется из справочника (миграцией), она удаляется и из всех сообщений. Единый жизненный цикл сущности, полу-состояния не допускаются.
 
 ### Уникальность
 
@@ -133,7 +133,7 @@ func (r *Repository) ListReactionsForMessages(
 **`AddMessageReaction`** — не-идемпотентная семантика с явной ошибкой на дубликат:
 
 ```sql
-INSERT INTO message_reactions (message_id, user_id, reaction_id)
+INSERT INTO messages_reactions (message_id, user_id, reaction_id)
 VALUES ($1, $2, $3)
 ON CONFLICT (message_id, user_id, reaction_id) DO NOTHING
 RETURNING id;
@@ -159,7 +159,7 @@ func (r *Repository) RemoveMessageReaction(
 Реализация:
 
 ```sql
-DELETE FROM message_reactions
+DELETE FROM messages_reactions
 WHERE message_id = $1 AND user_id = $2 AND reaction_id = $3;
 ```
 
@@ -177,7 +177,7 @@ Usecase публикует `reaction.removed` только при `deleted == tr
 
 ```sql
 SELECT mr.message_id, mr.reaction_id, r.emoji, mr.user_id
-FROM message_reactions mr
+FROM messages_reactions mr
 JOIN reactions r ON r.id = mr.reaction_id
 WHERE mr.message_id = ANY($1)
 ORDER BY mr.message_id, r.sort_order, mr.created_at;
@@ -311,7 +311,7 @@ Fan-out — по существующему паттерну (`sync.Map[userID �
 - **Юзер не в чате**: 403.
 - **Редактирование текста сообщения**: реакции остаются.
 - **Hard-delete сообщения/юзера**: реакции уходят по CASCADE.
-- **Удаление записи из `reactions` (миграцией)**: все ссылающиеся `message_reactions` уходят по CASCADE.
+- **Удаление записи из `reactions` (миграцией)**: все ссылающиеся `messages_reactions` уходят по CASCADE.
 
 ## 8. Загрузка справочника
 

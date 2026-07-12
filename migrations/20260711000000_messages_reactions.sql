@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS reactions
     updated_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS message_reactions
+CREATE TABLE IF NOT EXISTS messages_reactions
 (
     id          SERIAL PRIMARY KEY,
     message_id  INTEGER   NOT NULL REFERENCES messages (id)  ON DELETE CASCADE,
@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS message_reactions
     UNIQUE (message_id, user_id, reaction_id)
 );
 
-CREATE INDEX message_reactions_message_id_idx ON message_reactions (message_id);
-CREATE INDEX message_reactions_user_id_idx    ON message_reactions (user_id);
+CREATE INDEX messages_reactions_message_id_idx ON messages_reactions (message_id);
+CREATE INDEX messages_reactions_user_id_idx    ON messages_reactions (user_id);
 
 INSERT INTO reactions (emoji, sort_order) VALUES
     ('👍', 10),
@@ -35,6 +35,6 @@ INSERT INTO reactions (emoji, sort_order) VALUES
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS message_reactions;
+DROP TABLE IF EXISTS messages_reactions;
 DROP TABLE IF EXISTS reactions;
 -- +goose StatementEnd

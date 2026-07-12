@@ -15,7 +15,7 @@ import (
 
 const (
 	reactionsTableName        = "reactions"
-	messageReactionsTableName = "message_reactions"
+	messageReactionsTableName = "messages_reactions"
 
 	idColumnName         = "id"
 	emojiColumnName      = "emoji"

@@ -173,7 +173,7 @@ func (s *RepositoryTestSuite) TestAddMessageReaction_Success() {
 	var count int
 	err := s.tx.QueryRowContext(
 		s.ctx,
-		`SELECT COUNT(*) FROM message_reactions WHERE message_id = $1 AND user_id = $2 AND reaction_id = $3`,
+		`SELECT COUNT(*) FROM messages_reactions WHERE message_id = $1 AND user_id = $2 AND reaction_id = $3`,
 		dto.MessageID, dto.UserID, dto.ReactionID,
 	).Scan(&count)
 	s.NoError(err)
@@ -212,7 +212,7 @@ func (s *RepositoryTestSuite) TestAddMessageReaction_MultipleReactionsFromSameUs
 	var count int
 	err = s.tx.QueryRowContext(
 		s.ctx,
-		`SELECT COUNT(*) FROM message_reactions WHERE message_id = 1 AND user_id = 1`,
+		`SELECT COUNT(*) FROM messages_reactions WHERE message_id = 1 AND user_id = 1`,
 	).Scan(&count)
 	s.NoError(err)
 	s.Equal(2, count)
@@ -232,7 +232,7 @@ func (s *RepositoryTestSuite) TestRemoveMessageReaction_ExistingRow_ReturnsNil()
 	var count int
 	err := s.tx.QueryRowContext(
 		s.ctx,
-		`SELECT COUNT(*) FROM message_reactions WHERE message_id = $1 AND user_id = $2 AND reaction_id = $3`,
+		`SELECT COUNT(*) FROM messages_reactions WHERE message_id = $1 AND user_id = $2 AND reaction_id = $3`,
 		dto.MessageID, dto.UserID, dto.ReactionID,
 	).Scan(&count)
 	s.NoError(err)
@@ -319,7 +319,7 @@ func (s *RepositoryTestSuite) TestMessageReactions_CascadeOnUserDelete() {
 	var count int
 	err = s.tx.QueryRowContext(
 		s.ctx,
-		`SELECT COUNT(*) FROM message_reactions WHERE user_id = 2`,
+		`SELECT COUNT(*) FROM messages_reactions WHERE user_id = 2`,
 	).Scan(&count)
 	s.NoError(err)
 	s.Equal(0, count, "CASCADE удалил реакции удалённого юзера")
@@ -342,7 +342,7 @@ func (s *RepositoryTestSuite) TestMessageReactions_CascadeOnMessageDelete() {
 	var count int
 	err = s.tx.QueryRowContext(
 		s.ctx,
-		`SELECT COUNT(*) FROM message_reactions WHERE message_id = 1`,
+		`SELECT COUNT(*) FROM messages_reactions WHERE message_id = 1`,
 	).Scan(&count)
 	s.NoError(err)
 	s.Equal(0, count, "CASCADE удалил реакции удалённого сообщения")

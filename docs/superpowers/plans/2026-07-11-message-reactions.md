@@ -28,10 +28,10 @@
 ## Task 1: Миграция схемы и seed
 
 **Files:**
-- Create: `migrations/20260711000000_message_reactions.sql`
+- Create: `migrations/20260711000000_messages_reactions.sql`
 
 **Interfaces:**
-- Produces: таблицы `reactions`, `message_reactions`; seed 8 базовых emoji.
+- Produces: таблицы `reactions`, `messages_reactions`; seed 8 базовых emoji.
 
 - [ ] **Step 1: Создать файл миграции**
 
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS reactions
     updated_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS message_reactions
+CREATE TABLE IF NOT EXISTS messages_reactions
 (
     id          SERIAL PRIMARY KEY,
     message_id  INTEGER   NOT NULL REFERENCES messages (id)  ON DELETE CASCADE,
@@ -57,8 +57,8 @@ CREATE TABLE IF NOT EXISTS message_reactions
     UNIQUE (message_id, user_id, reaction_id)
 );
 
-CREATE INDEX message_reactions_message_id_idx ON message_reactions (message_id);
-CREATE INDEX message_reactions_user_id_idx    ON message_reactions (user_id);
+CREATE INDEX messages_reactions_message_id_idx ON messages_reactions (message_id);
+CREATE INDEX messages_reactions_user_id_idx    ON messages_reactions (user_id);
 
 INSERT INTO reactions (emoji, sort_order) VALUES
   ('👍', 10),
@@ -73,7 +73,7 @@ INSERT INTO reactions (emoji, sort_order) VALUES
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS message_reactions;
+DROP TABLE IF EXISTS messages_reactions;
 DROP TABLE IF EXISTS reactions;
 -- +goose StatementEnd
 ```
@@ -90,8 +90,8 @@ Expected: обе таблицы создаются, seed вставляется;
 - [ ] **Step 4: Commit**
 
 ```bash
-git add migrations/20260711000000_message_reactions.sql migrations/doc.md
-git commit -m "feat: миграция таблиц reactions и message_reactions"
+git add migrations/20260711000000_messages_reactions.sql migrations/doc.md
+git commit -m "feat: миграция таблиц reactions и messages_reactions"
 ```
 
 ---
@@ -332,7 +332,7 @@ import (
 
 const (
 	reactionsTableName        = "reactions"
-	messageReactionsTableName = "message_reactions"
+	messageReactionsTableName = "messages_reactions"
 
 	idColumnName         = "id"
 	emojiColumnName      = "emoji"

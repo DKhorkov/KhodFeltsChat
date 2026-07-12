@@ -23,7 +23,7 @@
 | `users`              | `users`                              | CRUD пользователей                     |
 | `chats`              | `chats`, `chats_members`             | Чаты и участники                       |
 | `messages`           | `messages`, `messages_statuses`      | Сообщения и статусы прочтения          |
-| `reactions`          | `reactions`, `message_reactions`     | Справочник emoji + M2M юзер↔сообщение↔реакция |
+| `reactions`          | `reactions`, `messages_reactions`     | Справочник emoji + M2M юзер↔сообщение↔реакция |
 | `emails`             | —                                    | Отправка email через SMTP (gomail)     |
 | `web_push_subscriptions` | `push_subscriptions`                 | CRUD push-подписок на уведомления      |
 
