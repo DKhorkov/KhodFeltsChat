@@ -77,6 +77,7 @@ func TestUseCases_UpdateAvatar_HappyPath_NoExistingAvatar(t *testing.T) {
 		DoAndReturn(func(_ context.Context, u domains.User) (*domains.User, error) {
 			assert.NotNil(t, u.AvatarPath)
 			assert.Contains(t, *u.AvatarPath, "https://example.com/files/")
+
 			return &u, nil
 		})
 
@@ -226,6 +227,7 @@ func TestUseCases_DeleteAvatar_HappyPath(t *testing.T) {
 		UpdateUser(gomock.Any(), gomock.Any()).
 		DoAndReturn(func(_ context.Context, u domains.User) (*domains.User, error) {
 			assert.Nil(t, u.AvatarPath)
+
 			return &u, nil
 		})
 
