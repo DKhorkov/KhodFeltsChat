@@ -205,9 +205,18 @@ definitions:
                 minimum: 1
                 type: integer
                 x-go-name: ID
+            sortOrder:
+                description: |-
+                    SortOrder — глобальный порядок отображения в UI (пикер + бэйджи).
+                    Клиент сортирует по нему, чтобы порядок не рушился при асинхронных WS-событиях.
+                example: 10
+                format: uint64
+                type: integer
+                x-go-name: SortOrder
         required:
             - id
             - emoji
+            - sortOrder
         title: Reaction represents an emoji reaction available in the dictionary.
         type: object
         x-go-package: github.com/DKhorkov/kfc/internal/controllers/http/schemas
@@ -637,13 +646,8 @@ paths:
                         items:
                             $ref: '#/definitions/Reaction'
                         type: array
-                "401":
-                    $ref: '#/responses/Unauthorized'
                 "500":
                     $ref: '#/responses/InternalServerError'
-            security:
-                - cookieAuth:
-                    - '[]'
             summary: ListReactions
             tags:
                 - reactions

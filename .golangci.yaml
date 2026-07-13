@@ -341,6 +341,7 @@ linters:
         linters:
           - exhaustruct
           - contextcheck
+          - dupl
 
       - path: internal/controllers/http/handlers/api/chats/create/handler.go
         line: "44"
