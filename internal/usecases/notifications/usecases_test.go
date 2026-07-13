@@ -641,6 +641,94 @@ func TestUseCases_SendNewMessageByWebPush(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name:   "GetWebPushSubscriptionsByUserID error - propagated",
+			userID: 1,
+			payload: domains.NewMessagePayload{
+				MessageID: 10,
+			},
+			setupMocks: func(
+				_ *mockservices.MockNotificationsService,
+				mockMessagesService *mockservices.MockMessagesService,
+				mockWebPushService *mockservices.MockWebPushSubscriptionsService,
+				_ *mocks.MockLogger,
+			) {
+				mockMessagesService.EXPECT().
+					GetMessageByID(gomock.Any(), uint64(1), uint64(10)).
+					Return(&domains.Message{ID: 10}, nil)
+
+				mockWebPushService.EXPECT().
+					GetWebPushSubscriptionsByUserID(gomock.Any(), uint64(1)).
+					Return(nil, errors.New("db down"))
+			},
+			expectedError: errors.New("db down"),
+		},
+		{
+			name:   "GetUserUnreadCount error - propagated",
+			userID: 1,
+			payload: domains.NewMessagePayload{
+				MessageID: 10,
+			},
+			setupMocks: func(
+				_ *mockservices.MockNotificationsService,
+				mockMessagesService *mockservices.MockMessagesService,
+				mockWebPushService *mockservices.MockWebPushSubscriptionsService,
+				_ *mocks.MockLogger,
+			) {
+				mockMessagesService.EXPECT().
+					GetMessageByID(gomock.Any(), uint64(1), uint64(10)).
+					Return(&domains.Message{ID: 10}, nil)
+
+				mockWebPushService.EXPECT().
+					GetWebPushSubscriptionsByUserID(gomock.Any(), uint64(1)).
+					Return([]domains.WebPushSubscription{{ID: 1}}, nil)
+
+				mockMessagesService.EXPECT().
+					GetUserUnreadCount(gomock.Any(), uint64(1)).
+					Return(uint64(0), errors.New("counter unavailable"))
+			},
+			expectedError: errors.New("counter unavailable"),
+		},
+		{
+			name:   "expired sub - DeleteWebPushSubscription error is logged, not propagated",
+			userID: 1,
+			payload: domains.NewMessagePayload{
+				MessageID: 10,
+			},
+			setupMocks: func(
+				mockNotificationsService *mockservices.MockNotificationsService,
+				mockMessagesService *mockservices.MockMessagesService,
+				mockWebPushService *mockservices.MockWebPushSubscriptionsService,
+				mockLogger *mocks.MockLogger,
+			) {
+				msg := &domains.Message{ID: 10, Text: "hi"}
+				mockMessagesService.EXPECT().
+					GetMessageByID(gomock.Any(), uint64(1), uint64(10)).
+					Return(msg, nil)
+
+				subs := []domains.WebPushSubscription{{ID: 42, UserID: 1}}
+				mockWebPushService.EXPECT().
+					GetWebPushSubscriptionsByUserID(gomock.Any(), uint64(1)).
+					Return(subs, nil)
+
+				mockMessagesService.EXPECT().
+					GetUserUnreadCount(gomock.Any(), uint64(1)).
+					Return(uint64(5), nil)
+
+				mockNotificationsService.EXPECT().
+					SendNewMessageByWebPush(gomock.Any(), subs[0], *msg, uint64(5)).
+					Return(customerrors.ErrWebPushSubscriptionExpired)
+
+				mockWebPushService.EXPECT().
+					DeleteWebPushSubscription(gomock.Any(), uint64(42)).
+					Return(errors.New("delete failed"))
+
+				// Info о том, что sub expired + Error о неудалённой подписке.
+				mockLogger.EXPECT().Info(gomock.Any()).Times(1)
+				mockLogger.EXPECT().Error(gomock.Any(), gomock.Any()).Times(1)
+			},
+			expectedError: nil, // ошибка удаления логируется, но не пробрасывается
+		},
+		{
 			name:   "expired subscription is deleted",
 			userID: 1,
 			payload: domains.NewMessagePayload{

@@ -13,6 +13,19 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+// newMockReactionsService возвращает мок с открытым AnyTimes-ожиданием на
+// ListReactionsForMessages — отдаёт пустую мапу, чтобы приватный attachReactions
+// в messagesUseCases не портил основные тесты (реакции остаются nil).
+func newMockReactionsService(ctrl *gomock.Controller) *mockservices.MockReactionsService {
+	m := mockservices.NewMockReactionsService(ctrl)
+	m.EXPECT().
+		ListReactionsForMessages(gomock.Any(), gomock.Any()).
+		Return(map[uint64][]domains.MessageReactionSummary{}, nil).
+		AnyTimes()
+
+	return m
+}
+
 func TestUseCases_SaveMessage(t *testing.T) {
 	t.Parallel()
 
@@ -97,6 +110,7 @@ func TestUseCases_SaveMessage(t *testing.T) {
 			mockMessagesService := mockservices.NewMockMessagesService(ctrl)
 			mockUsersService := mockservices.NewMockUsersService(ctrl)
 			mockChatsService := mockservices.NewMockChatsService(ctrl)
+			mockReactionsService := newMockReactionsService(ctrl)
 
 			if tt.fields.mockMessagesService != nil {
 				tt.fields.mockMessagesService(mockMessagesService)
@@ -114,6 +128,7 @@ func TestUseCases_SaveMessage(t *testing.T) {
 				mockMessagesService,
 				mockChatsService,
 				mockUsersService,
+				mockReactionsService,
 			)
 
 			// Act
@@ -395,6 +410,7 @@ func TestUseCases_GetChatMessages(t *testing.T) {
 			mockMessagesService := mockservices.NewMockMessagesService(ctrl)
 			mockUsersService := mockservices.NewMockUsersService(ctrl)
 			mockChatsService := mockservices.NewMockChatsService(ctrl)
+			mockReactionsService := newMockReactionsService(ctrl)
 
 			if tt.fields.mockMessagesService != nil {
 				tt.fields.mockMessagesService(mockMessagesService)
@@ -412,6 +428,7 @@ func TestUseCases_GetChatMessages(t *testing.T) {
 				mockMessagesService,
 				mockChatsService,
 				mockUsersService,
+				mockReactionsService,
 			)
 
 			// Act
@@ -580,6 +597,7 @@ func TestUseCases_GetChatMessages_WithPaginationVariations(t *testing.T) {
 			mockMessagesService := mockservices.NewMockMessagesService(ctrl)
 			mockUsersService := mockservices.NewMockUsersService(ctrl)
 			mockChatsService := mockservices.NewMockChatsService(ctrl)
+			mockReactionsService := newMockReactionsService(ctrl)
 
 			if tt.fields.mockMessagesService != nil {
 				tt.fields.mockMessagesService(mockMessagesService)
@@ -597,6 +615,7 @@ func TestUseCases_GetChatMessages_WithPaginationVariations(t *testing.T) {
 				mockMessagesService,
 				mockChatsService,
 				mockUsersService,
+				mockReactionsService,
 			)
 
 			// Act
@@ -698,6 +717,7 @@ func TestUseCases_GetMessageByID(t *testing.T) {
 			mockMessagesService := mockservices.NewMockMessagesService(ctrl)
 			mockUsersService := mockservices.NewMockUsersService(ctrl)
 			mockChatsService := mockservices.NewMockChatsService(ctrl)
+			mockReactionsService := newMockReactionsService(ctrl)
 
 			if tt.fields.mockMessagesService != nil {
 				tt.fields.mockMessagesService(mockMessagesService)
@@ -715,6 +735,7 @@ func TestUseCases_GetMessageByID(t *testing.T) {
 				mockMessagesService,
 				mockChatsService,
 				mockUsersService,
+				mockReactionsService,
 			)
 
 			// Act
@@ -818,6 +839,7 @@ func TestUseCases_GetUserUnreadCount(t *testing.T) {
 			mockMessagesService := mockservices.NewMockMessagesService(ctrl)
 			mockUsersService := mockservices.NewMockUsersService(ctrl)
 			mockChatsService := mockservices.NewMockChatsService(ctrl)
+			mockReactionsService := newMockReactionsService(ctrl)
 
 			if tt.fields.mockMessagesService != nil {
 				tt.fields.mockMessagesService(mockMessagesService)
@@ -835,6 +857,7 @@ func TestUseCases_GetUserUnreadCount(t *testing.T) {
 				mockMessagesService,
 				mockChatsService,
 				mockUsersService,
+				mockReactionsService,
 			)
 
 			// Act
@@ -1012,6 +1035,7 @@ func TestUseCases_DeleteMessage(t *testing.T) {
 			mockMessagesService := mockservices.NewMockMessagesService(ctrl)
 			mockUsersService := mockservices.NewMockUsersService(ctrl)
 			mockChatsService := mockservices.NewMockChatsService(ctrl)
+			mockReactionsService := newMockReactionsService(ctrl)
 
 			if tt.fields.mockMessagesService != nil {
 				tt.fields.mockMessagesService(mockMessagesService)
@@ -1029,6 +1053,7 @@ func TestUseCases_DeleteMessage(t *testing.T) {
 				mockMessagesService,
 				mockChatsService,
 				mockUsersService,
+				mockReactionsService,
 			)
 
 			// Act
@@ -1206,6 +1231,7 @@ func TestUseCases_UpdateMessage(t *testing.T) {
 			mockMessagesService := mockservices.NewMockMessagesService(ctrl)
 			mockUsersService := mockservices.NewMockUsersService(ctrl)
 			mockChatsService := mockservices.NewMockChatsService(ctrl)
+			mockReactionsService := newMockReactionsService(ctrl)
 
 			if tt.fields.mockMessagesService != nil {
 				tt.fields.mockMessagesService(mockMessagesService)
@@ -1223,6 +1249,7 @@ func TestUseCases_UpdateMessage(t *testing.T) {
 				mockMessagesService,
 				mockChatsService,
 				mockUsersService,
+				mockReactionsService,
 			)
 
 			// Act
@@ -1241,4 +1268,82 @@ func TestUseCases_UpdateMessage(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUseCases_GetChatMessages_AttachesReactions(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	mockMessagesService := mockservices.NewMockMessagesService(ctrl)
+	mockUsersService := mockservices.NewMockUsersService(ctrl)
+	mockChatsService := mockservices.NewMockChatsService(ctrl)
+	mockReactionsService := mockservices.NewMockReactionsService(ctrl)
+
+	ctx := context.Background()
+	userID := uint64(1)
+	chatID := uint64(100)
+	svcMsgs := []domains.Message{{ID: 10, ChatID: chatID}, {ID: 20, ChatID: chatID}}
+	summary10 := []domains.MessageReactionSummary{
+		{Reaction: domains.Reaction{ID: 1, Emoji: "👍"}, UserIDs: []uint64{7}},
+	}
+
+	mockUsersService.EXPECT().
+		GetUserByID(gomock.Any(), userID).
+		Return(&domains.User{ID: userID}, nil)
+	mockChatsService.EXPECT().GetChatMembers(gomock.Any(), chatID, userID).
+		Return([]domains.User{{ID: userID}}, nil)
+	mockMessagesService.EXPECT().
+		GetChatMessages(gomock.Any(), userID, chatID, gomock.Any()).
+		Return(svcMsgs, nil)
+	mockReactionsService.EXPECT().
+		ListReactionsForMessages(gomock.Any(), []uint64{10, 20}).
+		Return(map[uint64][]domains.MessageReactionSummary{10: summary10}, nil)
+
+	uc := messages.New(
+		mockMessagesService,
+		mockChatsService,
+		mockUsersService,
+		mockReactionsService,
+	)
+
+	got, err := uc.GetChatMessages(ctx, userID, chatID, nil)
+	assert.NoError(t, err)
+	assert.Len(t, got, 2)
+	assert.Equal(t, summary10, got[0].Reactions)
+	assert.Nil(t, got[1].Reactions)
+}
+
+func TestUseCases_GetMessageByID_AttachesReaction(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	mockMessagesService := mockservices.NewMockMessagesService(ctrl)
+	mockUsersService := mockservices.NewMockUsersService(ctrl)
+	mockChatsService := mockservices.NewMockChatsService(ctrl)
+	mockReactionsService := mockservices.NewMockReactionsService(ctrl)
+
+	ctx := context.Background()
+	svcMsg := &domains.Message{ID: 10, ChatID: 100}
+	summary := []domains.MessageReactionSummary{
+		{Reaction: domains.Reaction{ID: 1, Emoji: "👍"}, UserIDs: []uint64{7}},
+	}
+
+	mockMessagesService.EXPECT().
+		GetMessageByID(gomock.Any(), uint64(1), uint64(10)).
+		Return(svcMsg, nil)
+	mockReactionsService.EXPECT().
+		ListReactionsForMessages(gomock.Any(), []uint64{10}).
+		Return(map[uint64][]domains.MessageReactionSummary{10: summary}, nil)
+
+	uc := messages.New(
+		mockMessagesService,
+		mockChatsService,
+		mockUsersService,
+		mockReactionsService,
+	)
+
+	got, err := uc.GetMessageByID(ctx, 1, 10)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(10), got.ID)
+	assert.Equal(t, summary, got.Reactions)
 }

@@ -10,4 +10,4 @@ Shared-утилиты, используемые всеми HTTP-обработч
 |------|----------|
 | `headers.go` | Константы HTTP-заголовков: `Content-Type` (JSON, HTML, JS, text/plain, image/jpeg), `Service-Worker-Allowed` |
 | `pagination.go` | `GetPaginationFromRequest(r)` — извлекает `limit` и `offset` из query-параметров, возвращает `*domains.Pagination` |
-| `route.go` | Константа `IDRouteKey` — ключ для извлечения `{id}` из URL через `mux.Vars` |
+| `route.go` | Константа `IDRouteKey` (для `{id}`) — ключ для `mux.Vars`. Специфичные ключи (например, `ReactionIDRouteKey`) живут в пакете соответствующего хендлера |

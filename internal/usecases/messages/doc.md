@@ -15,10 +15,18 @@
 - Получает список участников чата через `ChatsService`.
 - Убеждается, что запрашивающий пользователь является членом чата.
 - Возвращает сообщения с поддержкой пагинации.
+- Обогащает сообщения реакциями приватным `attachReactions` (см. ниже).
 
 ### GetMessageByID
-- Прямая передача запроса в `MessagesService`.
+- Достаёт сообщение через `MessagesService`.
+- Обогащает реакциями через `attachReactions([]{msg})` — тот же пачечный путь, что и `GetChatMessages`.
 - Используется NATS-воркером push-уведомлений для получения текста сообщения.
+
+### attachReactions (private)
+- Приватный метод — обогащение это деталь чтения `messages`, не самостоятельная операция.
+- Один SQL через `ReactionsService.ListReactionsForMessages([ids...])`.
+- На пустой вход возвращает вход без обращения к сервису.
+- `usecases/messages` **не зависит от** `ReactionsUseCases` — только от `ReactionsService`, чтобы usecase-слои не тянули друг друга.
 
 ### GetUserUnreadCount
 - Прямая передача запроса в `MessagesService.GetUserUnreadCount`.
@@ -35,6 +43,6 @@
 
 ## Зависимости
 
-- `internal/interfaces` — `MessagesService`, `ChatsService`, `UsersService`.
-- `internal/domains` — `Message`, `Pagination`, `DeleteMessageDTO`, `UpdateMessageDTO`.
+- `internal/interfaces` — `MessagesService`, `ChatsService`, `UsersService`, `ReactionsService`.
+- `internal/domains` — `Message`, `Pagination`, `DeleteMessageDTO`, `UpdateMessageDTO`, `MessageReactionSummary`.
 - `internal/errors` — `ErrUserIsNotChatMember`, `ErrMessageNotFound`, `ErrNotMessageAuthor`.

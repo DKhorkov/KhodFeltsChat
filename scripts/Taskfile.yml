@@ -366,6 +366,8 @@ tasks:
           description: "WEB пуши для уведомления пользователей"
         - name: files
           description: "Работа с файлами"
+        - name: reactions
+          description: "Управление реакциями на сообщения"
         
         securityDefinitions:
           cookieAuth:

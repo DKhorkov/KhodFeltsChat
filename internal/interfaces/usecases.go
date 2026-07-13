@@ -7,7 +7,7 @@ import (
 	"github.com/DKhorkov/kfc/internal/domains"
 )
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/users_usecases.go -package=mockusecases -exclude_interfaces=AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/users_usecases.go -package=mockusecases -exclude_interfaces=AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases,ReactionsUseCases
 type UsersUseCases interface {
 	GetUsers(
 		ctx context.Context,
@@ -20,7 +20,7 @@ type UsersUseCases interface {
 	DeleteAvatar(ctx context.Context, userID uint64) error
 }
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/auth_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/auth_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases,ReactionsUseCases
 type AuthUseCases interface {
 	RegisterUser(ctx context.Context, dto domains.RegisterDTO) (*domains.User, error)
 	LoginUser(ctx context.Context, dto domains.LoginDTO) (*domains.TokensDTO, error)
@@ -34,7 +34,7 @@ type AuthUseCases interface {
 	SendVerifyEmailMessage(ctx context.Context, email string) error
 }
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/chats_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/chats_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases,ReactionsUseCases
 type ChatsUseCases interface {
 	GetChatMembers(ctx context.Context, chatID, userID uint64) ([]domains.User, error)
 	GetUserChats(
@@ -45,12 +45,12 @@ type ChatsUseCases interface {
 	CreateChat(ctx context.Context, chat domains.Chat) (*domains.Chat, error)
 }
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/messages_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,NotificationsUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/messages_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,NotificationsUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases,ReactionsUseCases
 type MessagesUseCases interface {
 	MessagesService
 }
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/notifications_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,ChatsUseCases,MessagesUseCases,AuthUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/notifications_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,ChatsUseCases,MessagesUseCases,AuthUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases,ReactionsUseCases
 type NotificationsUseCases interface {
 	SendVerifyEmailMessage(ctx context.Context, userID uint64) error
 	SendForgetPasswordMessage(ctx context.Context, userID uint64) error
@@ -66,13 +66,13 @@ type NotificationsUseCases interface {
 	) error
 }
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/settings_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/settings_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases,ReactionsUseCases
 type SettingsUseCases interface {
 	GetSettingsByUserID(ctx context.Context, userID uint64) (*domains.Settings, error)
 	UpdateSettings(ctx context.Context, settings domains.Settings) (*domains.Settings, error)
 }
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/web_push_subscriptions_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases,FileStorageUseCases
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/web_push_subscriptions_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases,FileStorageUseCases,ReactionsUseCases
 type WebPushSubscriptionsUseCases interface {
 	CreateWebPushSubscription(
 		ctx context.Context,
@@ -81,9 +81,16 @@ type WebPushSubscriptionsUseCases interface {
 	DeleteWebPushSubscription(ctx context.Context, id uint64) error
 }
 
-//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/file_storage_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases,WebPushSubscriptionsUseCases
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/file_storage_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,ReactionsUseCases
 type FileStorageUseCases interface {
 	Upload(ctx context.Context, path string, data io.Reader) (string, error)
 	Download(ctx context.Context, path string) ([]byte, error)
 	Delete(ctx context.Context, path string) error
+}
+
+//go:generate mockgen -source=usecases.go -destination=../../mocks/usecases/reactions_usecases.go -package=mockusecases -exclude_interfaces=UsersUseCases,AuthUseCases,ChatsUseCases,MessagesUseCases,NotificationsUseCases,SettingsUseCases,WebPushSubscriptionsUseCases,FileStorageUseCases
+type ReactionsUseCases interface {
+	ListReactions(ctx context.Context) ([]domains.Reaction, error)
+	AddReaction(ctx context.Context, dto domains.MessageReactionDTO) (*domains.Reaction, error)
+	RemoveReaction(ctx context.Context, dto domains.MessageReactionDTO) error
 }

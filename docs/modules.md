@@ -14,16 +14,19 @@
 | `internal/repositories/users/` | CRUD пользователей с фильтрацией и пагинацией |
 | `internal/repositories/chats/` | Чаты, участники, проверка существования приватного чата |
 | `internal/repositories/messages/` | Сообщения, статусы прочтения, bulk insert статусов |
+| `internal/repositories/reactions/` | Справочник emoji + M2M реакций юзер↔сообщение |
 | `internal/repositories/emails/` | SMTP отправка email через gomail (не работает с БД) |
 | `internal/services/auth/` | Бизнес-логика авторизации, дедупликация, NATS публикация событий |
 | `internal/services/users/` | CRUD сервис пользователей через UoW |
 | `internal/services/chats/` | Сервис чатов: обогащение участниками и последним сообщением |
 | `internal/services/messages/` | Сервис сообщений: сохранение + управление статусом прочтения |
+| `internal/services/reactions/` | Сервис реакций (UoW-обёртка над ReactionsRepository) |
 | `internal/services/notifications/` | Тонкий фасад над EmailsRepository |
 | `internal/usecases/auth/` | Юзкейсы авторизации + CacheDecorator (rate limit, token validation) |
 | `internal/usecases/users/` | Юзкейсы пользователей с валидацией username |
 | `internal/usecases/chats/` | Юзкейсы чатов: валидация, проверка участников, дедупликация |
-| `internal/usecases/messages/` | Юзкейсы сообщений: проверка membership перед доступом |
+| `internal/usecases/messages/` | Юзкейсы сообщений: проверка membership перед доступом + приватный attachReactions через reactionsService |
+| `internal/usecases/reactions/` | Юзкейсы реакций: валидация member/reaction, AddReaction возвращает `*domains.Reaction` (WS-фан-аут делает HTTP handler через WSBroadcaster) |
 | `internal/usecases/notifications/` | Юзкейсы уведомлений: проверка emailConfirmed |
 | `internal/controllers/http/` | HTTP контроллер: gorilla/mux роутер, 5 middleware, graceful shutdown |
 | `internal/controllers/http/handlers/` | Все HTTP обработчики (auth, users, chats, messages, ws, docs) |

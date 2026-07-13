@@ -45,6 +45,7 @@ func New(
 	authUseCases interfaces.AuthUseCases,
 	chatsUseCases interfaces.ChatsUseCases,
 	messagesUseCases interfaces.MessagesUseCases,
+	reactionsUseCases interfaces.ReactionsUseCases,
 	settingsUseCases interfaces.SettingsUseCases,
 	webPushSubscriptionsUseCases interfaces.WebPushSubscriptionsUseCases,
 	fileStorageUseCases interfaces.FileStorageUseCases,
@@ -141,6 +142,10 @@ func New(
 					Methods: []string{http.MethodGet},
 				},
 				{
+					Path:    regexp.MustCompile(`^` + handlers.APIPrefix + api.ReactionsURL + `$`),
+					Methods: []string{http.MethodGet},
+				},
+				{
 					Path: regexp.MustCompile(
 						`^` + handlers.APIPrefix + strings.ReplaceAll(
 							api.FileDownloadURL,
@@ -167,6 +172,7 @@ func New(
 		authUseCases,
 		chatsUseCases,
 		messagesUseCases,
+		reactionsUseCases,
 		settingsUseCases,
 		webPushSubscriptionsUseCases,
 		fileStorageUseCases,

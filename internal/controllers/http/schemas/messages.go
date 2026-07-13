@@ -52,6 +52,11 @@ type Message struct {
 	// required: false
 	// nullable: true
 	ReplyToMessage *ReplyMessage `json:"replyToMessage,omitempty"`
+
+	// Reactions set on the message, aggregated by reaction id.
+	// required: false
+	// nullable: true
+	Reactions []MessageReaction `json:"reactions,omitempty"`
 }
 
 // ReplyMessage represents an abbreviated message that was replied to.

@@ -9,7 +9,8 @@
 | Пакет | Функции |
 |-------|---------|
 | `chats/` | `MapChat`, `MapChats` — конвертация Chat (делегирует members в users mapper, messages в messages mapper) |
-| `messages/` | `MapMessage`, `MapMessages` — конвертация Message (включая `ReplyToMessage` → `ReplyMessage`) |
+| `messages/` | `MapMessage`, `MapMessages` — конвертация Message (включая `ReplyToMessage`, `Reactions`) |
+| `reactions/` | `MapReaction`, `MapReactions`, `MapMessageReaction`, `MapMessageReactions` — справочник и агрегаты на сообщении |
 | `settings/` | `MapSettings` — конвертация Settings (включая `EmailConsents`, `WebPushConsents`) |
 | `users/` | `MapUser`, `MapUsers` — конвертация User |
 | `web_push_subscriptions/` | `MapCreateResponse` — конвертация WebPushSubscription → CreateWebPushSubscriptionResponse (возвращает ID созданной подписки) |

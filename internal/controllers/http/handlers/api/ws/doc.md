@@ -34,6 +34,8 @@ WebSocket-обработчик для real-time обмена сообщения�
 | `BroadcastMessageDeleted(ctx, chatID, messageID)` | Рассылает `message_deleted` событие всем участникам чата (удаление у всех) |
 | `SendMessageDeletedToUser(ctx, chatID, messageID, userID)` | Отправляет `message_deleted` событие только конкретному пользователю (удаление у себя) |
 | `BroadcastMessageEdited(ctx, chatID, messageID, text)` | Рассылает `message_edited` событие всем участникам чата (редактирование сообщения) |
+| `BroadcastReactionAdded(ctx, messageID, userID, reactionID)` | Рассылает `reaction_added`. chatID резолвит сам через `messagesUseCases.GetMessageByID` — usecase-слой реакций не тянет транспортные детали. Emoji в payload не шлётся: клиент лукапит его в справочнике `/api/reactions` |
+| `BroadcastReactionRemoved(ctx, messageID, userID, reactionID)` | Рассылает `reaction_removed`. То же с chatID |
 
 ## Вспомогательные методы
 

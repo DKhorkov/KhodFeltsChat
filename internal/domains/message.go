@@ -5,14 +5,15 @@ import (
 )
 
 type Message struct {
-	ID             uint64    `json:"id"`
-	ChatID         uint64    `json:"chatId"`
-	Sender         User      `json:"sender"`
-	Text           string    `json:"text"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
-	IsRead         bool      `json:"isRead"`
-	ReplyToMessage *Message  `json:"replyToMessage,omitempty"`
+	ID             uint64                   `json:"id"`
+	ChatID         uint64                   `json:"chatId"`
+	Sender         User                     `json:"sender"`
+	Text           string                   `json:"text"`
+	CreatedAt      time.Time                `json:"createdAt"`
+	UpdatedAt      time.Time                `json:"updatedAt"`
+	IsRead         bool                     `json:"isRead"`
+	ReplyToMessage *Message                 `json:"replyToMessage,omitempty"`
+	Reactions      []MessageReactionSummary `json:"reactions,omitempty"`
 }
 
 func NewMessage() *Message {

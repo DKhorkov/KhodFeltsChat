@@ -16,6 +16,7 @@ import (
 	emailsrepository "github.com/DKhorkov/kfc/internal/repositories/emails"
 	filestoragerepository "github.com/DKhorkov/kfc/internal/repositories/file_storage"
 	messagesrepository "github.com/DKhorkov/kfc/internal/repositories/messages"
+	reactionsrepository "github.com/DKhorkov/kfc/internal/repositories/reactions"
 	settingsrepository "github.com/DKhorkov/kfc/internal/repositories/settings"
 	usersrepository "github.com/DKhorkov/kfc/internal/repositories/users"
 	webpushrepository "github.com/DKhorkov/kfc/internal/repositories/web_push"
@@ -25,6 +26,7 @@ import (
 	filestorageservice "github.com/DKhorkov/kfc/internal/services/file_storage"
 	messagesservice "github.com/DKhorkov/kfc/internal/services/messages"
 	notificationsservice "github.com/DKhorkov/kfc/internal/services/notifications"
+	reactionsservice "github.com/DKhorkov/kfc/internal/services/reactions"
 	settingsservice "github.com/DKhorkov/kfc/internal/services/settings"
 	usersservice "github.com/DKhorkov/kfc/internal/services/users"
 	webpushsubscriptionsservice "github.com/DKhorkov/kfc/internal/services/web_push_subscriptions"
@@ -34,6 +36,7 @@ import (
 	filestorageusecases "github.com/DKhorkov/kfc/internal/usecases/file_storage"
 	messagesusecases "github.com/DKhorkov/kfc/internal/usecases/messages"
 	notificaionsusecases "github.com/DKhorkov/kfc/internal/usecases/notifications"
+	reactionsusecases "github.com/DKhorkov/kfc/internal/usecases/reactions"
 	settingsusecases "github.com/DKhorkov/kfc/internal/usecases/settings"
 	usersusecases "github.com/DKhorkov/kfc/internal/usecases/users"
 	webpushsubscriptionsusecases "github.com/DKhorkov/kfc/internal/usecases/web_push_subscriptions"
@@ -308,10 +311,35 @@ func main() {
 		),
 	)
 
+	reactionsService := reactionsservice.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.Services.Reactions,
+		reactionsservice.New(
+			unitOfWork,
+			func(tx postgresql.Transaction) interfaces.ReactionsRepository {
+				return reactionsrepository.NewTraceDecorator(
+					traceProvider,
+					cfg.Tracing.Spans.Repositories.Reactions,
+					reactionsrepository.New(tx, logger),
+				)
+			},
+		),
+	)
+
+	reactionsUseCases := reactionsusecases.NewTraceDecorator(
+		traceProvider,
+		cfg.Tracing.Spans.UseCases.Reactions,
+		reactionsusecases.New(
+			reactionsService,
+			messagesService,
+			chatsService,
+		),
+	)
+
 	messagesUseCases := messagesusecases.NewTraceDecorator(
 		traceProvider,
 		cfg.Tracing.Spans.UseCases.Messages,
-		messagesusecases.New(messagesService, chatsService, usersService),
+		messagesusecases.New(messagesService, chatsService, usersService, reactionsService),
 	)
 
 	chatsUseCases := chatsusecases.NewTraceDecorator(
@@ -448,6 +476,7 @@ func main() {
 		authUseCases,
 		chatsUseCases,
 		messagesUseCases,
+		reactionsUseCases,
 		settingsUseCases,
 		webPushSubscriptionsUseCases,
 		fileStorageUseCases,
