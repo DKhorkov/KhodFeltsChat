@@ -30,7 +30,6 @@ type ReactionAddedPayload struct {
 	ChatID     uint64 `json:"chatId"`
 	UserID     uint64 `json:"userId"`
 	ReactionID uint64 `json:"reactionId"`
-	Emoji      string `json:"emoji"`
 }
 
 type ReactionRemovedPayload struct {

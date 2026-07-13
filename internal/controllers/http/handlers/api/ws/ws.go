@@ -191,10 +191,13 @@ func (h *Handler) BroadcastMessageEdited(
 }
 
 // BroadcastReactionAdded sends a reaction_added event to all chat members.
+// Payload и код повторяют BroadcastReactionRemoved — события семантически разные,
+// payload-типы живут отдельно (могут разъехаться независимо друг от друга).
+//
+//nolint:dupl // See doc above.
 func (h *Handler) BroadcastReactionAdded(
 	ctx context.Context,
 	messageID, userID, reactionID uint64,
-	emoji string,
 ) {
 	msg, err := h.messagesUseCases.GetMessageByID(ctx, userID, messageID)
 	if err != nil {
@@ -232,7 +235,6 @@ func (h *Handler) BroadcastReactionAdded(
 			ChatID:     msg.ChatID,
 			UserID:     userID,
 			ReactionID: reactionID,
-			Emoji:      emoji,
 		},
 	}
 
@@ -242,6 +244,8 @@ func (h *Handler) BroadcastReactionAdded(
 }
 
 // BroadcastReactionRemoved sends a reaction_removed event to all chat members.
+//
+//nolint:dupl // See BroadcastReactionAdded — same rationale.
 func (h *Handler) BroadcastReactionRemoved(
 	ctx context.Context,
 	messageID, userID, reactionID uint64,

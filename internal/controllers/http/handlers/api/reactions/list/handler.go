@@ -17,7 +17,6 @@ import (
 //
 // Responses:
 //	200: []Reaction
-//	401: Unauthorized
 //	500: InternalServerError
 
 // Handler returns the dictionary of available reactions.

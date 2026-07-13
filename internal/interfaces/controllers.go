@@ -16,7 +16,6 @@ type WSBroadcaster interface {
 	BroadcastReactionAdded(
 		ctx context.Context,
 		messageID, userID, reactionID uint64,
-		emoji string,
 	)
 	BroadcastReactionRemoved(
 		ctx context.Context,

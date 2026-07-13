@@ -85,7 +85,7 @@ func TestHandler_BroadcastReactionAdded_ResolvesChatIDAndQueriesMembers(t *testi
 		Times(1)
 
 	// Нет активных соединений → sendToUser молча выходит для каждого участника.
-	h.BroadcastReactionAdded(context.Background(), 10, 7, 1, "👍")
+	h.BroadcastReactionAdded(context.Background(), 10, 7, 1)
 }
 
 func TestHandler_BroadcastReactionAdded_LogsErrorOnGetMessageFailure(t *testing.T) {
@@ -103,7 +103,7 @@ func TestHandler_BroadcastReactionAdded_LogsErrorOnGetMessageFailure(t *testing.
 		ErrorContext(gomock.Any(), "Failed to resolve chatID for reaction added broadcast", gomock.Any()).
 		Times(1)
 
-	h.BroadcastReactionAdded(context.Background(), 10, 7, 1, "👍")
+	h.BroadcastReactionAdded(context.Background(), 10, 7, 1)
 }
 
 func TestHandler_BroadcastReactionAdded_LogsErrorOnGetChatMembersFailure(t *testing.T) {
@@ -124,7 +124,7 @@ func TestHandler_BroadcastReactionAdded_LogsErrorOnGetChatMembersFailure(t *test
 		ErrorContext(gomock.Any(), "Failed to get chat members for reaction added broadcast", gomock.Any()).
 		Times(1)
 
-	h.BroadcastReactionAdded(context.Background(), 10, 7, 1, "👍")
+	h.BroadcastReactionAdded(context.Background(), 10, 7, 1)
 }
 
 func TestHandler_BroadcastReactionAdded_NoMembers_NoOps(t *testing.T) {
@@ -142,7 +142,7 @@ func TestHandler_BroadcastReactionAdded_NoMembers_NoOps(t *testing.T) {
 		Times(1)
 
 	// Логгер не получает вызовов.
-	h.BroadcastReactionAdded(context.Background(), 10, 7, 1, "👍")
+	h.BroadcastReactionAdded(context.Background(), 10, 7, 1)
 }
 
 func TestHandler_BroadcastReactionRemoved_ResolvesChatIDAndQueriesMembers(t *testing.T) {

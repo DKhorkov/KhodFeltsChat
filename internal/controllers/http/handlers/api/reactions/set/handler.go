@@ -72,7 +72,7 @@ func Handler(
 			return
 		}
 
-		reaction, err := u.AddReaction(r.Context(), dto)
+		_, err = u.AddReaction(r.Context(), dto)
 
 		switch {
 		case errors.Is(err, customerrors.ErrReactionAlreadyExists):
@@ -97,7 +97,6 @@ func Handler(
 		broadcaster.BroadcastReactionAdded(
 			r.Context(),
 			dto.MessageID, dto.UserID, dto.ReactionID,
-			reaction.Emoji,
 		)
 
 		w.WriteHeader(http.StatusNoContent)

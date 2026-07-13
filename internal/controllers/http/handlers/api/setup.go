@@ -72,7 +72,7 @@ const (
 
 	ReactionsURL            = "/reactions"
 	SetMessageReactionURL   = MessagesURL + "/{%s}/reactions"
-	UnsetMessageReactionURL = MessagesURL + "/{%s}/reactions/{%s}"
+	UnsetMessageReactionURL = SetMessageReactionURL + "/{%s}"
 
 	AvatarURL       = MeURL + "/avatar"
 	FilesURL        = "/files"

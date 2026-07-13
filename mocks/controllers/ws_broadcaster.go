@@ -65,15 +65,15 @@ func (mr *MockWSBroadcasterMockRecorder) BroadcastMessageEdited(ctx, chatID, mes
 }
 
 // BroadcastReactionAdded mocks base method.
-func (m *MockWSBroadcaster) BroadcastReactionAdded(ctx context.Context, messageID, userID, reactionID uint64, emoji string) {
+func (m *MockWSBroadcaster) BroadcastReactionAdded(ctx context.Context, messageID, userID, reactionID uint64) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "BroadcastReactionAdded", ctx, messageID, userID, reactionID, emoji)
+	m.ctrl.Call(m, "BroadcastReactionAdded", ctx, messageID, userID, reactionID)
 }
 
 // BroadcastReactionAdded indicates an expected call of BroadcastReactionAdded.
-func (mr *MockWSBroadcasterMockRecorder) BroadcastReactionAdded(ctx, messageID, userID, reactionID, emoji any) *gomock.Call {
+func (mr *MockWSBroadcasterMockRecorder) BroadcastReactionAdded(ctx, messageID, userID, reactionID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastReactionAdded", reflect.TypeOf((*MockWSBroadcaster)(nil).BroadcastReactionAdded), ctx, messageID, userID, reactionID, emoji)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BroadcastReactionAdded", reflect.TypeOf((*MockWSBroadcaster)(nil).BroadcastReactionAdded), ctx, messageID, userID, reactionID)
 }
 
 // BroadcastReactionRemoved mocks base method.

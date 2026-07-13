@@ -16,8 +16,8 @@
 
 1. Достаёт `userID` из JWT-контекста и `messageID` из URL.
 2. Валидирует, что `reactionId != 0`.
-3. Вызывает `u.AddReaction(ctx, dto)` — usecase проверяет member чата и наличие реакции в справочнике; возвращает `(*domains.Reaction, err)` (id + emoji).
-4. При успехе — `broadcaster.BroadcastReactionAdded(messageID, userID, reactionID, reaction.Emoji)` фан-аутит WS всем участникам чата (chatID broadcaster резолвит сам через `messagesUseCases.GetMessageByID`).
+3. Вызывает `u.AddReaction(ctx, dto)` — usecase проверяет member чата и наличие реакции в справочнике; возвращает `(*domains.Reaction, err)`. Handler результат не использует (см. п.4), но контракт usecase — доменный объект.
+4. При успехе — `broadcaster.BroadcastReactionAdded(messageID, userID, reactionID)` фан-аутит WS всем участникам чата (chatID broadcaster резолвит сам через `messagesUseCases.GetMessageByID`). Emoji в payload не шлём — фронт лукапит его в загруженном справочнике `/api/reactions`.
 
 ## Ответы
 

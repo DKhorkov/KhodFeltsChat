@@ -66,7 +66,7 @@ func TestSetHandler_NoContent_Success_Broadcasts(t *testing.T) {
 		AddReaction(gomock.Any(), gomock.Any()).
 		Return(&domains.Reaction{ID: 1, Emoji: "👍"}, nil)
 	b.EXPECT().
-		BroadcastReactionAdded(gomock.Any(), uint64(10), uint64(7), uint64(1), "👍").
+		BroadcastReactionAdded(gomock.Any(), uint64(10), uint64(7), uint64(1)).
 		Times(1)
 
 	req := buildReq(t, "10", `{"reactionId":1}`, 7, true)

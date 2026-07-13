@@ -287,8 +287,15 @@ function handleReactionAdded(payload) {
 
     let summary = msg.reactions.find(r => r.reaction.id === payload.reactionId);
     if (!summary) {
+        // WS payload содержит только reactionId — emoji и sortOrder лукапим
+        // в справочнике, чтобы не таскать лишнее по сети.
+        const dict = reactionsDictionary.find(r => r.id === payload.reactionId);
         summary = {
-            reaction: {id: payload.reactionId, emoji: payload.emoji},
+            reaction: {
+                id: payload.reactionId,
+                emoji: dict ? dict.emoji : '',
+                sortOrder: dict ? dict.sortOrder : 0,
+            },
             userIds: [],
         };
         msg.reactions.push(summary);
