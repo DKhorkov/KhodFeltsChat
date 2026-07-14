@@ -4,7 +4,7 @@ const CHAT_LIST_DEBOUNCE_MS = 300;
 const CHAT_LIST_POLL_INTERVAL_MS = 5000;
 const WS_RECONNECT_DELAY_MS = 3000;
 const EMOJI_CLOSE_DELAY_MS = 500;
-const LONG_PRESS_DELAY_MS = 500;
+const LONG_PRESS_DELAY_MS = 350;
 const TOAST_DURATION_MS = 3000;
 const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 600;
 const SWIPE_CLOSE_THRESHOLD_RATIO = 0.5; // 50% ширины экрана для закрытия чата свайпом

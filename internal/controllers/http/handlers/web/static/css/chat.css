@@ -943,11 +943,14 @@ img.user-item__avatar {
     .message-bubble {
         max-width: 85%;
         will-change: transform;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
     }
 
     /* Анимация увеличения при long press */
     .message-bubble--pressing {
-        animation: longPressScale 500ms ease-out forwards;
+        animation: longPressScale 350ms ease-out forwards;
     }
 
     @keyframes longPressScale {
