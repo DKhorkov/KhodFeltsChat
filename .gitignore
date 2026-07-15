@@ -35,6 +35,7 @@ grafana/
 *.db
 bench.txt
 prometheus.yml
+timeweb
 
 # Environments
 .venv
@@ -50,6 +51,7 @@ venv.bak/
 postgres_backups
 postgres_data
 redis_data
+prometheus_data
 
 # Secure:
 nats.conf

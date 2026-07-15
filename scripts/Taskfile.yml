@@ -14,6 +14,7 @@ tasks:
       - task: generate_open_api_docs
       - task: create_grafana_folder
       - task: prepare_prometheus
+      - task: create_prometheus_folder
       - task: create_logs_folder
       - task: create_uploads_folder
       - task: docker_build_prod
@@ -27,6 +28,7 @@ tasks:
       - task: generate_open_api_docs
       - task: create_grafana_folder
       - task: prepare_prometheus
+      - task: create_prometheus_folder
       - task: create_logs_folder
       - task: create_uploads_folder
       - task: docker_build_local
@@ -55,6 +57,14 @@ tasks:
     dir: ../
     cmds:
       - export $(cat .env | xargs) && envsubst < prometheus.template.yml > prometheus.yml
+
+  create_prometheus_folder:
+    desc: "Create Prometheus data folder for docker volume purposes."
+    internal: true
+    dir: ../
+    cmds:
+      - mkdir -p prometheus_data
+      - sudo chmod -R 777 prometheus_data
 
   create_postgres_folders:
     desc: "Create postgres folders for other tasks purposes."
@@ -142,6 +152,7 @@ tasks:
     cmds:
       #      - sudo rm -rf grafana/
       - sudo rm -rf prometheus.yml
+      #      - sudo rm -rf prometheus_data/
       #      - sudo rm -rf logs/
       - sudo rm -rf coverage/
       - sudo rm -rf build/package/prod/.env

@@ -70,6 +70,7 @@ services:
       - "${PROMETHEUS_OUTER_PORT}:${PROMETHEUS_INNER_PORT}"
     volumes:
       - ../../../prometheus.yml:/etc/prometheus/prometheus.yml  # Конфиг Prometheus
+      - ../../../prometheus_data:/prometheus  # TSDB — иначе создаётся анонимный volume при каждом пересоздании
     networks:
       - kfc_network
     restart: unless-stopped
