@@ -516,6 +516,9 @@ img.chat-item__avatar {
     box-shadow: var(--shadow-lg);
     padding: var(--space-xs) 0;
     min-width: 180px;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .context-menu__item {

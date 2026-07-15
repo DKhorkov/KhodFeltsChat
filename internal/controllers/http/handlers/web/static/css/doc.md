@@ -158,6 +158,17 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 | `.message-bubble__header` | Имя отправителя + время |
 | `.message-bubble__text` | Текст (pre-wrap, word-wrap) |
 
+### Контекстное меню сообщения
+
+| Класс | Описание |
+|-------|----------|
+| `.context-menu` | Всплывающее меню действий над сообщением (`position: fixed`, `z-index: 3000`). `user-select: none` + `-webkit-touch-callout: none` — чтобы long press на мобильных не вызывал нативное выделение/callout на пунктах меню (меню открывается прямо под пальцем) |
+| `.context-menu__item` | Пункт меню (`display: block`, `width: 100%`, hover → `--bg-hover`) |
+| `.context-menu__item--danger` | Опасный пункт (цвет `--danger`) |
+| `.context-menu__reactions` | Полоса реакций (горизонтальный скролл) |
+| `.context-menu__reaction` | Кнопка реакции |
+| `.context-menu__reaction--active` | Активная реакция (обводка `--accent`) |
+
 ### Список пользователей (в модалках)
 
 | Класс | Описание |
