@@ -3,6 +3,7 @@ package auth_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -135,6 +136,34 @@ func TestUseCases_RegisterUser(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 			err:     errors.New("user already exists"),
+		},
+		{
+			// Ввод email в верхнем регистре не должен ломать валидацию regex'ом,
+			// который допускает только нижний регистр — usecase нормализует заранее.
+			name: "mixed case email is lowercased before validation and passed as lowercase to service",
+			fields: fields{
+				mockAuthService: func(as *mockservices.MockAuthService) {
+					as.EXPECT().
+						RegisterUser(gomock.Any(), gomock.AssignableToTypeOf(domains.RegisterDTO{})).
+						DoAndReturn(func(_ context.Context, dto domains.RegisterDTO) (*domains.User, error) {
+							if dto.Email != "sometest@gmail.com" {
+								return nil, fmt.Errorf("expected lowercased email, got %s", dto.Email)
+							}
+
+							return &domains.User{ID: 1, Email: dto.Email, Username: dto.Username}, nil
+						})
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.RegisterDTO{
+					Username: "testuser",
+					Email:    "SomeTest@GMAIL.com",
+					Password: "Password123!",
+				},
+			},
+			want:    &domains.User{ID: 1, Email: "sometest@gmail.com", Username: "testuser"},
+			wantErr: false,
 		},
 	}
 
@@ -424,6 +453,69 @@ func TestUseCases_LoginUser(t *testing.T) {
 			wantToken: false,
 			wantErr:   true,
 			err:       customerrors.ErrWrongPassword,
+		},
+		{
+			// Email в верхнем регистре должен быть нормализован до lookup.
+			name: "mixed case email is lowercased for email lookup",
+			fields: fields{
+				mockUsersService: func(us *mockservices.MockUsersService) {
+					us.EXPECT().
+						GetUserByEmail(gomock.Any(), "sometest@gmail.com").
+						Return(user, nil)
+				},
+				mockAuthService: func(as *mockservices.MockAuthService) {
+					as.EXPECT().
+						CreateRefreshToken(
+							gomock.Any(),
+							uint64(123),
+							gomock.Any(),
+							gomock.Any(),
+						).
+						Return(&domains.RefreshToken{}, nil)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.LoginDTO{
+					Login:    "SomeTest@GMAIL.com",
+					Password: pass,
+				},
+			},
+			wantToken: true,
+			wantErr:   false,
+		},
+		{
+			// Fallback по username: email lookup идёт с lowercase, username lookup — в оригинальном регистре.
+			name: "username fallback preserves original case",
+			fields: fields{
+				mockUsersService: func(us *mockservices.MockUsersService) {
+					us.EXPECT().
+						GetUserByEmail(gomock.Any(), "mixedcaseuser").
+						Return(nil, errors.New("not found"))
+					us.EXPECT().
+						GetUserByUsername(gomock.Any(), "MixedCaseUser").
+						Return(user, nil)
+				},
+				mockAuthService: func(as *mockservices.MockAuthService) {
+					as.EXPECT().
+						CreateRefreshToken(
+							gomock.Any(),
+							uint64(123),
+							gomock.Any(),
+							gomock.Any(),
+						).
+						Return(&domains.RefreshToken{}, nil)
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				dto: domains.LoginDTO{
+					Login:    "MixedCaseUser",
+					Password: pass,
+				},
+			},
+			wantToken: true,
+			wantErr:   false,
 		},
 	}
 
@@ -1572,6 +1664,26 @@ func TestUseCases_SendVerifyEmailMessage(t *testing.T) {
 			wantErr: true,
 			err:     errors.New("SMTP error"),
 		},
+		{
+			name: "mixed case email is lowercased before lookup and send",
+			fields: fields{
+				mockUsersService: func(us *mockservices.MockUsersService) {
+					us.EXPECT().
+						GetUserByEmail(gomock.Any(), "sometest@gmail.com").
+						Return(unconfirmedUser, nil)
+				},
+				mockAuthService: func(as *mockservices.MockAuthService) {
+					as.EXPECT().
+						SendVerifyEmailMessage(gomock.Any(), "sometest@gmail.com").
+						Return(nil)
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				email: "SomeTest@GMAIL.com",
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1743,6 +1855,26 @@ func TestUseCases_SendForgetPasswordMessage(t *testing.T) {
 			},
 			wantErr: true,
 			err:     errors.New("user not found"), // GetUserByEmail вернет ошибку
+		},
+		{
+			name: "mixed case email is lowercased before lookup and send",
+			fields: fields{
+				mockUsersService: func(us *mockservices.MockUsersService) {
+					us.EXPECT().
+						GetUserByEmail(gomock.Any(), "sometest@gmail.com").
+						Return(confirmedUser, nil)
+				},
+				mockAuthService: func(as *mockservices.MockAuthService) {
+					as.EXPECT().
+						SendForgetPasswordMessage(gomock.Any(), "sometest@gmail.com").
+						Return(nil)
+				},
+			},
+			args: args{
+				ctx:   context.Background(),
+				email: "SomeTest@GMAIL.com",
+			},
+			wantErr: false,
 		},
 	}
 

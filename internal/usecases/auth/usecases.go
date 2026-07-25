@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
@@ -37,6 +38,8 @@ func (u *UseCases) RegisterUser(
 	ctx context.Context,
 	dto domains.RegisterDTO,
 ) (*domains.User, error) {
+	dto.Email = strings.ToLower(dto.Email)
+
 	if !validation.ValidateValueByRule(dto.Email, u.validationConfig.EmailRegExp) {
 		return nil, fmt.Errorf("%w: invalid email address", customerrors.ErrValidationFailed)
 	}
@@ -71,7 +74,8 @@ func (u *UseCases) LoginUser(
 		return nil, fmt.Errorf("%w: password is required", customerrors.ErrValidationFailed)
 	}
 
-	user, _ := u.usersService.GetUserByEmail(ctx, dto.Login)
+	// Email нормализуем к нижнему регистру; username case-sensitive и остаётся как есть.
+	user, _ := u.usersService.GetUserByEmail(ctx, strings.ToLower(dto.Login))
 
 	// Fallback логина по имени пользователя
 	if user == nil {
@@ -286,6 +290,8 @@ func (u *UseCases) ChangePassword(ctx context.Context, dto domains.ChangePasswor
 }
 
 func (u *UseCases) SendVerifyEmailMessage(ctx context.Context, email string) error {
+	email = strings.ToLower(email)
+
 	user, err := u.usersService.GetUserByEmail(ctx, email)
 	if err != nil {
 		return err
@@ -299,6 +305,8 @@ func (u *UseCases) SendVerifyEmailMessage(ctx context.Context, email string) err
 }
 
 func (u *UseCases) SendForgetPasswordMessage(ctx context.Context, email string) error {
+	email = strings.ToLower(email)
+
 	user, err := u.usersService.GetUserByEmail(ctx, email)
 	if err != nil {
 		return err
