@@ -315,6 +315,14 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 | `showInfo(message)` | Показывает информационную модалку (синяя, иконка ℹ️). |
 | `showConfirmDelete(message, onConfirm, options?)` | Модалка подтверждения удаления с кнопками «Отмена» и «Удалить» (иконка ❓). При подтверждении вызывает `onConfirm()`. `options`: `title`, `confirmText`, `cancelText`, `confirmType` (`'danger'` или `'primary'`). |
 
+### password-toggle.js — Кнопка «глаз» для полей пароля
+
+| Функция | Описание |
+|---------|----------|
+| IIFE + `scan(root)` | При загрузке страницы находит все `input[type="password"]` и оборачивает их в `.password-field` с кнопкой-глазом (`aria-pressed` управляет иконкой). Клик по кнопке переключает `type` между `password` и `text`. |
+| `wrapInput(input)` | Одноразовая обработка одного инпута (флаг `data-password-toggle="processed"` предотвращает двойное оборачивание). Вставляет SVG-иконки открытого/закрытого глаза. |
+| `MutationObserver` | Ловит password-инпуты, добавленные в DOM после загрузки (например, при рендере модалок), и оборачивает их автоматически. |
+
 ### emoji-picker.js — Emoji picker
 
 | Функция | Описание |
