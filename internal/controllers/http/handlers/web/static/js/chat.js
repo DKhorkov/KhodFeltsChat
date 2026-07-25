@@ -568,6 +568,15 @@ async function selectChat(chat) {
     titleEl.textContent = getChatTitle(chat);
     titleEl.onclick = () => openChatInfo(chat);
 
+    // Аватар в шапке — те же стили и данные, что у элемента в списке чатов.
+    const avatarSlot = document.getElementById('conversation-avatar');
+    avatarSlot.innerHTML = '';
+    const otherMember = getOtherMember(chat);
+    const avatarUser = otherMember || {username: getChatTitle(chat), avatarPath: null};
+    const avatar = createAvatarElement('chat-item__avatar', avatarUser, getChatTitle(chat));
+    avatar.onclick = () => openChatInfo(chat);
+    avatarSlot.appendChild(avatar);
+
     await loadMessages(chat.id, 0);
     scrollToBottom();
     resetScrollDownState();
