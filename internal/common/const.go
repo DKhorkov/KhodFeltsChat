@@ -8,7 +8,6 @@ import (
 const (
 	LoggingTraceSkipLevel = 1
 	DateFormat            = "02.01.2006"
-	SaltSeparator         = ":"
 )
 
 var Timezone *time.Location

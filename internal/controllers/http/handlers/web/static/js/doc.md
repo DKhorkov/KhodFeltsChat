@@ -315,6 +315,22 @@ HTML-шаблону через `<script>`. Общие утилиты (`auth.js`,
 | `showInfo(message)` | Показывает информационную модалку (синяя, иконка ℹ️). |
 | `showConfirmDelete(message, onConfirm, options?)` | Модалка подтверждения удаления с кнопками «Отмена» и «Удалить» (иконка ❓). При подтверждении вызывает `onConfirm()`. `options`: `title`, `confirmText`, `cancelText`, `confirmType` (`'danger'` или `'primary'`). |
 
+### linkify.js — Кликабельные ссылки в тексте сообщений
+
+| Функция | Описание |
+|---------|----------|
+| `renderTextWithLinks(element, text)` | Очищает `element` и заполняет его смесью текстовых нод и `<a class="message-link" target="_blank" rel="noopener noreferrer">`. Находит `http(s)://…` через regex, отделяет хвостовую пунктуацию. HTML-инъекция невозможна — URL кладётся в `anchor.href`/`anchor.textContent`, а не в `innerHTML`. Публичный интерфейс — `window.renderTextWithLinks`. |
+
+Используется в `chat.js`: `createMessageBubble` (рендер новых сообщений) и `handleMessageEdited` (обновление текста при редактировании).
+
+### password-toggle.js — Кнопка «глаз» для полей пароля
+
+| Функция | Описание |
+|---------|----------|
+| IIFE + `scan(root)` | При загрузке страницы находит все `input[type="password"]` и оборачивает их в `.password-field` с кнопкой-глазом (`aria-pressed` управляет иконкой). Клик по кнопке переключает `type` между `password` и `text`. |
+| `wrapInput(input)` | Одноразовая обработка одного инпута (флаг `data-password-toggle="processed"` предотвращает двойное оборачивание). Вставляет SVG-иконки открытого/закрытого глаза. |
+| `MutationObserver` | Ловит password-инпуты, добавленные в DOM после загрузки (например, при рендере модалок), и оборачивает их автоматически. |
+
 ### emoji-picker.js — Emoji picker
 
 | Функция | Описание |

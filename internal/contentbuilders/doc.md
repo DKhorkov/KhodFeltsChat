@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Генерация HTML тела и темы для исходящих email-ов. Также сохраняет одноразовые токены в Redis.
+Генерация HTML тела и темы для исходящих email-ов. Также сохраняет одноразовые 6-значные коды в Redis.
 
 ## Модули
 
@@ -10,15 +10,14 @@
 `ContentBuilder{baseURL, cacheProvider}`:
 - `Subject()` — тема письма
 - `Body(ctx, user)`:
-  1. Генерирует UUID salt
-  2. Кодирует `salt:userID` в base64 как токен
-  3. Сохраняет в Redis: ключ `verifyEmailToken:{userID}`, TTL = 15 мин
-  4. Возвращает HTML с ссылкой `baseURL/token`
+  1. Генерирует 6-значный код (`common.GenerateOTP`) в диапазоне `[100000, 999999]`
+  2. Атомарно сохраняет `{verify_email_token}:{code}` = userID через `SetNX` + `Get` (проверка на коллизию, до `OTPGenerateAttempts` попыток), TTL = 15 мин
+  3. Возвращает HTML со ссылкой `baseURL/{code}` и кодом в теле
 
 ### forget_password/
 Аналогичный подход:
-- Токен не в ссылке, а в теле письма (raw)
-- Ключ Redis: `forgetPasswordToken:{userID}`
+- Код показан в теле письма (в тег `<b>`)
+- Ключ Redis: `{forget_password_token}:{code}` = userID
 
 ### new_message/
 `ContentBuilder`:
@@ -27,6 +26,7 @@
 
 ## Гарантии безопасности
 
-- **Один токен на пользователя**: новый перезаписывает старый в Redis
-- **Одноразовость**: токен удаляется из кэша при использовании (в CacheDecorator usecases)
+- **Атомарность записи**: `SetNX` + `Get` — если код уже занят другим пользователем, регенерируем; собственную запись не перезатираем
+- **Одноразовость**: код удаляется из кэша при использовании (в `CacheDecorator` usecases)
 - **TTL**: автоматическое истечение через 15 минут
+- **Коллизии**: до `OTPGenerateAttempts` попыток, затем `ErrOTPCollision`

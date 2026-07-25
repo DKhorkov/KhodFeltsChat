@@ -8,8 +8,6 @@ import (
 	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/kfc/internal/domains"
 	"github.com/DKhorkov/libs/cache"
-	"github.com/DKhorkov/libs/security"
-	"github.com/google/uuid"
 )
 
 type ContentBuilder struct {
@@ -29,23 +27,39 @@ func (b *ContentBuilder) Subject() string {
 }
 
 func (b *ContentBuilder) Body(ctx context.Context, user domains.User) (string, error) {
-	salt := uuid.New().String()
+	userIDStr := strconv.FormatUint(user.ID, 10)
 
-	token := security.RawEncode(
-		[]byte(salt + common.SaltSeparator + strconv.FormatUint(user.ID, 10)),
-	)
+	var code uint64
 
-	cacheKey := fmt.Sprintf("%s:%d", common.VerifyEmailTokenPrefix, user.ID)
-	if err := b.cacheProvider.Set(
-		ctx,
-		cacheKey,
-		token,
-		common.TokenTTL,
-	); err != nil {
-		return "", fmt.Errorf("failed to set cache for %s key: %w", cacheKey, err)
+	for range common.OTPGenerateAttempts {
+		generated, err := common.GenerateOTP()
+		if err != nil {
+			return "", fmt.Errorf("failed to generate OTP: %w", err)
+		}
+
+		cacheKey := fmt.Sprintf("%s:%d", common.VerifyEmailTokenPrefix, generated)
+
+		if err = b.cacheProvider.SetNX(ctx, cacheKey, userIDStr, common.TokenTTL); err != nil {
+			return "", fmt.Errorf("failed to set cache for %s key: %w", cacheKey, err)
+		}
+
+		stored, err := b.cacheProvider.Get(ctx, cacheKey)
+		if err != nil {
+			return "", fmt.Errorf("failed to verify cache for %s key: %w", cacheKey, err)
+		}
+
+		if stored == userIDStr {
+			code = generated
+
+			break
+		}
 	}
 
-	link := fmt.Sprintf("%s/%s", b.baseURL, token)
+	if code == 0 {
+		return "", common.ErrOTPCollision
+	}
+
+	link := fmt.Sprintf("%s/%d", b.baseURL, code)
 
 	template := `<p>Добрый день, %s!</p>
 <p>Пожалуйста, перейдите по <a href="%s">ссылке</a>, чтобы подтвердить адрес электронной почты!</p>

@@ -631,14 +631,14 @@ func TestTraceDecorator_VerifyEmail(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name             string
-		verifyEmailToken string
-		setupMocks       func(*mocktracing.MockProvider, *mockusecases.MockAuthUseCases, *mocktracing.MockSpan)
-		expectedError    error
+		name            string
+		verifyEmailCode uint64
+		setupMocks      func(*mocktracing.MockProvider, *mockusecases.MockAuthUseCases, *mocktracing.MockSpan)
+		expectedError   error
 	}{
 		{
-			name:             "successful email verification with tracing",
-			verifyEmailToken: "valid_token_123",
+			name:            "successful email verification with tracing",
+			verifyEmailCode: 111111,
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockusecases.MockAuthUseCases,
@@ -651,14 +651,14 @@ func TestTraceDecorator_VerifyEmail(t *testing.T) {
 					})
 
 				mockBase.EXPECT().
-					VerifyEmail(gomock.Any(), "valid_token_123").
+					VerifyEmail(gomock.Any(), uint64(111111)).
 					Return(nil)
 			},
 			expectedError: nil,
 		},
 		{
-			name:             "invalid token",
-			verifyEmailToken: "invalid_token",
+			name:            "invalid code",
+			verifyEmailCode: 222222,
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockusecases.MockAuthUseCases,
@@ -669,14 +669,14 @@ func TestTraceDecorator_VerifyEmail(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					VerifyEmail(gomock.Any(), "invalid_token").
+					VerifyEmail(gomock.Any(), uint64(222222)).
 					Return(errors.New("invalid verification token"))
 			},
 			expectedError: errors.New("invalid verification token"),
 		},
 		{
-			name:             "expired token",
-			verifyEmailToken: "expired_token",
+			name:            "expired code",
+			verifyEmailCode: 333333,
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockusecases.MockAuthUseCases,
@@ -687,14 +687,14 @@ func TestTraceDecorator_VerifyEmail(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					VerifyEmail(gomock.Any(), "expired_token").
+					VerifyEmail(gomock.Any(), uint64(333333)).
 					Return(errors.New("verification token expired"))
 			},
 			expectedError: errors.New("verification token expired"),
 		},
 		{
-			name:             "email already verified",
-			verifyEmailToken: "token_for_verified_user",
+			name:            "email already verified",
+			verifyEmailCode: 444444,
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockusecases.MockAuthUseCases,
@@ -705,7 +705,7 @@ func TestTraceDecorator_VerifyEmail(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					VerifyEmail(gomock.Any(), "token_for_verified_user").
+					VerifyEmail(gomock.Any(), uint64(444444)).
 					Return(errors.New("email already verified"))
 			},
 			expectedError: errors.New("email already verified"),
@@ -737,7 +737,7 @@ func TestTraceDecorator_VerifyEmail(t *testing.T) {
 			decorator := auth.NewTraceDecorator(mockProvider, spanConfig, mockBase)
 
 			ctx := context.Background()
-			err := decorator.VerifyEmail(ctx, tt.verifyEmailToken)
+			err := decorator.VerifyEmail(ctx, tt.verifyEmailCode)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)
@@ -753,16 +753,16 @@ func TestTraceDecorator_ForgetPassword(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name                string
-		forgetPasswordToken string
-		newPassword         string
-		setupMocks          func(*mocktracing.MockProvider, *mockusecases.MockAuthUseCases, *mocktracing.MockSpan)
-		expectedError       error
+		name               string
+		forgetPasswordCode uint64
+		newPassword        string
+		setupMocks         func(*mocktracing.MockProvider, *mockusecases.MockAuthUseCases, *mocktracing.MockSpan)
+		expectedError      error
 	}{
 		{
-			name:                "successful password reset with tracing",
-			forgetPasswordToken: "valid_token_123",
-			newPassword:         "NewPassword123!",
+			name:               "successful password reset with tracing",
+			forgetPasswordCode: 111111,
+			newPassword:        "NewPassword123!",
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockusecases.MockAuthUseCases,
@@ -775,15 +775,15 @@ func TestTraceDecorator_ForgetPassword(t *testing.T) {
 					})
 
 				mockBase.EXPECT().
-					ForgetPassword(gomock.Any(), "valid_token_123", "NewPassword123!").
+					ForgetPassword(gomock.Any(), uint64(111111), "NewPassword123!").
 					Return(nil)
 			},
 			expectedError: nil,
 		},
 		{
-			name:                "invalid token",
-			forgetPasswordToken: "invalid_token",
-			newPassword:         "NewPassword123!",
+			name:               "invalid code",
+			forgetPasswordCode: 222222,
+			newPassword:        "NewPassword123!",
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockusecases.MockAuthUseCases,
@@ -794,15 +794,15 @@ func TestTraceDecorator_ForgetPassword(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					ForgetPassword(gomock.Any(), "invalid_token", "NewPassword123!").
+					ForgetPassword(gomock.Any(), uint64(222222), "NewPassword123!").
 					Return(errors.New("invalid reset token"))
 			},
 			expectedError: errors.New("invalid reset token"),
 		},
 		{
-			name:                "expired token",
-			forgetPasswordToken: "expired_token",
-			newPassword:         "NewPassword123!",
+			name:               "expired code",
+			forgetPasswordCode: 333333,
+			newPassword:        "NewPassword123!",
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockusecases.MockAuthUseCases,
@@ -813,15 +813,15 @@ func TestTraceDecorator_ForgetPassword(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					ForgetPassword(gomock.Any(), "expired_token", "NewPassword123!").
+					ForgetPassword(gomock.Any(), uint64(333333), "NewPassword123!").
 					Return(errors.New("reset token expired"))
 			},
 			expectedError: errors.New("reset token expired"),
 		},
 		{
-			name:                "weak password",
-			forgetPasswordToken: "valid_token",
-			newPassword:         "weak",
+			name:               "weak password",
+			forgetPasswordCode: 444444,
+			newPassword:        "weak",
 			setupMocks: func(
 				mockProvider *mocktracing.MockProvider,
 				mockBase *mockusecases.MockAuthUseCases,
@@ -832,7 +832,7 @@ func TestTraceDecorator_ForgetPassword(t *testing.T) {
 					Return(context.Background(), mockSpan)
 
 				mockBase.EXPECT().
-					ForgetPassword(gomock.Any(), "valid_token", "weak").
+					ForgetPassword(gomock.Any(), uint64(444444), "weak").
 					Return(errors.New("password does not meet security requirements"))
 			},
 			expectedError: errors.New("password does not meet security requirements"),
@@ -864,7 +864,7 @@ func TestTraceDecorator_ForgetPassword(t *testing.T) {
 			decorator := auth.NewTraceDecorator(mockProvider, spanConfig, mockBase)
 
 			ctx := context.Background()
-			err := decorator.ForgetPassword(ctx, tt.forgetPasswordToken, tt.newPassword)
+			err := decorator.ForgetPassword(ctx, tt.forgetPasswordCode, tt.newPassword)
 
 			if tt.expectedError != nil {
 				assert.Error(t, err)

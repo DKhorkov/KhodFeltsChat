@@ -3,10 +3,8 @@ package auth
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
-	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
@@ -40,6 +38,8 @@ func (u *UseCases) RegisterUser(
 	ctx context.Context,
 	dto domains.RegisterDTO,
 ) (*domains.User, error) {
+	dto.Email = strings.ToLower(dto.Email)
+
 	if !validation.ValidateValueByRule(dto.Email, u.validationConfig.EmailRegExp) {
 		return nil, fmt.Errorf("%w: invalid email address", customerrors.ErrValidationFailed)
 	}
@@ -74,7 +74,8 @@ func (u *UseCases) LoginUser(
 		return nil, fmt.Errorf("%w: password is required", customerrors.ErrValidationFailed)
 	}
 
-	user, _ := u.usersService.GetUserByEmail(ctx, dto.Login)
+	// Email нормализуем к нижнему регистру; username case-sensitive и остаётся как есть.
+	user, _ := u.usersService.GetUserByEmail(ctx, strings.ToLower(dto.Login))
 
 	// Fallback логина по имени пользователя
 	if user == nil {
@@ -217,23 +218,8 @@ func (u *UseCases) LogoutUserFromAllSessions(ctx context.Context, userID uint64)
 	return u.authService.ExpireAllUserRefreshTokens(ctx, userID)
 }
 
-func (u *UseCases) VerifyEmail(ctx context.Context, verifyEmailToken string) error {
-	decodedToken, err := security.RawDecode(verifyEmailToken)
-	if err != nil {
-		return customerrors.ErrInvalidJWT
-	}
-
-	_, rawUserID, found := strings.Cut(string(decodedToken), common.SaltSeparator)
-	if !found {
-		return customerrors.ErrInvalidJWT
-	}
-
-	intUserID, err := strconv.ParseUint(rawUserID, 10, 64)
-	if err != nil {
-		return err
-	}
-
-	user, err := u.usersService.GetUserByID(ctx, intUserID)
+func (u *UseCases) VerifyEmail(ctx context.Context, userID uint64) error {
+	user, err := u.usersService.GetUserByID(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -247,28 +233,14 @@ func (u *UseCases) VerifyEmail(ctx context.Context, verifyEmailToken string) err
 
 func (u *UseCases) ForgetPassword(
 	ctx context.Context,
-	forgetPasswordToken, newPassword string,
+	userID uint64,
+	newPassword string,
 ) error {
 	if !validation.ValidateValueByRules(newPassword, u.validationConfig.PasswordRegExps) {
 		return fmt.Errorf("%w: invalid password", customerrors.ErrValidationFailed)
 	}
 
-	decodedToken, err := security.RawDecode(forgetPasswordToken)
-	if err != nil {
-		return customerrors.ErrInvalidJWT
-	}
-
-	_, rawUserID, found := strings.Cut(string(decodedToken), common.SaltSeparator)
-	if !found {
-		return customerrors.ErrInvalidJWT
-	}
-
-	intUserID, err := strconv.ParseUint(rawUserID, 10, 64)
-	if err != nil {
-		return err
-	}
-
-	user, err := u.usersService.GetUserByID(ctx, intUserID)
+	user, err := u.usersService.GetUserByID(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -318,6 +290,8 @@ func (u *UseCases) ChangePassword(ctx context.Context, dto domains.ChangePasswor
 }
 
 func (u *UseCases) SendVerifyEmailMessage(ctx context.Context, email string) error {
+	email = strings.ToLower(email)
+
 	user, err := u.usersService.GetUserByEmail(ctx, email)
 	if err != nil {
 		return err
@@ -331,6 +305,8 @@ func (u *UseCases) SendVerifyEmailMessage(ctx context.Context, email string) err
 }
 
 func (u *UseCases) SendForgetPasswordMessage(ctx context.Context, email string) error {
+	email = strings.ToLower(email)
+
 	user, err := u.usersService.GetUserByEmail(ctx, email)
 	if err != nil {
 		return err

@@ -15,12 +15,15 @@
     <link rel="stylesheet" href="/web/static/css/alert-modal.css">
     <link rel="stylesheet" href="/web/static/css/chat.css">
     <link rel="stylesheet" href="/web/static/css/emoji-picker.css">
+    <link rel="stylesheet" href="/web/static/css/password-toggle.css">
     <script src="/web/static/js/auth.js" defer></script>
     <script src="/web/static/js/alert-modal.js" defer></script>
     <script src="/web/static/js/validation.js" defer></script>
     <script src="/web/static/js/errors-mapper.js" defer></script>
     <script src="/web/static/js/navbar.js" defer></script>
+    <script src="/web/static/js/password-toggle.js" defer></script>
     <script src="/web/static/js/emoji-picker.js" defer></script>
+    <script src="/web/static/js/linkify.js" defer></script>
     <script src="/web/static/js/chat.js" defer></script>
 </head>
 <body>
@@ -38,7 +41,10 @@
 
         <main class="conversation" id="conversation" style="display: none;">
             <div class="conversation__header">
-                <h3 class="conversation__header-title" id="conversation-title"></h3>
+                <div class="conversation__header-left">
+                    <span class="conversation__header-avatar" id="conversation-avatar"></span>
+                    <h3 class="conversation__header-title" id="conversation-title"></h3>
+                </div>
                 <button class="conversation__close-btn" id="btn-close-chat" title="Закрыть чат" aria-label="Закрыть чат">&times;</button>
             </div>
 

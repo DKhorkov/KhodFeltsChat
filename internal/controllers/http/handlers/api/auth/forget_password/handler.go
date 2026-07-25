@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
@@ -32,7 +33,12 @@ const (
 // Handler changes forgotten password to new password of current user.
 func Handler(u interfaces.AuthUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		forgetPasswordToken := mux.Vars(r)[TokenRouteKey]
+		code, err := strconv.ParseUint(mux.Vars(r)[TokenRouteKey], 10, 64)
+		if err != nil {
+			http.Error(w, customerrors.ErrInvalidJWT.Error(), http.StatusUnauthorized)
+
+			return
+		}
 
 		data, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -48,7 +54,7 @@ func Handler(u interfaces.AuthUseCases) http.HandlerFunc {
 			return
 		}
 
-		err = u.ForgetPassword(r.Context(), forgetPasswordToken, dto.NewPassword)
+		err = u.ForgetPassword(r.Context(), code, dto.NewPassword)
 
 		switch {
 		case errors.Is(err, customerrors.ErrValidationFailed):

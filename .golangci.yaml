@@ -272,6 +272,10 @@ linters:
         linters:
           - dupl
 
+      - path: internal/usecases/auth/cache_decorator.go
+        linters:
+          - gocritic
+
       - path: .repository\.go
         linters:
           - exhaustruct

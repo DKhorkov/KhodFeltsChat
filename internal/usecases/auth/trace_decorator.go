@@ -85,19 +85,20 @@ func (d *TraceDecorator) LogoutUserFromAllSessions(ctx context.Context, userID u
 	return d.base.LogoutUserFromAllSessions(ctx, userID)
 }
 
-func (d *TraceDecorator) VerifyEmail(ctx context.Context, verifyEmailToken string) error {
+func (d *TraceDecorator) VerifyEmail(ctx context.Context, verifyEmailCode uint64) error {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
 
 	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
 	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
 
-	return d.base.VerifyEmail(ctx, verifyEmailToken)
+	return d.base.VerifyEmail(ctx, verifyEmailCode)
 }
 
 func (d *TraceDecorator) ForgetPassword(
 	ctx context.Context,
-	forgetPasswordToken, newPassword string,
+	forgetPasswordCode uint64,
+	newPassword string,
 ) error {
 	ctx, span := d.traceProvider.Span(ctx, tracing.CallerName(tracing.DefaultSkipLevel))
 	defer span.End()
@@ -105,7 +106,7 @@ func (d *TraceDecorator) ForgetPassword(
 	span.AddEvent(d.spanConfig.Events.Start.Name, d.spanConfig.Events.Start.Opts...)
 	defer span.AddEvent(d.spanConfig.Events.End.Name, d.spanConfig.Events.End.Opts...)
 
-	return d.base.ForgetPassword(ctx, forgetPasswordToken, newPassword)
+	return d.base.ForgetPassword(ctx, forgetPasswordCode, newPassword)
 }
 
 func (d *TraceDecorator) ChangePassword(ctx context.Context, dto domains.ChangePasswordDTO) error {

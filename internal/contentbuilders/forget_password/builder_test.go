@@ -5,14 +5,12 @@ import (
 	"errors"
 	"regexp"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/kfc/internal/contentbuilders/forget_password"
 	"github.com/DKhorkov/kfc/internal/domains"
 	cachemocks "github.com/DKhorkov/libs/cache/mocks"
-	"github.com/DKhorkov/libs/security"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -25,24 +23,7 @@ func TestContentBuilder_Subject(t *testing.T) {
 
 	builder := forget_password.New(mockCache)
 
-	testCases := []struct {
-		name     string
-		expected string
-	}{
-		{
-			name:     "default subject",
-			expected: "Восстановление пароля от аккаунта",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := builder.Subject()
-			require.Equal(t, tc.expected, result)
-		})
-	}
+	require.Equal(t, "Восстановление пароля от аккаунта", builder.Subject())
 }
 
 func TestContentBuilder_Body(t *testing.T) {
@@ -54,28 +35,19 @@ func TestContentBuilder_Body(t *testing.T) {
 	}{
 		{
 			name: "basic user",
-			user: domains.User{
-				ID:       1,
-				Username: "Alice",
-			},
+			user: domains.User{ID: 1, Username: "Alice"},
 		},
 		{
 			name: "user with special characters",
-			user: domains.User{
-				ID:       123,
-				Username: "Bob <Test>",
-			},
+			user: domains.User{ID: 123, Username: "Bob <Test>"},
 		},
 		{
 			name: "user with large ID",
-			user: domains.User{
-				ID:       987654321,
-				Username: "Charlie",
-			},
+			user: domains.User{ID: 987654321, Username: "Charlie"},
 		},
 	}
 
-	tokenRegexp := regexp.MustCompile(`<b>([A-Za-z0-9_-]+)</b>`)
+	codeRegexp := regexp.MustCompile(`<b>(\d{6})</b>`)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -84,10 +56,16 @@ func TestContentBuilder_Body(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockCache := cachemocks.NewMockProvider(ctrl)
 
+			userIDStr := strconv.FormatUint(tc.user.ID, 10)
+
 			mockCache.EXPECT().
-				Set(gomock.Any(), gomock.Any(), gomock.Any(), common.TokenTTL).
+				SetNX(gomock.Any(), gomock.Any(), userIDStr, common.TokenTTL).
 				Return(nil).
-				Times(2)
+				AnyTimes()
+			mockCache.EXPECT().
+				Get(gomock.Any(), gomock.Any()).
+				Return(userIDStr, nil).
+				AnyTimes()
 
 			builder := forget_password.New(mockCache)
 
@@ -95,39 +73,53 @@ func TestContentBuilder_Body(t *testing.T) {
 			require.NoError(t, err)
 			require.Contains(t, result, tc.user.Username)
 
-			matches := tokenRegexp.FindStringSubmatch(result)
-			require.Len(t, matches, 2, "should contain encoded token in bold tag")
+			matches := codeRegexp.FindStringSubmatch(result)
+			require.Len(t, matches, 2, "should contain 6-digit code in bold tag")
 
-			decoded, err := security.RawDecode(matches[1])
+			code, err := strconv.ParseUint(matches[1], 10, 64)
 			require.NoError(t, err)
-
-			_, rawUserID, found := strings.Cut(string(decoded), common.SaltSeparator)
-			require.True(t, found, "decoded token should contain salt separator")
-			require.Equal(t, strconv.FormatUint(tc.user.ID, 10), rawUserID)
-
-			// Token should be different on each call (random salt).
-			result2, err := builder.Body(context.Background(), tc.user)
-			require.NoError(t, err)
-
-			matches2 := tokenRegexp.FindStringSubmatch(result2)
-			require.Len(t, matches2, 2)
-			require.NotEqual(t, matches[1], matches2[1])
+			require.GreaterOrEqual(t, code, common.OTPMin)
+			require.LessOrEqual(t, code, common.OTPMax)
 		})
 	}
 }
 
-func TestContentBuilder_Body_CacheError(t *testing.T) {
+func TestContentBuilder_Body_CacheSetError(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
 	mockCache := cachemocks.NewMockProvider(ctrl)
 
 	mockCache.EXPECT().
-		Set(gomock.Any(), gomock.Any(), gomock.Any(), common.TokenTTL).
+		SetNX(gomock.Any(), gomock.Any(), gomock.Any(), common.TokenTTL).
 		Return(errors.New("connection refused"))
 
 	builder := forget_password.New(mockCache)
 
 	_, err := builder.Body(context.Background(), domains.User{ID: 1, Username: "Alice"})
 	require.Error(t, err)
+}
+
+func TestContentBuilder_Body_Collision(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	mockCache := cachemocks.NewMockProvider(ctrl)
+
+	// SetNX always succeeds (no error), but Get returns a different userID —
+	// simulating another user already owning every generated code. Builder
+	// must retry OTPGenerateAttempts times then fail with ErrOTPCollision.
+	mockCache.EXPECT().
+		SetNX(gomock.Any(), gomock.Any(), gomock.Any(), common.TokenTTL).
+		Return(nil).
+		Times(common.OTPGenerateAttempts)
+	mockCache.EXPECT().
+		Get(gomock.Any(), gomock.Any()).
+		Return("other-user", nil).
+		Times(common.OTPGenerateAttempts)
+
+	builder := forget_password.New(mockCache)
+
+	_, err := builder.Body(context.Background(), domains.User{ID: 1, Username: "Alice"})
+	require.ErrorIs(t, err, common.ErrOTPCollision)
 }

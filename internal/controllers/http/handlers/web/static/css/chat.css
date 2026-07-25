@@ -175,6 +175,18 @@ img.chat-item__avatar {
     align-items: center;
 }
 
+.conversation__header-left {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1;
+}
+
+.conversation__header-avatar {
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
 .conversation__header-title {
     font-size: var(--font-lg);
     font-weight: 600;
@@ -182,6 +194,9 @@ img.chat-item__avatar {
     cursor: pointer;
     transition: color var(--transition-base);
     margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .conversation__header-title:hover {
@@ -351,6 +366,21 @@ img.chat-item__avatar {
     white-space: pre-wrap;
     word-wrap: break-word;
     line-height: 1.5;
+}
+
+.message-link {
+    color: var(--accent);
+    text-decoration: underline;
+    word-break: break-all;
+}
+
+.message-link:hover {
+    text-decoration: none;
+}
+
+.message-bubble--own .message-link {
+    color: var(--text-on-accent);
+    text-decoration: underline;
 }
 
 /* ═══════════════════════════════════════

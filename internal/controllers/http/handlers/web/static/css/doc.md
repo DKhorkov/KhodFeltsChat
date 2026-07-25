@@ -362,6 +362,27 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 
 ---
 
+### Кликабельные ссылки в сообщениях (chat.css)
+
+| Класс | Описание |
+|-------|----------|
+| `.message-link` | Ссылка внутри `.message-bubble__text`, цвет `--accent`, `text-decoration: underline`, `word-break: break-all`. При hover подчёркивание убирается. |
+| `.message-bubble--own .message-link` | В своих (accent-фон) сообщениях ссылка перекрашивается в `--text-on-accent` для контраста. |
+
+---
+
+## password-toggle.css — Кнопка «глаз» для полей пароля
+
+| Класс | Описание |
+|-------|----------|
+| `.password-field` | Обёртка для password-инпута (`position: relative`) — оборачивание делает `password-toggle.js`. |
+| `.password-field__input` | Модификатор инпута — увеличивает правый padding под кнопку глаза. |
+| `.password-field__toggle` | Абсолютно позиционированная кнопка справа (32×32px, background-hover, `focus-visible` outline через `--accent`). |
+| `.password-field__toggle svg` | SVG-иконка глаза (20×20px). |
+| `.password-field__icon--hidden` / `.password-field__icon--visible` | Иконки открытого и закрытого глаза; переключаются через `aria-pressed` на кнопке. |
+
+---
+
 ## emoji-picker.css — Emoji picker
 
 | Класс | Описание |
