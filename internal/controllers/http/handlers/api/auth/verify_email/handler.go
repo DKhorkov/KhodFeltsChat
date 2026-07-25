@@ -3,6 +3,7 @@ package verify_email
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
 	"github.com/DKhorkov/kfc/internal/interfaces"
@@ -29,9 +30,14 @@ const (
 // Handler changes forgotten password to new password of current user.
 func Handler(u interfaces.AuthUseCases) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		verifyEmailToken := mux.Vars(r)[TokenRouteKey]
+		code, err := strconv.ParseUint(mux.Vars(r)[TokenRouteKey], 10, 64)
+		if err != nil {
+			http.Error(w, customerrors.ErrInvalidJWT.Error(), http.StatusUnauthorized)
 
-		err := u.VerifyEmail(r.Context(), verifyEmailToken)
+			return
+		}
+
+		err = u.VerifyEmail(r.Context(), code)
 
 		switch {
 		case errors.Is(err, customerrors.ErrInvalidJWT):

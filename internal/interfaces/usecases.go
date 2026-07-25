@@ -27,8 +27,8 @@ type AuthUseCases interface {
 	LogoutUser(ctx context.Context, refreshToken string) error
 	LogoutUserFromAllSessions(ctx context.Context, userID uint64) error
 	RefreshTokens(ctx context.Context, refreshToken string) (*domains.TokensDTO, error)
-	VerifyEmail(ctx context.Context, verifyEmailToken string) error
-	ForgetPassword(ctx context.Context, forgetPasswordToken, newPassword string) error
+	VerifyEmail(ctx context.Context, userID uint64) error
+	ForgetPassword(ctx context.Context, userID uint64, newPassword string) error
 	SendForgetPasswordMessage(ctx context.Context, email string) error
 	ChangePassword(ctx context.Context, dto domains.ChangePasswordDTO) error
 	SendVerifyEmailMessage(ctx context.Context, email string) error

@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/kfc/internal/config"
 	"github.com/DKhorkov/kfc/internal/domains"
 	customerrors "github.com/DKhorkov/kfc/internal/errors"
@@ -903,8 +902,8 @@ func TestUseCases_VerifyEmail(t *testing.T) {
 	}
 
 	type args struct {
-		ctx              context.Context
-		verifyEmailToken string
+		ctx    context.Context
+		userID uint64
 	}
 
 	unconfirmedUser := &domains.User{
@@ -918,8 +917,6 @@ func TestUseCases_VerifyEmail(t *testing.T) {
 		Email:          "sometest@gmail.com",
 		EmailConfirmed: true,
 	}
-
-	validVerifyToken := security.RawEncode([]byte("salt" + common.SaltSeparator + "7"))
 
 	tests := []struct {
 		name    string
@@ -943,27 +940,10 @@ func TestUseCases_VerifyEmail(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:              context.Background(),
-				verifyEmailToken: validVerifyToken,
+				ctx:    context.Background(),
+				userID: 7,
 			},
 			wantErr: false,
-		},
-		{
-			name: "invalid user ID in token",
-			args: args{
-				ctx:              context.Background(),
-				verifyEmailToken: "invalid",
-			},
-			wantErr: true,
-		},
-		{
-			name: "token without salt separator",
-			args: args{
-				ctx:              context.Background(),
-				verifyEmailToken: security.RawEncode([]byte("7")),
-			},
-			wantErr: true,
-			err:     customerrors.ErrInvalidJWT,
 		},
 		{
 			name: "user not found",
@@ -975,8 +955,8 @@ func TestUseCases_VerifyEmail(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:              context.Background(),
-				verifyEmailToken: validVerifyToken,
+				ctx:    context.Background(),
+				userID: 7,
 			},
 			wantErr: true,
 			err:     errors.New("user not found"),
@@ -991,8 +971,8 @@ func TestUseCases_VerifyEmail(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:              context.Background(),
-				verifyEmailToken: validVerifyToken,
+				ctx:    context.Background(),
+				userID: 7,
 			},
 			wantErr: true,
 			err:     customerrors.ErrEmailAlreadyConfirmed,
@@ -1012,8 +992,8 @@ func TestUseCases_VerifyEmail(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:              context.Background(),
-				verifyEmailToken: validVerifyToken,
+				ctx:    context.Background(),
+				userID: 7,
 			},
 			wantErr: true,
 			err:     errors.New("database error"),
@@ -1049,15 +1029,14 @@ func TestUseCases_VerifyEmail(t *testing.T) {
 			)
 
 			// Act
-			err := uc.VerifyEmail(tt.args.ctx, tt.args.verifyEmailToken)
+			err := uc.VerifyEmail(tt.args.ctx, tt.args.userID)
 
 			// Assert
 			if tt.wantErr {
 				assert.Error(t, err)
 
 				if tt.err != nil {
-					if errors.Is(tt.err, customerrors.ErrInvalidJWT) ||
-						errors.Is(tt.err, customerrors.ErrEmailAlreadyConfirmed) {
+					if errors.Is(tt.err, customerrors.ErrEmailAlreadyConfirmed) {
 						assert.ErrorIs(t, err, tt.err)
 					} else {
 						assert.Contains(t, err.Error(), tt.err.Error())
@@ -1079,9 +1058,9 @@ func TestUseCases_ForgetPassword(t *testing.T) {
 	}
 
 	type args struct {
-		ctx                 context.Context
-		forgetPasswordToken string
-		newPassword         string
+		ctx         context.Context
+		userID      uint64
+		newPassword string
 	}
 
 	pass := "SomeTestP@ssword2"
@@ -1095,8 +1074,6 @@ func TestUseCases_ForgetPassword(t *testing.T) {
 		Email:    "sometest@gmail.com",
 		Password: hashedPassword,
 	}
-
-	validForgetToken := security.RawEncode([]byte("salt" + common.SaltSeparator + "7"))
 
 	tests := []struct {
 		name    string
@@ -1120,37 +1097,18 @@ func TestUseCases_ForgetPassword(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:                 context.Background(),
-				forgetPasswordToken: validForgetToken,
-				newPassword:         newPass,
+				ctx:         context.Background(),
+				userID:      7,
+				newPassword: newPass,
 			},
 			wantErr: false,
 		},
 		{
-			name: "invalid user ID in token",
-			args: args{
-				ctx:                 context.Background(),
-				forgetPasswordToken: "sdadas",
-				newPassword:         newPass,
-			},
-			wantErr: true,
-		},
-		{
-			name: "token without salt separator",
-			args: args{
-				ctx:                 context.Background(),
-				forgetPasswordToken: security.RawEncode([]byte("7")),
-				newPassword:         newPass,
-			},
-			wantErr: true,
-			err:     customerrors.ErrInvalidJWT,
-		},
-		{
 			name: "invalid password format",
 			args: args{
-				ctx:                 context.Background(),
-				forgetPasswordToken: validForgetToken,
-				newPassword:         "weak",
+				ctx:         context.Background(),
+				userID:      7,
+				newPassword: "weak",
 			},
 			wantErr: true,
 			err:     customerrors.ErrValidationFailed,
@@ -1165,9 +1123,9 @@ func TestUseCases_ForgetPassword(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:                 context.Background(),
-				forgetPasswordToken: validForgetToken,
-				newPassword:         newPass,
+				ctx:         context.Background(),
+				userID:      7,
+				newPassword: newPass,
 			},
 			wantErr: true,
 			err:     errors.New("user not found"),
@@ -1182,9 +1140,9 @@ func TestUseCases_ForgetPassword(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:                 context.Background(),
-				forgetPasswordToken: validForgetToken,
-				newPassword:         pass,
+				ctx:         context.Background(),
+				userID:      7,
+				newPassword: pass,
 			},
 			wantErr: true,
 			err:     customerrors.ErrNewPasswordEqualToOldPassword,
@@ -1204,9 +1162,9 @@ func TestUseCases_ForgetPassword(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:                 context.Background(),
-				forgetPasswordToken: validForgetToken,
-				newPassword:         newPass,
+				ctx:         context.Background(),
+				userID:      7,
+				newPassword: newPass,
 			},
 			wantErr: true,
 			err:     errors.New("database error"),
@@ -1250,15 +1208,14 @@ func TestUseCases_ForgetPassword(t *testing.T) {
 			)
 
 			// Act
-			err := uc.ForgetPassword(tt.args.ctx, tt.args.forgetPasswordToken, tt.args.newPassword)
+			err := uc.ForgetPassword(tt.args.ctx, tt.args.userID, tt.args.newPassword)
 
 			// Assert
 			if tt.wantErr {
 				assert.Error(t, err)
 
 				if tt.err != nil {
-					if errors.Is(tt.err, customerrors.ErrInvalidJWT) ||
-						errors.Is(tt.err, customerrors.ErrValidationFailed) {
+					if errors.Is(tt.err, customerrors.ErrValidationFailed) {
 						assert.ErrorIs(t, err, tt.err)
 					} else {
 						assert.Contains(t, err.Error(), tt.err.Error())

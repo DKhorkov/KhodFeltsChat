@@ -56,17 +56,17 @@ func (mr *MockAuthUseCasesMockRecorder) ChangePassword(ctx, dto any) *gomock.Cal
 }
 
 // ForgetPassword mocks base method.
-func (m *MockAuthUseCases) ForgetPassword(ctx context.Context, forgetPasswordToken, newPassword string) error {
+func (m *MockAuthUseCases) ForgetPassword(ctx context.Context, userID uint64, newPassword string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ForgetPassword", ctx, forgetPasswordToken, newPassword)
+	ret := m.ctrl.Call(m, "ForgetPassword", ctx, userID, newPassword)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ForgetPassword indicates an expected call of ForgetPassword.
-func (mr *MockAuthUseCasesMockRecorder) ForgetPassword(ctx, forgetPasswordToken, newPassword any) *gomock.Call {
+func (mr *MockAuthUseCasesMockRecorder) ForgetPassword(ctx, userID, newPassword any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForgetPassword", reflect.TypeOf((*MockAuthUseCases)(nil).ForgetPassword), ctx, forgetPasswordToken, newPassword)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForgetPassword", reflect.TypeOf((*MockAuthUseCases)(nil).ForgetPassword), ctx, userID, newPassword)
 }
 
 // LoginUser mocks base method.
@@ -171,15 +171,15 @@ func (mr *MockAuthUseCasesMockRecorder) SendVerifyEmailMessage(ctx, email any) *
 }
 
 // VerifyEmail mocks base method.
-func (m *MockAuthUseCases) VerifyEmail(ctx context.Context, verifyEmailToken string) error {
+func (m *MockAuthUseCases) VerifyEmail(ctx context.Context, userID uint64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "VerifyEmail", ctx, verifyEmailToken)
+	ret := m.ctrl.Call(m, "VerifyEmail", ctx, userID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // VerifyEmail indicates an expected call of VerifyEmail.
-func (mr *MockAuthUseCasesMockRecorder) VerifyEmail(ctx, verifyEmailToken any) *gomock.Call {
+func (mr *MockAuthUseCasesMockRecorder) VerifyEmail(ctx, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyEmail", reflect.TypeOf((*MockAuthUseCases)(nil).VerifyEmail), ctx, verifyEmailToken)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyEmail", reflect.TypeOf((*MockAuthUseCases)(nil).VerifyEmail), ctx, userID)
 }

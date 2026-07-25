@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/DKhorkov/kfc/internal/common"
 	"github.com/DKhorkov/kfc/internal/domains"
@@ -12,7 +11,6 @@ import (
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	"github.com/DKhorkov/libs/cache"
 	"github.com/DKhorkov/libs/logging"
-	"github.com/DKhorkov/libs/security"
 )
 
 type CacheDecorator struct {
@@ -62,13 +60,13 @@ func (d *CacheDecorator) LogoutUserFromAllSessions(ctx context.Context, userID u
 	return d.base.LogoutUserFromAllSessions(ctx, userID)
 }
 
-func (d *CacheDecorator) VerifyEmail(ctx context.Context, verifyEmailToken string) error {
-	cacheKey, err := d.validateToken(ctx, common.VerifyEmailTokenPrefix, verifyEmailToken)
+func (d *CacheDecorator) VerifyEmail(ctx context.Context, verifyEmailCode uint64) error {
+	cacheKey, userID, err := d.resolveCode(ctx, common.VerifyEmailTokenPrefix, verifyEmailCode)
 	if err != nil {
 		return err
 	}
 
-	if err = d.base.VerifyEmail(ctx, verifyEmailToken); err != nil {
+	if err = d.base.VerifyEmail(ctx, userID); err != nil {
 		return err
 	}
 
@@ -77,18 +75,19 @@ func (d *CacheDecorator) VerifyEmail(ctx context.Context, verifyEmailToken strin
 
 func (d *CacheDecorator) ForgetPassword(
 	ctx context.Context,
-	forgetPasswordToken, newPassword string,
+	forgetPasswordCode uint64,
+	newPassword string,
 ) error {
-	cacheKey, err := d.validateToken(
+	cacheKey, userID, err := d.resolveCode(
 		ctx,
 		common.ForgetPasswordTokenPrefix,
-		forgetPasswordToken,
+		forgetPasswordCode,
 	)
 	if err != nil {
 		return err
 	}
 
-	if err = d.base.ForgetPassword(ctx, forgetPasswordToken, newPassword); err != nil {
+	if err = d.base.ForgetPassword(ctx, userID, newPassword); err != nil {
 		return err
 	}
 
@@ -237,27 +236,22 @@ func (d *CacheDecorator) SendForgetPasswordMessage(ctx context.Context, email st
 	return nil
 }
 
-func (d *CacheDecorator) validateToken(ctx context.Context, prefix, token string) (string, error) {
-	decodedToken, err := security.RawDecode(token)
+func (d *CacheDecorator) resolveCode(
+	ctx context.Context,
+	prefix string,
+	code uint64,
+) (string, uint64, error) {
+	cacheKey := fmt.Sprintf("%s:%d", prefix, code)
+
+	rawUserID, err := d.cacheProvider.Get(ctx, cacheKey)
+	if err != nil || rawUserID == "" {
+		return "", 0, errors.ErrTokenExpired
+	}
+
+	userID, err := strconv.ParseUint(rawUserID, 10, 64)
 	if err != nil {
-		return "", fmt.Errorf("%w: invalid %s", errors.ErrInvalidJWT, prefix)
+		return "", 0, fmt.Errorf("%w: invalid %s", errors.ErrInvalidJWT, prefix)
 	}
 
-	_, rawUserID, found := strings.Cut(string(decodedToken), common.SaltSeparator)
-	if !found {
-		return "", fmt.Errorf("%w: invalid %s", errors.ErrInvalidJWT, prefix)
-	}
-
-	cacheKey := fmt.Sprintf("%s:%s", prefix, rawUserID)
-
-	storedToken, err := d.cacheProvider.Get(ctx, cacheKey)
-	if err != nil {
-		return "", errors.ErrTokenExpired
-	}
-
-	if storedToken != token {
-		return "", errors.ErrTokenExpired
-	}
-
-	return cacheKey, nil
+	return cacheKey, userID, nil
 }
