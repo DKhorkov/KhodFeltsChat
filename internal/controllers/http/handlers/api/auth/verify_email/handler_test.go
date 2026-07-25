@@ -68,7 +68,9 @@ func TestHandler(t *testing.T) {
 			name:    "unauthorized - use case returns invalid JWT",
 			rawCode: "654321",
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().VerifyEmail(gomock.Any(), uint64(654321)).Return(customerrors.ErrInvalidJWT)
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), uint64(654321)).
+					Return(customerrors.ErrInvalidJWT)
 			},
 			expectedStatus: http.StatusUnauthorized,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -80,7 +82,9 @@ func TestHandler(t *testing.T) {
 			name:    "not found - user not found",
 			rawCode: "222222",
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().VerifyEmail(gomock.Any(), uint64(222222)).Return(customerrors.ErrUserNotFound)
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), uint64(222222)).
+					Return(customerrors.ErrUserNotFound)
 			},
 			expectedStatus: http.StatusNotFound,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -92,7 +96,9 @@ func TestHandler(t *testing.T) {
 			name:    "conflict - email already confirmed",
 			rawCode: "333333",
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().VerifyEmail(gomock.Any(), uint64(333333)).Return(customerrors.ErrEmailAlreadyConfirmed)
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), uint64(333333)).
+					Return(customerrors.ErrEmailAlreadyConfirmed)
 			},
 			expectedStatus: http.StatusConflict,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {
@@ -104,7 +110,9 @@ func TestHandler(t *testing.T) {
 			name:    "internal server error",
 			rawCode: "444444",
 			setupMock: func(m *mockusecases.MockAuthUseCases) {
-				m.EXPECT().VerifyEmail(gomock.Any(), uint64(444444)).Return(errors.New("database connection failed"))
+				m.EXPECT().
+					VerifyEmail(gomock.Any(), uint64(444444)).
+					Return(errors.New("database connection failed"))
 			},
 			expectedStatus: http.StatusInternalServerError,
 			checkResponse: func(t *testing.T, rr *httptest.ResponseRecorder) {

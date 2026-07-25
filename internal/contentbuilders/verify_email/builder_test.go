@@ -48,7 +48,6 @@ func TestContentBuilder_Body(t *testing.T) {
 	}
 
 	linkRegexp := regexp.MustCompile(`http://example\.com/verify-email/(\d{6})`)
-	codeRegexp := regexp.MustCompile(`<b>(\d{6})</b>`)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -76,10 +75,6 @@ func TestContentBuilder_Body(t *testing.T) {
 
 			linkMatches := linkRegexp.FindStringSubmatch(result)
 			require.Len(t, linkMatches, 2, "should contain 6-digit code in link")
-
-			codeMatches := codeRegexp.FindStringSubmatch(result)
-			require.Len(t, codeMatches, 2, "should contain 6-digit code in bold tag")
-			require.Equal(t, linkMatches[1], codeMatches[1])
 
 			code, err := strconv.ParseUint(linkMatches[1], 10, 64)
 			require.NoError(t, err)

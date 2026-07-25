@@ -31,7 +31,7 @@ func (b *ContentBuilder) Body(ctx context.Context, user domains.User) (string, e
 
 	var code uint64
 
-	for i := 0; i < common.OTPGenerateAttempts; i++ {
+	for range common.OTPGenerateAttempts {
 		generated, err := common.GenerateOTP()
 		if err != nil {
 			return "", fmt.Errorf("failed to generate OTP: %w", err)
@@ -62,7 +62,7 @@ func (b *ContentBuilder) Body(ctx context.Context, user domains.User) (string, e
 	link := fmt.Sprintf("%s/%d", b.baseURL, code)
 
 	template := `<p>Добрый день, %s!</p>
-<p>Пожалуйста, перейдите по <a href="%s">ссылке</a> или введите код <b>%d</b>, чтобы подтвердить адрес электронной почты!</p>
+<p>Пожалуйста, перейдите по <a href="%s">ссылке</a>, чтобы подтвердить адрес электронной почты!</p>
 <p>С уважением,<br>
 команда Handmade Toys Marketplace.</p>
 `
@@ -71,6 +71,5 @@ func (b *ContentBuilder) Body(ctx context.Context, user domains.User) (string, e
 		template,
 		user.Username,
 		link,
-		code,
 	), nil
 }

@@ -147,10 +147,17 @@ func TestUseCases_RegisterUser(t *testing.T) {
 						RegisterUser(gomock.Any(), gomock.AssignableToTypeOf(domains.RegisterDTO{})).
 						DoAndReturn(func(_ context.Context, dto domains.RegisterDTO) (*domains.User, error) {
 							if dto.Email != "sometest@gmail.com" {
-								return nil, fmt.Errorf("expected lowercased email, got %s", dto.Email)
+								return nil, fmt.Errorf(
+									"expected lowercased email, got %s",
+									dto.Email,
+								)
 							}
 
-							return &domains.User{ID: 1, Email: dto.Email, Username: dto.Username}, nil
+							return &domains.User{
+								ID:       1,
+								Email:    dto.Email,
+								Username: dto.Username,
+							}, nil
 						})
 				},
 			},
