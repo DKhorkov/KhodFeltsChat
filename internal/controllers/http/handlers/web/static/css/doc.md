@@ -362,6 +362,15 @@ CSS-стили веб-интерфейса. Используется BEM-под�
 
 ---
 
+### Кликабельные ссылки в сообщениях (chat.css)
+
+| Класс | Описание |
+|-------|----------|
+| `.message-link` | Ссылка внутри `.message-bubble__text`, цвет `--accent`, `text-decoration: underline`, `word-break: break-all`. При hover подчёркивание убирается. |
+| `.message-bubble--own .message-link` | В своих (accent-фон) сообщениях ссылка перекрашивается в `--text-on-accent` для контраста. |
+
+---
+
 ## password-toggle.css — Кнопка «глаз» для полей пароля
 
 | Класс | Описание |
