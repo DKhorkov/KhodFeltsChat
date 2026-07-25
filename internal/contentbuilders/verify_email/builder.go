@@ -31,7 +31,7 @@ func (b *ContentBuilder) Body(ctx context.Context, user domains.User) (string, e
 
 	var code uint64
 
-	for i := 0; i < common.OTPGenerateAttempts; i++ {
+	for range common.OTPGenerateAttempts {
 		generated, err := common.GenerateOTP()
 		if err != nil {
 			return "", fmt.Errorf("failed to generate OTP: %w", err)
