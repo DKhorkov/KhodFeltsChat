@@ -353,6 +353,21 @@ img.chat-item__avatar {
     line-height: 1.5;
 }
 
+.message-link {
+    color: var(--accent);
+    text-decoration: underline;
+    word-break: break-all;
+}
+
+.message-link:hover {
+    text-decoration: none;
+}
+
+.message-bubble--own .message-link {
+    color: var(--text-on-accent);
+    text-decoration: underline;
+}
+
 /* ═══════════════════════════════════════
    Плашка ответа в пузырьке
    ═══════════════════════════════════════ */

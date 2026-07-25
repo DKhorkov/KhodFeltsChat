@@ -257,7 +257,7 @@ async function handleMessageEdited(payload) {
                     );
                     if (bubble) {
                         const textEl = bubble.querySelector('.message-bubble__text');
-                        if (textEl) textEl.textContent = updated.text;
+                        if (textEl) renderTextWithLinks(textEl, updated.text);
                     }
                 }
             }
@@ -727,7 +727,7 @@ function createMessageBubble(message) {
 
     const text = document.createElement('div');
     text.className = 'message-bubble__text';
-    text.textContent = message.text;
+    renderTextWithLinks(text, message.text);
 
     bubble.appendChild(header);
     bubble.appendChild(text);
