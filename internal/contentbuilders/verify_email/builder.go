@@ -71,6 +71,5 @@ func (b *ContentBuilder) Body(ctx context.Context, user domains.User) (string, e
 		template,
 		user.Username,
 		link,
-		code,
 	), nil
 }
