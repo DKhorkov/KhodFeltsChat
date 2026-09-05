@@ -12,12 +12,12 @@ import (
 )
 
 type Service struct {
-	uow                        interfaces.UnitOfWork
+	uow                        pg.UnitOfWork
 	newReactionsRepositoryFunc func(tx pg.Transaction) interfaces.ReactionsRepository
 }
 
 func New(
-	uow interfaces.UnitOfWork,
+	uow pg.UnitOfWork,
 	newReactionsRepositoryFunc func(tx pg.Transaction) interfaces.ReactionsRepository,
 ) *Service {
 	return &Service{

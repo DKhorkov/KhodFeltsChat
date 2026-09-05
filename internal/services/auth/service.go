@@ -15,7 +15,7 @@ import (
 )
 
 type Service struct {
-	uow                       interfaces.UnitOfWork
+	uow                       pg.UnitOfWork
 	newAuthRepositoryFunc     func(tx pg.Transaction) interfaces.AuthRepository
 	newUsersRepositoryFunc    func(tx pg.Transaction) interfaces.UsersRepository
 	newSettingsRepositoryFunc func(tx pg.Transaction) interfaces.SettingsRepository
@@ -24,7 +24,7 @@ type Service struct {
 }
 
 func New(
-	uow interfaces.UnitOfWork,
+	uow pg.UnitOfWork,
 	newAuthRepositoryFunc func(tx pg.Transaction) interfaces.AuthRepository,
 	newUsersRepositoryFunc func(tx pg.Transaction) interfaces.UsersRepository,
 	newSettingsRepositoryFunc func(tx pg.Transaction) interfaces.SettingsRepository,

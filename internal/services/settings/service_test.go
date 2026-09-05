@@ -12,8 +12,8 @@ import (
 	"github.com/DKhorkov/kfc/internal/interfaces"
 	service "github.com/DKhorkov/kfc/internal/services/settings"
 	mockrepositories "github.com/DKhorkov/kfc/mocks/repositories"
-	mockuow "github.com/DKhorkov/kfc/mocks/uow"
 	pg "github.com/DKhorkov/libs/db/postgresql"
+	mockuow "github.com/DKhorkov/libs/db/postgresql/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )

@@ -11,12 +11,12 @@ import (
 )
 
 type Service struct {
-	uow                                   interfaces.UnitOfWork
+	uow                                   pg.UnitOfWork
 	newWebPushSubscriptionsRepositoryFunc func(tx pg.Transaction) interfaces.WebPushSubscriptionsRepository
 }
 
 func New(
-	uow interfaces.UnitOfWork,
+	uow pg.UnitOfWork,
 	newWebPushSubscriptionsRepositoryFunc func(tx pg.Transaction) interfaces.WebPushSubscriptionsRepository,
 ) *Service {
 	return &Service{

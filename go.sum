@@ -1,5 +1,5 @@
-github.com/DKhorkov/libs v1.15.3 h1:DWIlGbg6ExbDqi2TG0aVhGq/7/jX0+PGZf39woChKwA=
-github.com/DKhorkov/libs v1.15.3/go.mod h1:gFfZ3dobLeIjxwc6OUOYB9E5dYMNexGbBMVoSSEUEQU=
+github.com/DKhorkov/libs v1.16.0 h1:577dv211PlmKWcugIwEmIjbNaB1wUKbhaLa97OgO8CE=
+github.com/DKhorkov/libs v1.16.0/go.mod h1:gFfZ3dobLeIjxwc6OUOYB9E5dYMNexGbBMVoSSEUEQU=
 github.com/Masterminds/squirrel v1.5.4 h1:uUcX/aBc8O7Fg9kaISIUsHXdKuqehiXAMQTYX8afzqM=
 github.com/Masterminds/squirrel v1.5.4/go.mod h1:NNaOrjSoIDfDA40n7sr2tPNZRfjzjA400rg+riTZj10=
 github.com/SherClockHolmes/webpush-go v1.4.0 h1:ocnzNKWN23T9nvHi6IfyrQjkIc0oJWv1B1pULsf9i3s=

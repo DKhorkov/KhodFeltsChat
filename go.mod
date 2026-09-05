@@ -3,7 +3,7 @@ module github.com/DKhorkov/kfc
 go 1.25.0
 
 require (
-	github.com/DKhorkov/libs v1.15.3
+	github.com/DKhorkov/libs v1.16.0
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/go-openapi/runtime v0.29.2
